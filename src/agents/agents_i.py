@@ -23,6 +23,7 @@ class IAgents(ABC):
         self,
         agent_id: AgentID,
         observation: ObsType,
+        explore: bool = True,
     ) -> (ActionType, float):
         pass
 

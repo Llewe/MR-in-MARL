@@ -14,6 +14,7 @@ from config import (
     actor_critic_config,
     training_config,
     env_config,
+    eval_config,
 )
 from enviroments import env_helper_parallel, env_helper_aec
 
@@ -35,150 +36,129 @@ def _episode_test(
     last_observation = {}
     last_log_prob = {}
     actions = {}
-    gamma = 0.95
 
-    for agent_name in env.possible_agents:
-        episode_reward[agent_name] = 0
-        actions[agent_name] = []
+    for agent_id in env.possible_agents:
+        episode_reward[agent_id] = 0
+        actions[agent_id] = []
 
-    for agent_name in env.agent_iter():
+    for agent_id in env.agent_iter():
         pygame.event.get()  # so that the window doesn't freeze
         observation, reward, termination, truncation, info = env.last()
 
         # lets update the agent from the last cycle, if there was one
-        if agent_name in last_action:
+        if agent_id in last_action:
             agents.update(
-                agent_id=agent_name,
-                last_observation=last_observation[agent_name],
+                agent_id=agent_id,
+                last_observation=last_observation[agent_id],
                 curr_observation=observation,
-                last_action=last_action[agent_name],
+                last_action=last_action[agent_id],
                 reward=reward,
                 done=termination or truncation,
-                log_prob=last_log_prob[agent_name],
-                gamma=gamma,
+                log_prob=last_log_prob[agent_id],
+                gamma=actor_critic_config.DISCOUNT_FACTOR,
             )
 
         if termination or truncation:
             action = None
             log_prob = None
         else:
-            # if numpy.random.randint(current_episode + 1) < 50:
-            #     print("random action")
-            #     action = numpy.random.choice(env.action_space(agent_name).n)
-            #     log_prob = 1.0
-            # else:
-            action, log_prob = agents.act(agent_id=agent_name, observation=observation)
+            action, log_prob = agents.act(agent_id=agent_id, observation=observation)
 
-        last_action[agent_name] = action
-        last_observation[agent_name] = observation
-        last_log_prob[agent_name] = log_prob
+        last_action[agent_id] = action
+        last_observation[agent_id] = observation
+        last_log_prob[agent_id] = log_prob
         global all_steps
         all_steps += 1
         writer.add_scalar(f"all_rewards", reward, all_steps)
-        episode_reward[agent_name] += reward
+        episode_reward[agent_id] += reward
 
         if action is not None:
-            actions[agent_name].append(action)
+            actions[agent_id].append(action)
 
         env.step(action)
 
-    for agent_name in episode_reward:
+    for agent_id in episode_reward:
         writer.add_scalar(
-            f"rewards/{agent_name}", episode_reward[agent_name], current_episode
+            f"rewards/{agent_id}", episode_reward[agent_id], current_episode
         )
-    for agent_name in episode_reward:
-        action = numpy.array(actions[agent_name])
+    for agent_id in episode_reward:
+        action = numpy.array(actions[agent_id])
         writer.add_histogram(
-            f"actions/{agent_name}", action, global_step=current_episode, max_bins=10
+            f"actions/{agent_id}", action, global_step=current_episode, max_bins=10
         )
 
     return episode_reward
 
 
-# def _episode_parallel(
-#     actor_critic: ActorCritic, env: ParallelEnv, current_episode: int
-# ) -> dict:
-#     observations, states = env.reset()
-#
-#     episode_reward = {}
-#     for agent_name in observations:
-#         episode_reward[agent_name] = 0
-#
-#     steps = 0
-#     global gamma
-#     gamma -= 0.001
-#     if gamma < 0.2:
-#         gamma = 0.2
-#     mlflow.log_metric("gamma", gamma, current_episode)
-#     while env.agents:
-#         pygame.event.get()  # so that the window doesn't freeze
-#         steps += 1
-#
-#         actions, log_prob = actor_critic.act(observations)
-#
-#         next_observations, rewards, terminations, truncations, infos = env.step(actions)
-#
-#         actor_critic.update(
-#             observations,
-#             actions,
-#             rewards,
-#             next_observations,
-#             terminations,
-#             log_prob,
-#             gamma,
-#         )
-#         observations = next_observations
-#
-#         for agent_name in rewards:
-#             episode_reward[agent_name] += rewards[agent_name]
-#
-#     return episode_reward
-#
-#
-# def _episode_aec(actor_critic: ActorCritic, env: AECEnv, current_episode: int) -> dict:
-#     env.reset()
-#
-#     episode_reward = {}
-#     last_action = {}
-#     last_observation = {}
-#     last_log_prob = {}
-#     for agent_name in env.possible_agents:
-#         episode_reward[agent_name] = 0
-#     for agent_name in env.agent_iter():
-#         pygame.event.get()  # so that the window doesn't freeze
-#
-#         observation, reward, termination, truncation, info = env.last()
-#
-#         if agent_name in last_action:
-#             actor_critic.update_single(
-#                 agent_name,
-#                 last_observation[agent_name],
-#                 last_action[agent_name],
-#                 reward,
-#                 observation,
-#                 termination or truncation,
-#                 last_log_prob[agent_name],
-#                 0.95,
-#             )
-#
-#         if env.agent_selection is not agent_name:
-#             raise Exception
-#
-#         if termination or truncation:
-#             action = None
-#
-#         else:
-#             action, log_prob = actor_critic.act_single(agent_name, observation)
-#             last_log_prob[agent_name] = log_prob
-#
-#         last_action[agent_name] = action
-#         last_observation[agent_name] = observation
-#
-#         env.step(action)
-#
-#         episode_reward[agent_name] += reward
-#
-#     return episode_reward
+def _eval_agents(
+    agents: IAgents,
+    env: AECEnv,
+    writer: SummaryWriter,
+    current_episode: int,
+    num_eval_episodes: int,
+):
+    rewards = {}
+    for agent_name in env.possible_agents:
+        rewards[agent_name] = []
+
+    for steps in range(num_eval_episodes):
+        env.reset()
+
+        episode_reward = {}
+        for agent_name in env.possible_agents:
+            episode_reward[agent_name] = 0
+
+        for agent_name in env.agent_iter():
+            pygame.event.get()  # so that the window doesn't freeze
+            observation, reward, termination, truncation, info = env.last()
+
+            episode_reward[agent_name] += reward
+
+            if termination or truncation:
+                action = None
+            else:
+                action, _ = agents.act(
+                    agent_id=agent_name, observation=observation, explore=False
+                )
+
+            env.step(action)
+        for agent_id in env.possible_agents:
+            writer.add_scalar(
+                f"eval/rewards/episode-{current_episode}/{agent_id}",
+                episode_reward[agent_id],
+                steps,
+            )
+            rewards[agent_id].append(episode_reward[agent_id])
+
+    for agent_id in env.possible_agents:
+        writer.add_scalar(
+            f"eval/rewards/mean/{agent_id}",
+            numpy.mean(rewards[agent_id]),
+            current_episode,
+        )
+
+
+def get_logging_file(run_name: str) -> str:
+    file = join(
+        dirname(dirname(realpath(__file__))),
+        "resources",
+        "tensorboard",
+        run_name,
+    )
+    return file
+
+
+def baseline_writer():
+    steps = 10000
+    baseline_values = {"agent_0": -39.79}
+    log_name = "rewards"
+    log_location = get_logging_file("baseline/simple")
+    with SummaryWriter(log_dir=log_location) as writer:
+        for i in range(steps):
+            for agent_name in baseline_values:
+                writer.add_scalar(
+                    f"{log_name}/{agent_name}", baseline_values[agent_name], i
+                )
 
 
 def start_training() -> None:
@@ -188,13 +168,10 @@ def start_training() -> None:
         else env_helper_aec.setup_env()
     )
 
-    RUN_NAME = f"a-{training_config.AGENT_TYPE.value}_e-{env_config.ENV_NAME}/time-{time.time()}"
-    ml_folder = join(
-        dirname(dirname(realpath(__file__))),
-        "resources",
-        "tensorboard",
-        RUN_NAME,
+    RUN_NAME = (
+        f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/time-{time.time()}"
     )
+    ml_folder = get_logging_file(RUN_NAME)
     logging.info(f"TensorBoard -> Logging to {ml_folder}")
 
     agents = get_agents()
@@ -207,18 +184,38 @@ def start_training() -> None:
 
     with SummaryWriter(log_dir=ml_folder) as writer:
         agents.set_logger(writer)
-        # writer.add_hparams(hparam_dict=vars(actor_critic_config), metric_dict={})
-        # writer.add_hparams(hparam_dict=vars(actor_critic_config), metric_dict={})
-        # writer.add_hparams(hparam_dict=vars(training_config), metric_dict={})
-        # writer.add_hparams(hparam_dict=vars(env_config), metric_dict={})
+
+        for key, value in actor_critic_config.__dict__.items():
+            writer.add_text(key, str(value))
+        for key, value in training_config.__dict__.items():
+            writer.add_text(key, str(value))
+        for key, value in env_config.__dict__.items():
+            writer.add_text(key, str(value))
+
         pygame.init()
+        all_rewards = {}
+
         for epoch in range(training_config.EPOCHS):
             for episode in range(training_config.EPISODES):
                 if env_config.PARALLEL_ENV:
                     raise NotImplementedError
                 else:
+                    if episode % eval_config.EVAL_INTERVAL == 0:
+                        logging.info("Evaluating agents")
+                        _eval_agents(
+                            agents,
+                            env,
+                            writer,
+                            episode,
+                            num_eval_episodes=eval_config.NUM_EPISODES,
+                        )
+
                     rewards = _episode_test(agents, env, episode, writer)
 
+                    for i in rewards:
+                        if i not in all_rewards:
+                            all_rewards[i] = []
+                        all_rewards[i].append(rewards[i])
                 # for agent_name in rewards:
                 #     writer.log_metric(
                 #         key=agent_name,
@@ -228,7 +225,13 @@ def start_training() -> None:
                 logging.info(
                     f"Epoch {epoch}/{training_config.EPOCHS} Episode: {episode}/{training_config.EPISODES} - Reward: {rewards}"
                 )
+
         env.close()
+        logging.info("Finished training")
+
+        #
+        for agent_id in env.possible_agents:
+            logging.info(f"{agent_id} mean reward: {numpy.mean(all_rewards[agent_id])}")
 
 
 if __name__ == "__main__":

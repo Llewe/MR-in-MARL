@@ -45,7 +45,7 @@ class ActorCriticTdLamdaBack(IAgents):
             self.critic_trace[agent_id] = []
             self.I[agent_id] = 1
 
-    def act(self, agent_id: AgentID, observation: ObsType) -> ActionType:
+    def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         policy_network = self.policy_networks[agent_id]
 
         # convert state to float tensor, add 1 dimension, allocate tensor on device

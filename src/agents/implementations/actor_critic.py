@@ -75,8 +75,8 @@ class ActorCritic(IAgents):
 
     epsilon_initial = 1.0
     epsilon = epsilon_initial
-    epsilon_final = 0.1  # Set to a small value close to zero
-    epsilon_decay_rate = 0.0001
+    epsilon_final = 0.08  # Set to a small value close to zero
+    epsilon_decay_rate = 0.001
 
     def init_agents(
         self,
@@ -133,8 +133,10 @@ class ActorCritic(IAgents):
 
         self.current_episode += 1
 
-    def act(self, agent_id: AgentID, observation: ObsType) -> (ActionType, float):
-        if np.random.rand() < self.epsilon:
+    def act(
+        self, agent_id: AgentID, observation: ObsType, explore=True
+    ) -> (ActionType, float):
+        if explore and np.random.rand() < self.epsilon:
             action = np.random.choice(self.actor_networks[agent_id].action_space.n)
             log_prob = -np.log(1.0 / self.actor_networks[agent_id].action_space.n)
         else:

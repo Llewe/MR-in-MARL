@@ -7,13 +7,18 @@ class Config(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
 
+class EvalConfig(BaseSettings):
+    NUM_EPISODES: int = 500
+    EVAL_INTERVAL: int = 500
+
+
 class ActorCriticConfig(BaseSettings):
     TORCH_DEVICE: str = "cpu"
 
-    ACTOR_LR: float = 0.0001
+    ACTOR_LR: float = 0.0005
     CRITIC_LR: float = 0.0001
     ACTOR_HIDDEN_UNITS: int = 64
-    CRITIC_HIDDEN_UNITS: int = 64
+    CRITIC_HIDDEN_UNITS: int = 128
     DISCOUNT_FACTOR: float = 0.95
 
     CLIP_NORM: float = 1.0
@@ -39,3 +44,4 @@ config = Config()
 actor_critic_config = ActorCriticConfig()
 training_config = TrainingConfig()
 env_config = EnvConfig()
+eval_config = EvalConfig()

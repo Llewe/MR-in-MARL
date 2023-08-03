@@ -2,6 +2,7 @@ from gymnasium import Space
 from pettingzoo.utils.env import ObsDict, ActionDict, AgentID, ObsType, ActionType
 
 from agents.agents_i import IAgents
+from torch.utils.tensorboard import SummaryWriter
 
 
 class RandomAgents(IAgents):
@@ -20,7 +21,7 @@ class RandomAgents(IAgents):
         # Random agents don't learn
         pass
 
-    def act(self, agent_id: AgentID, observation: ObsType) -> (ActionType, float):
+    def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> (ActionType, float):
         return self.action_space[agent_id].sample(), 1.0
 
     def update(
@@ -62,4 +63,8 @@ class RandomAgents(IAgents):
 
     def load(self, path: str) -> None:
         # useless to load random agents
+        pass
+
+    def set_logger(self, writer: SummaryWriter) -> None:
+        # Random agents don't learn
         pass

@@ -43,7 +43,7 @@ class ActorCriticTd0(IAgentsGym):
         for agent_id in self.policy_networks:
             self.I[agent_id] = 1
 
-    def act(self, agent_id: AgentID, observation: ObsType) -> (ActionType, float):
+    def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> (ActionType, float):
         # convert state to float tensor, add 1 dimension, allocate tensor on device
         state = torch.from_numpy(observation).float().unsqueeze(0)
 
