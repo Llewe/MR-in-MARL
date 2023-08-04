@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 from os.path import join, dirname, realpath
 
 import numpy
@@ -150,9 +151,20 @@ def get_logging_file(run_name: str) -> str:
 
 def baseline_writer():
     steps = 10000
+    # simple:
     baseline_values = {"agent_0": -39.79}
-    log_name = "rewards"
     log_location = get_logging_file("baseline/simple")
+
+    # baseline_values = {
+    #     "adversary_0": 4.51,
+    #     "adversary_1": 4.51,
+    #     "adversary_2": 4.51,
+    #     "agent_0": -16.25,
+    # }
+    # log_location = get_logging_file("baseline/simple_tag")
+
+    log_name = "rewards"
+
     with SummaryWriter(log_dir=log_location) as writer:
         for i in range(steps):
             for agent_name in baseline_values:
@@ -167,10 +179,7 @@ def start_training() -> None:
         if env_config.PARALLEL_ENV
         else env_helper_aec.setup_env()
     )
-
-    RUN_NAME = (
-        f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/time-{time.time()}"
-    )
+    RUN_NAME = f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/{datetime.fromtimestamp(time.time()).isoformat(timespec='seconds')} - {config.NAME_TAG}"
     ml_folder = get_logging_file(RUN_NAME)
     logging.info(f"TensorBoard -> Logging to {ml_folder}")
 
@@ -209,7 +218,17 @@ def start_training() -> None:
                             episode,
                             num_eval_episodes=eval_config.NUM_EPISODES,
                         )
+                        # save model
 
+                        model_storage = join(
+                            dirname(dirname(realpath(__file__))),
+                            "resources",
+                            "models",
+                            RUN_NAME,
+                            f"episode-{episode}",
+                        )
+
+                        agents.save(model_storage)
                     rewards = _episode_test(agents, env, episode, writer)
 
                     for i in rewards:
@@ -237,3 +256,4 @@ def start_training() -> None:
 if __name__ == "__main__":
     logging.info("Starting MR-in-MARL")
     start_training()
+    # baseline_writer()

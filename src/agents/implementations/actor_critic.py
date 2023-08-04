@@ -1,13 +1,17 @@
+import logging
+from os import makedirs
+from os.path import join
+
+import numpy as np
 import torch
 from gymnasium import Space
 from pettingzoo.utils.env import ObsDict, ActionDict, AgentID, ObsType, ActionType
 from torch.distributions import Categorical
-from torch.nn import Module, Linear, Sequential, ELU, ReLU
+from torch.nn import Module, Linear, Sequential, ELU
 from torch.nn.functional import mse_loss
 from torch.nn.functional import softmax
 from torch.utils.tensorboard import SummaryWriter
 
-import numpy as np
 from agents.agents_i import IAgents
 from config import actor_critic_config
 
@@ -261,10 +265,43 @@ class ActorCritic(IAgents):
         raise NotImplementedError
 
     def save(self, path: str) -> None:
-        raise NotImplementedError
+        logging.info(f"Saving actor critic to {path}")
+
+        makedirs(path)
+        for ids in self.actor_networks:
+            actor_net = self.actor_networks[ids]
+
+            model_path = join(
+                path,
+                f"actor_net_{ids}.pth",
+            )
+            torch.save(actor_net, model_path)
+
+        for ids in self.actor_networks:
+            critic_net = self.critic_networks[ids]
+            model_path = join(
+                path,
+                f"critic_net_{ids}.pth",
+            )
+
+            torch.save(critic_net, model_path)
 
     def load(self, path: str) -> None:
-        raise NotImplementedError
+        logging.info(f"Loading actor critic from {path}")
+        for ids in self.actor_networks:
+            model_path = join(
+                path,
+                f"actor_net_{ids}.pth",
+            )
+            self.actor_networks[ids] = torch.load(model_path)
+
+        for ids in self.actor_networks:
+            critic_net = self.critic_networks[ids]
+            model_path = join(
+                path,
+                f"critic_net_{ids}.pth",
+            )
+            self.critic_networks[ids] = torch.load(model_path)
 
     def set_logger(self, writer: SummaryWriter) -> None:
         self.writer = writer

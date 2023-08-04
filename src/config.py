@@ -1,3 +1,5 @@
+import names
+
 from pydantic_settings import BaseSettings
 
 from agents.agent_type_e import AgentType
@@ -6,16 +8,18 @@ from agents.agent_type_e import AgentType
 class Config(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
+    NAME_TAG: str = names.get_first_name()
+
 
 class EvalConfig(BaseSettings):
-    NUM_EPISODES: int = 500
+    NUM_EPISODES: int = 100
     EVAL_INTERVAL: int = 500
 
 
 class ActorCriticConfig(BaseSettings):
     TORCH_DEVICE: str = "cpu"
 
-    ACTOR_LR: float = 0.0005
+    ACTOR_LR: float = 0.0001
     CRITIC_LR: float = 0.0001
     ACTOR_HIDDEN_UNITS: int = 64
     CRITIC_HIDDEN_UNITS: int = 128
@@ -31,7 +35,7 @@ class TrainingConfig(BaseSettings):
 
 
 class EnvConfig(BaseSettings):
-    ENV_NAME: str = "simple"
+    ENV_NAME: str = "simple_tag"
     PARALLEL_ENV: bool = False
     RENDER_MODE: str = ""
     RENDER_FPS: int = 30
