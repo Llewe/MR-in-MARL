@@ -18,8 +18,8 @@ def setup_agents_old(env: ParallelEnv | AECEnv) -> ActorCritic:
     )
 
 
-def get_agents() -> IAgents:
-    match training_config.AGENT_TYPE:
+def get_agents(agent_type: AgentType = training_config.AGENT_TYPE) -> IAgents:
+    match agent_type:
         case AgentType.RANDOM:
             from agents.implementations.random_agents import RandomAgents
 

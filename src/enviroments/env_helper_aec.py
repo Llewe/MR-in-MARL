@@ -2,8 +2,8 @@ from pettingzoo import AECEnv
 from config import env_config
 
 
-def setup_env() -> AECEnv:
-    match env_config.ENV_NAME:
+def setup_env(env_name=env_config.ENV_NAME) -> AECEnv:
+    match env_name:
         case "simple":
             return _setup_simple()
         case "simple_tag":

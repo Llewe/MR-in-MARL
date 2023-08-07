@@ -71,7 +71,7 @@ class ActorCritic(IAgents):
     actor_networks: dict[AgentID, ActorNetwork]
     critic_networks: dict[AgentID, CriticNetwork]
     returns: dict[AgentID, float]
-    writer: SummaryWriter
+    writer: SummaryWriter | None = None
     current_episode: int
 
     actor_losses = {}
@@ -170,10 +170,13 @@ class ActorCritic(IAgents):
             # return action
             log_prob = m.log_prob(action)
             action = action.item()
-
-        self.writer.add_histogram(
-            f"actions/{agent_id}", action, global_step=self.current_episode, max_bins=10
-        )
+        if self.writer:
+            self.writer.add_histogram(
+                f"actions/{agent_id}",
+                action,
+                global_step=self.current_episode,
+                max_bins=10,
+            )
 
         return action, log_prob
 

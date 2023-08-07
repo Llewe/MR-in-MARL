@@ -209,26 +209,7 @@ def start_training() -> None:
                 if env_config.PARALLEL_ENV:
                     raise NotImplementedError
                 else:
-                    if episode % eval_config.EVAL_INTERVAL == 0:
-                        logging.info("Evaluating agents")
-                        _eval_agents(
-                            agents,
-                            env,
-                            writer,
-                            episode,
-                            num_eval_episodes=eval_config.NUM_EPISODES,
-                        )
-                        # save model
 
-                        model_storage = join(
-                            dirname(dirname(realpath(__file__))),
-                            "resources",
-                            "models",
-                            RUN_NAME,
-                            f"episode-{episode}",
-                        )
-
-                        agents.save(model_storage)
                     rewards = _episode_test(agents, env, episode, writer)
 
                     for i in rewards:
@@ -244,6 +225,26 @@ def start_training() -> None:
                 logging.info(
                     f"Epoch {epoch}/{training_config.EPOCHS} Episode: {episode}/{training_config.EPISODES} - Reward: {rewards}"
                 )
+                if (episode + 1) % eval_config.EVAL_INTERVAL == 0:
+                    logging.info("Evaluating agents")
+                    _eval_agents(
+                        agents,
+                        env,
+                        writer,
+                        episode + 1,
+                        num_eval_episodes=eval_config.NUM_EPISODES,
+                    )
+                    # save model
+
+                    model_storage = join(
+                        dirname(dirname(realpath(__file__))),
+                        "resources",
+                        "models",
+                        RUN_NAME,
+                        f"episode-{episode + 1}",
+                    )
+
+                    agents.save(model_storage)
 
         env.close()
         logging.info("Finished training")
