@@ -12,9 +12,9 @@ from torch.nn.functional import mse_loss
 from torch.nn.functional import softmax
 from torch.utils.tensorboard import SummaryWriter
 
-from agents.agents_i import IAgents
-from agents.implementations.utils.reward_normalization import RewardNormalization
-from config import actor_critic_config
+from src.agents.agents_i import IAgents
+from src.agents.implementations.utils.reward_normalization import RewardNormalization
+from src.config import actor_critic_config
 from torch import Tensor
 
 # https://medium.com/geekculture/actor-critic-implementing-actor-critic-methods-82efb998c273

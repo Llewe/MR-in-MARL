@@ -1,18 +1,6 @@
 from pettingzoo import AECEnv
-from config import env_config
 
-
-def setup_env(env_name=env_config.ENV_NAME) -> AECEnv:
-    match env_name:
-        case "simple":
-            return _setup_simple()
-        case "simple_tag":
-            return _setup_simple_tag()
-        case "simple_spread":
-            return _setup_simple_spread()
-        case "simple_adversary":
-            return _setup_simple_adversary()
-    raise NotImplementedError
+from src.config import env_config
 
 
 def _setup_simple() -> AECEnv:

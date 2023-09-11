@@ -3,11 +3,12 @@ import names
 from pydantic_settings import BaseSettings
 
 from agents.agent_type_e import AgentType
+from src.enviroments.enums.env_type_e import EnvType
 
 
 class ReplayConfig(BaseSettings):
     AGENT_TYPE: AgentType = AgentType.DEMO_MANIPULATION_AGENT
-    ENV_NAME: str = "simple_adversary"
+    ENV_NAME: EnvType = EnvType.SIMPLE
 
     EXPERIMENT_NAME: str = "2023-08-09T15:00:49 - Nicholas"
     TIMEOUT: int = 6
@@ -39,14 +40,13 @@ class ActorCriticConfig(BaseSettings):
 
 
 class TrainingConfig(BaseSettings):
-    EPISODES: int = 10000
+    EPISODES: int = 100
     EPOCHS: int = 1
     AGENT_TYPE: AgentType = AgentType.DEMO_MANIPULATION_AGENT
 
 
 class EnvConfig(BaseSettings):
-    ENV_NAME: str = "simple_adversary"
-    PARALLEL_ENV: bool = False
+    ENV_NAME: EnvType = EnvType.SIMPLE
     RENDER_MODE: str = ""
     RENDER_FPS: int = 30
 

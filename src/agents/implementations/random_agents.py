@@ -1,7 +1,7 @@
 from gymnasium import Space
 from pettingzoo.utils.env import ObsDict, ActionDict, AgentID, ObsType, ActionType
 
-from agents.agents_i import IAgents
+from src.agents.agents_i import IAgents
 from torch.utils.tensorboard import SummaryWriter
 
 

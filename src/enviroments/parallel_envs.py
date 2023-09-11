@@ -1,20 +1,9 @@
 from pettingzoo import ParallelEnv
 
-from config import env_config
+from src.config import env_config
 
 
-def setup_env() -> ParallelEnv:
-    match env_config.ENV_NAME:
-        case "simple":
-            return _setup_simple()
-        case "simple_tag":
-            return _setup_simple_tag()
-        case "simple_spread":
-            return _setup_simple_spread()
-    raise NotImplementedError
-
-
-def _setup_simple() -> ParallelEnv:
+def _setup_parallel_simple() -> ParallelEnv:
     from pettingzoo.mpe import simple_v3
 
     return simple_v3.parallel_env(
@@ -24,7 +13,7 @@ def _setup_simple() -> ParallelEnv:
     )
 
 
-def _setup_simple_tag() -> ParallelEnv:
+def _setup_parallel_simple_tag() -> ParallelEnv:
     from pettingzoo.mpe import simple_tag_v3
 
     return simple_tag_v3.parallel_env(
@@ -37,7 +26,7 @@ def _setup_simple_tag() -> ParallelEnv:
     )
 
 
-def _setup_simple_spread() -> ParallelEnv:
+def _setup_parallel_simple_spread() -> ParallelEnv:
     from pettingzoo.mpe import simple_spread_v3
 
     return simple_spread_v3.parallel_env(

@@ -1,8 +1,6 @@
 from torch.nn import Module, Linear, Sequential, ELU, Softmax
 from torch.nn.functional import relu, softmax, elu
 
-NR_HIDDEN_UNITS = 128
-
 
 def preprocessing_module(nr_input_features, nr_hidden_units):
     return Sequential(

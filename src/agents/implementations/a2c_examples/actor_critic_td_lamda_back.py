@@ -2,9 +2,9 @@ import torch
 from gymnasium import Space
 from pettingzoo.utils.env import ObsDict, ActionDict, AgentID, ObsType, ActionType
 from torch.distributions import Categorical
-from agents.agents_i import IAgents
-from agents.implementations.utils.policy_network import PolicyNetwork
-from agents.implementations.utils.state_value_network import StateValueNetwork
+from src.agents.agents_i import IAgents
+from src.agents.implementations.utils.policy_network import PolicyNetwork
+from src.agents.implementations.utils.state_value_network import StateValueNetwork
 
 ACTOR_LAMBDA = 0.8
 CRITIC_LAMBDA = 0.8

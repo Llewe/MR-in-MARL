@@ -5,8 +5,8 @@ from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
 from torch.optim import Optimizer, Adam
 
-from agents.agents_gym_i import IAgentsGym
-from config import actor_critic_config
+from src.agents.agents_gym_i import IAgentsGym
+from src.config import actor_critic_config
 
 
 class ActorCriticTd0(IAgentsGym):
@@ -43,7 +43,9 @@ class ActorCriticTd0(IAgentsGym):
         for agent_id in self.policy_networks:
             self.I[agent_id] = 1
 
-    def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> (ActionType, float):
+    def act(
+        self, agent_id: AgentID, observation: ObsType, explore=True
+    ) -> (ActionType, float):
         # convert state to float tensor, add 1 dimension, allocate tensor on device
         state = torch.from_numpy(observation).float().unsqueeze(0)
 
@@ -60,9 +62,16 @@ class ActorCriticTd0(IAgentsGym):
         # return action
         return action.item(), m.log_prob(action)
 
-    def update(self, agent_id: AgentID, last_observation: ObsType,
-               curr_observation: ObsType, last_action: ActionType, reward: float,
-               done: bool, gamma: float) -> None:
+    def update(
+        self,
+        agent_id: AgentID,
+        last_observation: ObsType,
+        curr_observation: ObsType,
+        last_action: ActionType,
+        reward: float,
+        done: bool,
+        gamma: float,
+    ) -> None:
         critic_network = self.critic_networks[agent_id]
         policy_network = self.policy_networks[agent_id]
         critic_opt = self.critic_optimizer[agent_id]
@@ -80,9 +89,11 @@ class ActorCriticTd0(IAgentsGym):
 
         # Aktualisiere den Critic (Value Function) mit dem TD-Fehler und dem Optimierer
 
-        critic_loss = mse_loss(critic_network(state_tensor),
-                                 reward + actor_critic_config.DISCOUNT_FACTOR * critic_network(
-                                     new_state_tensor))
+        critic_loss = mse_loss(
+            critic_network(state_tensor),
+            reward
+            + actor_critic_config.DISCOUNT_FACTOR * critic_network(new_state_tensor),
+        )
         critic_opt.zero_grad()
         critic_loss.backward(retain_graph=True)
         critic_opt.step()

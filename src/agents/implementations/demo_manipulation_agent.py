@@ -1,6 +1,5 @@
-from agents.implementations.mr_agent import MRAgent
+from .mr_agent import MRAgent
 from pettingzoo.utils.env import AgentID, ObsType, ActionType
-
 import numpy as np
 
 

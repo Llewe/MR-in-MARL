@@ -7,7 +7,7 @@ import logging
 from agents.agents_helper import get_agents
 from agents.agents_i import IAgents
 from config import config, replay_config, env_config
-from enviroments.env_helper_aec import setup_env
+from enviroments import build_env
 
 logging.basicConfig(level=logging.getLevelName(config.LOG_LEVEL))
 
@@ -70,8 +70,7 @@ if __name__ == "__main__":
     env_config.RENDER_MODE = "human"
     env_config.RENDER_FPS = 60
     env_config.MAX_CYCLES = replay_config.STEPS
-    env: AECEnv = setup_env(replay_config.ENV_NAME)
-
+    env: AECEnv = build_env(replay_config.ENV_NAME)
 
     logging.info(f"Loading agents from {replay_config.AGENT_TYPE}")
     agents: IAgents = load_agents(env)

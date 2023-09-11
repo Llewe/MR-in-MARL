@@ -9,10 +9,12 @@ class RewardNormalization:
     def normalize(self, reward: float) -> float:
         # Reward normalization
         self.mean_reward = (self.mean_reward * self.current_episode + reward) / (
-                self.current_episode + 1
+            self.current_episode + 1
         )
-        up = (self.std_reward**2) * self.current_episode + (reward - self.mean_reward) ** 2
-        down = (self.current_episode + 1)
+        up = (self.std_reward**2) * self.current_episode + (
+            reward - self.mean_reward
+        ) ** 2
+        down = self.current_episode + 1
         dif = up / down
         root = np.sqrt(dif)
 

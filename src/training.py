@@ -17,7 +17,7 @@ from config import (
     env_config,
     eval_config,
 )
-from enviroments import env_helper_parallel, env_helper_aec
+from enviroments import build_env
 
 logging.basicConfig(level=logging.getLevelName(config.LOG_LEVEL))
 
@@ -147,8 +147,8 @@ def get_logging_file(run_name: str) -> str:
 def baseline_writer():
     steps = 10000
     # simple:
-    #baseline_values = {"agent_0": -39.79}
-    #log_location = get_logging_file("baseline/simple")
+    # baseline_values = {"agent_0": -39.79}
+    # log_location = get_logging_file("baseline/simple")
     # simple_adversary:
     baseline_values = {
         "adversary_0": -28.19,
@@ -175,11 +175,8 @@ def baseline_writer():
 
 
 def start_training() -> None:
-    env: ParallelEnv | AECEnv = (
-        env_helper_parallel.setup_env()
-        if env_config.PARALLEL_ENV
-        else env_helper_aec.setup_env()
-    )
+    env: ParallelEnv | AECEnv = build_env(env_config.ENV_NAME)
+
     RUN_NAME = f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/{datetime.fromtimestamp(time.time()).isoformat(timespec='seconds')} - {config.NAME_TAG}"
     ml_folder = get_logging_file(RUN_NAME)
     logging.info(f"TensorBoard -> Logging to {ml_folder}")
@@ -207,15 +204,12 @@ def start_training() -> None:
 
         for epoch in range(training_config.EPOCHS):
             for episode in range(training_config.EPISODES):
-                if env_config.PARALLEL_ENV:
-                    raise NotImplementedError
-                else:
-                    rewards = _episode_test(agents, env, episode, writer)
+                rewards = _episode_test(agents, env, episode, writer)
 
-                    for i in rewards:
-                        if i not in all_rewards:
-                            all_rewards[i] = []
-                        all_rewards[i].append(rewards[i])
+                for i in rewards:
+                    if i not in all_rewards:
+                        all_rewards[i] = []
+                    all_rewards[i].append(rewards[i])
                 # for agent_name in rewards:
                 #     writer.log_metric(
                 #         key=agent_name,
@@ -257,4 +251,4 @@ def start_training() -> None:
 if __name__ == "__main__":
     logging.info("Starting MR-in-MARL")
     start_training()
-    #baseline_writer()
+    # baseline_writer()
