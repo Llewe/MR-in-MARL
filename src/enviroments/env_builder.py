@@ -1,13 +1,12 @@
+import logging
 from typing import Union
 from pettingzoo import AECEnv, ParallelEnv
 from src.enums.env_type_e import EnvType
-from .aec_envs import (
+from .setup import (
     _setup_simple,
     _setup_simple_tag,
     _setup_simple_spread,
     _setup_simple_adversary,
-)
-from .parallel_envs import (
     _setup_parallel_simple,
     _setup_parallel_simple_tag,
     _setup_parallel_simple_spread,
@@ -15,6 +14,7 @@ from .parallel_envs import (
 
 
 def build_env(env_name: EnvType) -> Union[AECEnv, ParallelEnv]:
+    logging.info(f"Building env: {env_name}")
     match env_name:
         case EnvType.SIMPLE:
             return _setup_simple()

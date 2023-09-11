@@ -1,3 +1,5 @@
+import logging
+
 from src.enums.agent_type_e import AgentType
 from src.interfaces.agents_i import IAgents
 
@@ -16,6 +18,7 @@ from .implementations.a2c_examples import (
 
 
 def get_agents(agent_type: AgentType = training_config.AGENT_TYPE) -> IAgents:
+    logging.info(f"Getting agents for {agent_type}")
     match agent_type:
         case AgentType.RANDOM:
             return RandomAgents()

@@ -1,4 +1,5 @@
 import time
+from collections import defaultdict
 from datetime import datetime
 from os.path import join, dirname, realpath
 
@@ -26,7 +27,7 @@ gamma = 0.95
 all_steps = 0
 
 
-def _episode_test(
+def _episode_train(
     agents: IAgents, env: AECEnv, current_episode: int, writer: SummaryWriter
 ) -> dict:
     env.reset()
@@ -134,7 +135,7 @@ def _eval_agents(
         )
 
 
-def get_logging_file(run_name: str) -> str:
+def get_logging_folder(run_name: str) -> str:
     file = join(
         dirname(dirname(realpath(__file__))),
         "resources",
@@ -155,7 +156,7 @@ def baseline_writer():
         "agent_0": 7.40,
         "agent_1": 7.40,
     }
-    log_location = get_logging_file("baseline/simple_adversary")
+    log_location = get_logging_folder("baseline/simple_adversary")
     # baseline_values = {
     #     "adversary_0": 4.51,
     #     "adversary_1": 4.51,
@@ -174,78 +175,90 @@ def baseline_writer():
                 )
 
 
+def create_run_name() -> str:
+    return f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/{datetime.fromtimestamp(time.time()).isoformat(timespec='seconds')} - {log_config.NAME_TAG}"
+
+
+def get_model_storage(name: str, episode: int) -> str:
+    return join(
+        dirname(dirname(realpath(__file__))),
+        "resources",
+        "models",
+        name,
+        f"episode-{episode + 1}",
+    )
+
+
+def do_eval(
+    name: str,
+    writer: SummaryWriter,
+    agents: IAgents,
+    env: AECEnv,
+    episodes: int,
+) -> None:
+    logging.info("Evaluating agents")
+    _eval_agents(
+        agents,
+        env,
+        writer,
+        episodes,
+        num_eval_episodes=eval_config.NUM_EPISODES,
+    )
+
+    # save model
+    logging.info("Saving model")
+    agents.save(get_model_storage(name, episodes))
+
+
+def log_configs(writer: SummaryWriter) -> None:
+    for key, value in actor_critic_config.__dict__.items():
+        writer.add_text(key, str(value))
+    for key, value in training_config.__dict__.items():
+        writer.add_text(key, str(value))
+    for key, value in env_config.__dict__.items():
+        writer.add_text(key, str(value))
+
+
 def start_training() -> None:
+    logging.info(f"Starting training")
+
+    run_name: str = create_run_name()
+    log_folder: str = get_logging_folder(run_name)
+
+    logging.info(f"TensorBoard -> Logging to {log_folder}")
+
+    # Building  the environment
     env: ParallelEnv | AECEnv = build_env(env_config.ENV_NAME)
 
-    RUN_NAME = f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/{datetime.fromtimestamp(time.time()).isoformat(timespec='seconds')} - {log_config.NAME_TAG}"
-    ml_folder = get_logging_file(RUN_NAME)
-    logging.info(f"TensorBoard -> Logging to {ml_folder}")
-
+    # Building the agents
     agents = get_agents()
-    logging.info(f"Starting agent type: {training_config.AGENT_TYPE}")
 
     agents.init_agents(
         action_space={a: env.action_space(a) for a in env.possible_agents},
         observation_space={a: env.observation_space(a) for a in env.possible_agents},
     )
 
-    with SummaryWriter(log_dir=ml_folder) as writer:
+    with SummaryWriter(log_dir=log_folder) as writer:
         agents.set_logger(writer)
 
-        for key, value in actor_critic_config.__dict__.items():
-            writer.add_text(key, str(value))
-        for key, value in training_config.__dict__.items():
-            writer.add_text(key, str(value))
-        for key, value in env_config.__dict__.items():
-            writer.add_text(key, str(value))
+        log_configs(writer)
 
         pygame.init()
-        all_rewards = {}
 
         for epoch in range(training_config.EPOCHS):
             for episode in range(training_config.EPISODES):
-                rewards = _episode_test(agents, env, episode, writer)
-
-                for i in rewards:
-                    if i not in all_rewards:
-                        all_rewards[i] = []
-                    all_rewards[i].append(rewards[i])
-                # for agent_name in rewards:
-                #     writer.log_metric(
-                #         key=agent_name,
-                #         value=rewards[agent_name],
-                #         step=episode * (1 + epoch),
-                #     )
                 logging.info(
-                    f"Epoch {epoch}/{training_config.EPOCHS} Episode: {episode}/{training_config.EPISODES} - Reward: {rewards}"
+                    f"Epoch {epoch}/{training_config.EPOCHS}"
+                    f" Episode: {episode}/{training_config.EPISODES}"
                 )
+
+                _episode_train(agents, env, episode, writer)
+
                 if (episode + 1) % eval_config.EVAL_INTERVAL == 0:
-                    logging.info("Evaluating agents")
-                    _eval_agents(
-                        agents,
-                        env,
-                        writer,
-                        episode + 1,
-                        num_eval_episodes=eval_config.NUM_EPISODES,
-                    )
-                    # save model
-
-                    model_storage = join(
-                        dirname(dirname(realpath(__file__))),
-                        "resources",
-                        "models",
-                        RUN_NAME,
-                        f"episode-{episode + 1}",
-                    )
-
-                    agents.save(model_storage)
+                    do_eval(run_name, writer, agents, env, episode)
 
         env.close()
         logging.info("Finished training")
-
-        #
-        for agent_id in env.possible_agents:
-            logging.info(f"{agent_id} mean reward: {numpy.mean(all_rewards[agent_id])}")
 
 
 if __name__ == "__main__":

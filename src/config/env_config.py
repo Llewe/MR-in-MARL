@@ -5,7 +5,7 @@ from src.enums.env_type_e import EnvType
 
 
 class EnvConfig(BaseSettings):
-    ENV_NAME: EnvType = EnvType.SIMPLE
+    ENV_NAME: EnvType = EnvType.SIMPLE_TAG
     RENDER_MODE: str = ""
     RENDER_FPS: int = 30
 
