@@ -1,6 +1,6 @@
 from typing import Union
 from pettingzoo import AECEnv, ParallelEnv
-from .enums.env_type_e import EnvType
+from src.enums.env_type_e import EnvType
 from .aec_envs import (
     _setup_simple,
     _setup_simple_tag,

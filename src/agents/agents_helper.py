@@ -1,6 +1,7 @@
-from src.agents.agent_type_e import AgentType
-from src.agents.agents_i import IAgents
-from src.config import training_config
+from src.enums.agent_type_e import AgentType
+from src.interfaces.agents_i import IAgents
+
+from src import training_config
 
 from .implementations import (
     RandomAgents,
@@ -27,5 +28,6 @@ def get_agents(agent_type: AgentType = training_config.AGENT_TYPE) -> IAgents:
 
         case AgentType.ACTOR_CRITIC_TD0:
             return ActorCriticTd0()
+
         case AgentType.ACTOR_CRITIC_TD_LAMBDA_BACKWARD_VIEW:
             return ActorCriticTdLamdaBack()

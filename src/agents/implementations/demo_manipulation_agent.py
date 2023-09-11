@@ -6,6 +6,10 @@ import numpy as np
 class DemoManipulationAgent(MRAgent):
     manipulation_amount = 0.1
 
+    def __init__(self, *args, **kwargs):
+        self.set_callback("agent_0", self._man_agent_0)
+        super().__init__(*args, **kwargs)
+
     def _man_agent_0(
         self, agent_id: AgentID, last_obs: ObsType, last_act: ActionType, reward: float
     ) -> float:
@@ -93,7 +97,3 @@ class DemoManipulationAgent(MRAgent):
                     return -np.abs(reward) * self.manipulation_amount
 
         return 0.0
-
-    def __init__(self, *args, **kwargs):
-        self.set_callback("agent_0", self._man_agent_0)
-        super().__init__(*args, **kwargs)

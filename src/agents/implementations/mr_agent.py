@@ -6,6 +6,16 @@ from .actor_critic import ActorCritic
 
 
 class MRAgent(ActorCritic):
+    """
+    Manipulating rewards agent
+    This agent controller is used to manipulate the rewards of other agents
+
+    Just extend your class with this AC implementation and add the callbacks for each
+    manipulating agent inside the init function.
+    Don't forget to call super().__init__(self, *args, **kwargs)
+
+    """
+
     mr_callbacks: dict[
         AgentID, Callable[[AgentID, ObsType, ActionType, float], float]
     ] = {}
@@ -13,8 +23,25 @@ class MRAgent(ActorCritic):
     next_reward_offset_dict: dict[AgentID, float] = {}
 
     def set_callback(
-        self, agent_id: AgentID, callback: Callable[[ObsType], ActionType]
+        self,
+        agent_id: AgentID,
+        callback: Callable[[AgentID, ObsType, ActionType, float], float],
     ) -> None:
+        """
+        Set the callback for the given agent id
+        Parameters
+        ----------
+        agent_id: AgentID
+            The agent id for which the callback should be set
+        callback: Callable[[AgentID, ObsType, ActionType, float], float]
+            The callback function which should be called for the given agent id
+
+            The callback function should return the manipulated reward offset as a float value
+
+        Returns
+        -------
+
+        """
         self.mr_callbacks[agent_id] = callback
 
     def update(

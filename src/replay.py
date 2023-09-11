@@ -5,11 +5,11 @@ from pettingzoo import AECEnv
 
 import logging
 from agents.agents_helper import get_agents
-from agents.agents_i import IAgents
-from config import config, replay_config, env_config
-from enviroments import build_env
+from src.interfaces.agents_i import IAgents
 
-logging.basicConfig(level=logging.getLevelName(config.LOG_LEVEL))
+from src import replay_config, env_config, log_config, build_env
+
+logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 
 
 def replay(aec_env: AECEnv, agent: IAgents, timeout=replay_config.TIMEOUT) -> None:

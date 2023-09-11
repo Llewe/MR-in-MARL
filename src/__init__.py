@@ -1,2 +1,9 @@
-from config import config, training_config, env_config, eval_config
-from enviroments import build_env, EnvType
+from .config import (
+    log_config,
+    training_config,
+    env_config,
+    eval_config,
+    replay_config,
+    actor_critic_config,
+)
+from .enviroments import build_env

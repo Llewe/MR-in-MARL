@@ -2,7 +2,7 @@ import torch
 from gymnasium import Space
 from pettingzoo.utils.env import ObsDict, ActionDict, AgentID, ObsType, ActionType
 from torch.distributions import Categorical
-from src.agents.agents_i import IAgents
+from src.interfaces.agents_i import IAgents
 from src.agents.implementations.utils.policy_network import PolicyNetwork
 from src.agents.implementations.utils.state_value_network import StateValueNetwork
 

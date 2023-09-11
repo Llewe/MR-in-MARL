@@ -3,10 +3,10 @@ from abc import ABC
 from gymnasium.spaces import Space
 from pettingzoo.utils.env import AgentID
 
-from .agents_i import IAgents
-from .implementations.utils.policy_network import PolicyNetwork
-from .implementations.utils.state_value_network import StateValueNetwork
-from src.config import actor_critic_config
+from src import actor_critic_config
+from src.agents.implementations.utils.policy_network import PolicyNetwork
+from src.agents.implementations.utils.state_value_network import StateValueNetwork
+from src.interfaces import IAgents
 
 
 class IAgentsGym(IAgents, ABC):

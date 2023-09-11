@@ -5,14 +5,14 @@ from os.path import join
 import numpy as np
 import torch
 from gymnasium import Space
-from pettingzoo.utils.env import ObsDict, ActionDict, AgentID, ObsType, ActionType
+from pettingzoo.utils.env import AgentID, ObsType, ActionType
 from torch.distributions import Categorical
 from torch.nn import Module, Linear, Sequential, ELU
 from torch.nn.functional import mse_loss
 from torch.nn.functional import softmax
 from torch.utils.tensorboard import SummaryWriter
 
-from src.agents.agents_i import IAgents
+from src.interfaces.agents_i import IAgents
 from src.agents.implementations.utils.reward_normalization import RewardNormalization
 from src.config import actor_critic_config
 from torch import Tensor

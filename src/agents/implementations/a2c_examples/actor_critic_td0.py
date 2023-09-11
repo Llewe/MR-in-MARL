@@ -5,8 +5,8 @@ from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
 from torch.optim import Optimizer, Adam
 
-from src.agents.agents_gym_i import IAgentsGym
-from src.config import actor_critic_config
+from src import actor_critic_config
+from src.agents.implementations.base_agents.agents_gym_i import IAgentsGym
 
 
 class ActorCriticTd0(IAgentsGym):

@@ -9,9 +9,9 @@ from pettingzoo import ParallelEnv, AECEnv
 
 import logging
 from agents.agents_helper import get_agents
-from agents.agents_i import IAgents
-from config import (
-    config,
+from src.interfaces.agents_i import IAgents
+from src import (
+    log_config,
     actor_critic_config,
     training_config,
     env_config,
@@ -19,7 +19,7 @@ from config import (
 )
 from enviroments import build_env
 
-logging.basicConfig(level=logging.getLevelName(config.LOG_LEVEL))
+logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 
 
 gamma = 0.95
@@ -177,7 +177,7 @@ def baseline_writer():
 def start_training() -> None:
     env: ParallelEnv | AECEnv = build_env(env_config.ENV_NAME)
 
-    RUN_NAME = f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/{datetime.fromtimestamp(time.time()).isoformat(timespec='seconds')} - {config.NAME_TAG}"
+    RUN_NAME = f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/{datetime.fromtimestamp(time.time()).isoformat(timespec='seconds')} - {log_config.NAME_TAG}"
     ml_folder = get_logging_file(RUN_NAME)
     logging.info(f"TensorBoard -> Logging to {ml_folder}")
 
