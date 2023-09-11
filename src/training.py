@@ -27,7 +27,7 @@ gamma = 0.95
 all_steps = 0
 
 
-def _episode_train(
+def _train_aec_episode(
     agents: IAgents, env: AECEnv, current_episode: int, writer: SummaryWriter
 ) -> dict:
     env.reset()
@@ -87,7 +87,7 @@ def _episode_train(
     return episode_reward
 
 
-def _eval_agents(
+def _eval_aec_agents(
     agents: IAgents,
     env: AECEnv,
     writer: SummaryWriter,
@@ -189,27 +189,6 @@ def get_model_storage(name: str, episode: int) -> str:
     )
 
 
-def do_eval(
-    name: str,
-    writer: SummaryWriter,
-    agents: IAgents,
-    env: AECEnv,
-    episodes: int,
-) -> None:
-    logging.info("Evaluating agents")
-    _eval_agents(
-        agents,
-        env,
-        writer,
-        episodes,
-        num_eval_episodes=eval_config.NUM_EPISODES,
-    )
-
-    # save model
-    logging.info("Saving model")
-    agents.save(get_model_storage(name, episodes))
-
-
 def log_configs(writer: SummaryWriter) -> None:
     for key, value in actor_critic_config.__dict__.items():
         writer.add_text(key, str(value))
@@ -252,10 +231,21 @@ def start_training() -> None:
                     f" Episode: {episode}/{training_config.EPISODES}"
                 )
 
-                _episode_train(agents, env, episode, writer)
+                _train_aec_episode(agents, env, episode, writer)
 
                 if (episode + 1) % eval_config.EVAL_INTERVAL == 0:
-                    do_eval(run_name, writer, agents, env, episode)
+                    logging.info("Evaluating agents")
+                    _eval_aec_agents(
+                        agents,
+                        env,
+                        writer,
+                        episode + 1,
+                        num_eval_episodes=eval_config.NUM_EPISODES,
+                    )
+
+                    # save model
+                    logging.info("Saving model")
+                    agents.save(get_model_storage(run_name, episode + 1))
 
         env.close()
         logging.info("Finished training")
