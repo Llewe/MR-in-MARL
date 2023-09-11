@@ -1,4 +1,4 @@
-import time
+from time import time
 from collections import defaultdict
 from datetime import datetime
 from os.path import join, dirname, realpath
@@ -33,14 +33,10 @@ def _train_aec_episode(
     env.reset()
     agents.init_new_episode()
 
-    episode_reward = {}
+    episode_reward = defaultdict(lambda: 0)
     last_action = {}
     last_observation = {}
-    actions = {}
-
-    for agent_id in env.possible_agents:
-        episode_reward[agent_id] = 0
-        actions[agent_id] = []
+    actions = defaultdict(list)
 
     for agent_id in env.agent_iter():
         pygame.event.get()  # so that the window doesn't freeze
@@ -78,7 +74,6 @@ def _train_aec_episode(
         writer.add_scalar(
             f"rewards/{agent_id}", episode_reward[agent_id], current_episode
         )
-    for agent_id in episode_reward:
         action = numpy.array(actions[agent_id])
         writer.add_histogram(
             f"actions/{agent_id}", action, global_step=current_episode, max_bins=10
@@ -176,7 +171,11 @@ def baseline_writer():
 
 
 def create_run_name() -> str:
-    return f"{env_config.ENV_NAME}/{training_config.AGENT_TYPE.value}/{datetime.fromtimestamp(time.time()).isoformat(timespec='seconds')} - {log_config.NAME_TAG}"
+    env_name: str = env_config.ENV_NAME
+    agent_name: str = training_config.AGENT_TYPE.value
+    cur_time: str = datetime.fromtimestamp(time()).isoformat(timespec="seconds")
+    tag: str = log_config.NAME_TAG
+    return f"{env_name}/{agent_name}/{cur_time} - {tag}"
 
 
 def get_model_storage(name: str, episode: int) -> str:
