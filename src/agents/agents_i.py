@@ -24,7 +24,7 @@ class IAgents(ABC):
         agent_id: AgentID,
         observation: ObsType,
         explore: bool = True,
-    ) -> (ActionType, float):
+    ) -> ActionType:
         pass
 
     @abstractmethod
@@ -36,24 +36,6 @@ class IAgents(ABC):
         last_action: ActionType,
         reward: float,
         done: bool,
-        log_prob: float,
-        gamma: float,
-    ) -> None:
-        pass
-
-    @abstractmethod
-    def act_parallel(self, observations: ObsDict) -> (ActionDict, dict[AgentID:float]):
-        pass
-
-    @abstractmethod
-    def update_parallel(
-        self,
-        observations: ObsDict,
-        next_observations: ObsDict,
-        actions: ActionDict,
-        rewards: dict[AgentID:float],
-        dones: dict[AgentID:bool],
-        log_probs: dict[AgentID:float],
         gamma: float,
     ) -> None:
         pass

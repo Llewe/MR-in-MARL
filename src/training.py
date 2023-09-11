@@ -35,7 +35,6 @@ def _episode_test(
     episode_reward = {}
     last_action = {}
     last_observation = {}
-    last_log_prob = {}
     actions = {}
 
     for agent_id in env.possible_agents:
@@ -55,19 +54,15 @@ def _episode_test(
                 last_action=last_action[agent_id],
                 reward=reward,
                 done=termination or truncation,
-                log_prob=last_log_prob[agent_id],
                 gamma=actor_critic_config.DISCOUNT_FACTOR,
             )
-
         if termination or truncation:
             action = None
-            log_prob = None
         else:
-            action, log_prob = agents.act(agent_id=agent_id, observation=observation)
+            action = agents.act(agent_id=agent_id, observation=observation)
 
         last_action[agent_id] = action
         last_observation[agent_id] = observation
-        last_log_prob[agent_id] = log_prob
         global all_steps
         all_steps += 1
         writer.add_scalar(f"all_rewards", reward, all_steps)
@@ -118,7 +113,7 @@ def _eval_agents(
             if termination or truncation:
                 action = None
             else:
-                action, _ = agents.act(
+                action = agents.act(
                     agent_id=agent_name, observation=observation, explore=False
                 )
 
@@ -152,9 +147,15 @@ def get_logging_file(run_name: str) -> str:
 def baseline_writer():
     steps = 10000
     # simple:
-    baseline_values = {"agent_0": -39.79}
-    log_location = get_logging_file("baseline/simple")
-
+    #baseline_values = {"agent_0": -39.79}
+    #log_location = get_logging_file("baseline/simple")
+    # simple_adversary:
+    baseline_values = {
+        "adversary_0": -28.19,
+        "agent_0": 7.40,
+        "agent_1": 7.40,
+    }
+    log_location = get_logging_file("baseline/simple_adversary")
     # baseline_values = {
     #     "adversary_0": 4.51,
     #     "adversary_1": 4.51,
@@ -209,7 +210,6 @@ def start_training() -> None:
                 if env_config.PARALLEL_ENV:
                     raise NotImplementedError
                 else:
-
                     rewards = _episode_test(agents, env, episode, writer)
 
                     for i in rewards:
@@ -257,4 +257,4 @@ def start_training() -> None:
 if __name__ == "__main__":
     logging.info("Starting MR-in-MARL")
     start_training()
-    # baseline_writer()
+    #baseline_writer()

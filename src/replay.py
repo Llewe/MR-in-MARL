@@ -25,7 +25,7 @@ def replay(aec_env: AECEnv, agent: IAgents, timeout=replay_config.TIMEOUT) -> No
             if termination or truncation:
                 action = None
             else:
-                action, _ = agent.act(
+                action = agent.act(
                     agent_id=agent_id, observation=observation, explore=False
                 )
 

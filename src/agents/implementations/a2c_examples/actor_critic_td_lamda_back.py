@@ -63,17 +63,9 @@ class ActorCriticTdLamdaBack(IAgents):
         # return action
         return action.item(), m.log_prob(action)
 
-    def update(
-        self,
-        agent_id: AgentID,
-        last_observation: ObsType,
-        curr_observation: ObsType,
-        last_action: ActionType,
-        reward: float,
-        done: bool,
-        log_prob: float,
-        gamma: float,
-    ) -> None:
+    def update(self, agent_id: AgentID, last_observation: ObsType,
+               curr_observation: ObsType, last_action: ActionType, reward: float,
+               done: bool, gamma: float) -> None:
         policy_network = self.policy_networks[agent_id]
         stateval_network = self.stateval_networks[agent_id]
 

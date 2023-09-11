@@ -4,7 +4,10 @@
 ```bash
 poetry run mlflow server --backend-store-uri ./resources/mlruns
 ```
-
+## Run Tensorboard
+```bash
+poetry run tensorboard --logdir=./resources/tensorboard
+```
 
 # Random Agent (Baseline)
 | Env    | Episodes | Mean Reward |

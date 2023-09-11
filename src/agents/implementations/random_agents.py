@@ -21,8 +21,8 @@ class RandomAgents(IAgents):
         # Random agents don't learn
         pass
 
-    def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> (ActionType, float):
-        return self.action_space[agent_id].sample(), 1.0
+    def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
+        return self.action_space[agent_id].sample()
 
     def update(
         self,
@@ -32,26 +32,6 @@ class RandomAgents(IAgents):
         last_action: ActionType,
         reward: float,
         done: bool,
-        log_prob: float,
-        gamma: float,
-    ) -> None:
-        # Random agents don't learn
-        pass
-
-    def act_parallel(self, observations: ObsDict) -> (ActionDict, dict[AgentID:float]):
-        return {
-            agent_id: self.action_space[agent_id].sample()
-            for agent_id in self.action_space
-        }
-
-    def update_parallel(
-        self,
-        observations: ObsDict,
-        next_observations: ObsDict,
-        actions: ActionDict,
-        rewards: dict[AgentID:float],
-        dones: dict[AgentID:bool],
-        log_probs: dict[AgentID:float],
         gamma: float,
     ) -> None:
         # Random agents don't learn

@@ -6,14 +6,13 @@ from agents.agent_type_e import AgentType
 
 
 class ReplayConfig(BaseSettings):
-    AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
-    ENV_NAME: str = "simple_tag"
+    AGENT_TYPE: AgentType = AgentType.DEMO_MANIPULATION_AGENT
+    ENV_NAME: str = "simple_adversary"
 
-    EXPERIMENT_NAME: str = "2023-08-04T17:43:23 - John"
-    TIMEOUT: int = 1
+    EXPERIMENT_NAME: str = "2023-08-09T15:00:49 - Nicholas"
+    TIMEOUT: int = 6
     EPISODE: int = 1000
-    STEPS: int = 1000
-
+    STEPS: int = 25
 
 
 class Config(BaseSettings):
@@ -32,8 +31,8 @@ class ActorCriticConfig(BaseSettings):
 
     ACTOR_LR: float = 0.0002
     CRITIC_LR: float = 0.0001
-    ACTOR_HIDDEN_UNITS: int = 128
-    CRITIC_HIDDEN_UNITS: int = 256
+    ACTOR_HIDDEN_UNITS: int = 64
+    CRITIC_HIDDEN_UNITS: int = 64
     DISCOUNT_FACTOR: float = 0.95
 
     CLIP_NORM: float = 1.0
@@ -42,11 +41,11 @@ class ActorCriticConfig(BaseSettings):
 class TrainingConfig(BaseSettings):
     EPISODES: int = 10000
     EPOCHS: int = 1
-    AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
+    AGENT_TYPE: AgentType = AgentType.DEMO_MANIPULATION_AGENT
 
 
 class EnvConfig(BaseSettings):
-    ENV_NAME: str = "simple_tag"
+    ENV_NAME: str = "simple_adversary"
     PARALLEL_ENV: bool = False
     RENDER_MODE: str = ""
     RENDER_FPS: int = 30

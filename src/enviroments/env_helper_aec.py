@@ -10,6 +10,8 @@ def setup_env(env_name=env_config.ENV_NAME) -> AECEnv:
             return _setup_simple_tag()
         case "simple_spread":
             return _setup_simple_spread()
+        case "simple_adversary":
+            return _setup_simple_adversary()
     raise NotImplementedError
 
 
@@ -42,6 +44,17 @@ def _setup_simple_spread() -> AECEnv:
     return simple_spread_v3.env(
         N=3,
         local_ratio=0.5,
+        render_mode=env_config.RENDER_MODE,
+        max_cycles=env_config.MAX_CYCLES,
+        continuous_actions=env_config.CONTINUOUS_ACTIONS,
+    )
+
+
+def _setup_simple_adversary() -> AECEnv:
+    from pettingzoo.mpe import simple_adversary_v3
+
+    return simple_adversary_v3.env(
+        N=2,
         render_mode=env_config.RENDER_MODE,
         max_cycles=env_config.MAX_CYCLES,
         continuous_actions=env_config.CONTINUOUS_ACTIONS,

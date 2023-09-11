@@ -1,4 +1,3 @@
-import config
 from agents.agent_type_e import AgentType
 from agents.agents_i import IAgents
 from agents.old.actor_critic import ActorCritic
@@ -30,12 +29,21 @@ def get_agents(agent_type: AgentType = training_config.AGENT_TYPE) -> IAgents:
 
             return ActorCritic()
 
+        case AgentType.DEMO_MANIPULATION_AGENT:
+            from agents.implementations.demo_manipulatio_agent import (
+                DemoManipulationAgent,
+            )
+
+            return DemoManipulationAgent()
+
         case AgentType.ACTOR_CRITIC_TD0:
-            from agents.implementations.actor_critic_td0 import ActorCriticTd0
+            from agents.implementations.a2c_examples.actor_critic_td0 import (
+                ActorCriticTd0,
+            )
 
             return ActorCriticTd0()
         case AgentType.ACTOR_CRITIC_TD_LAMBDA_BACKWARD_VIEW:
-            from agents.implementations.actor_critic_td_lamda_back import (
+            from agents.implementations.a2c_examples.actor_critic_td_lamda_back import (
                 ActorCriticTdLamdaBack,
             )
 
