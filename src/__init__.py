@@ -6,4 +6,4 @@ from .config import (
     replay_config,
     actor_critic_config,
 )
-from .enviroments import build_env
+from .envs import build_env

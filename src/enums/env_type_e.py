@@ -7,6 +7,8 @@ class EnvType(str, Enum):
     SIMPLE_SPREAD = "simple_spread"
     SIMPLE_ADVERSARY = "simple_adversary"
 
+    COIN_GAME = "coin_game"
+
     P_SIMPLE = "p_simple"
     P_SIMPLE_TAG = "p_simple_tag"
     P_SIMPLE_SPREAD = "p_simple_spread"

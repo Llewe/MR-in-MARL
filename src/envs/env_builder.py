@@ -2,7 +2,7 @@ import logging
 from typing import Union
 from pettingzoo import AECEnv, ParallelEnv
 from src.enums.env_type_e import EnvType
-from .setup import (
+from src.envs.setup import (
     _setup_simple,
     _setup_simple_tag,
     _setup_simple_spread,
@@ -10,6 +10,7 @@ from .setup import (
     _setup_parallel_simple,
     _setup_parallel_simple_tag,
     _setup_parallel_simple_spread,
+    _setup_coin_game,
 )
 
 
@@ -32,4 +33,7 @@ def build_env(env_name: EnvType) -> Union[AECEnv, ParallelEnv]:
             return _setup_parallel_simple_spread()
         case EnvType.P_SIMPLE_ADVERSARY:
             raise NotImplementedError
+
+        case EnvType.COIN_GAME:
+            return _setup_coin_game()
     raise NotImplementedError

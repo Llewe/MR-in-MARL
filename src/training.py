@@ -18,7 +18,7 @@ from src import (
     env_config,
     eval_config,
 )
-from enviroments import build_env
+from envs import build_env
 
 logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 

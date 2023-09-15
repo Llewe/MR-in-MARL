@@ -86,6 +86,18 @@ class ActorCritic(IAgents):
     epsilon_final = 0.08  # Set to a small value close to zero
     epsilon_decay_rate = 0.001
 
+    @classmethod
+    def get_space_size(cls, space: Space) -> int:
+        from gymnasium import spaces
+
+        print(type(space))
+        if isinstance(space, spaces.Discrete):
+            return space.n
+        elif isinstance(space, spaces.Box):
+            return space.shape[0]
+        else:
+            raise ValueError("Unsupported space type")
+
     def init_agents(
         self,
         action_space: dict[AgentID, Space],
@@ -93,7 +105,7 @@ class ActorCritic(IAgents):
     ):
         self.actor_networks = {
             agent_id: ActorNetwork(
-                observation_space[agent_id].shape[0],
+                ActorCritic.get_space_size(observation_space[agent_id]),
                 action_space[agent_id],
                 actor_critic_config.ACTOR_HIDDEN_UNITS,
                 actor_critic_config.ACTOR_LR,
@@ -103,7 +115,8 @@ class ActorCritic(IAgents):
 
         self.critic_networks = {
             agent_id: CriticNetwork(
-                observation_space[agent_id].shape[0],
+                ActorCritic.get_space_size(observation_space[agent_id]),
+                # observation_space[agent_id].shape[0],
                 actor_critic_config.CRITIC_HIDDEN_UNITS,
                 actor_critic_config.CRITIC_LR,
             )

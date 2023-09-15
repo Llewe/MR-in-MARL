@@ -5,7 +5,7 @@ from src.enums.env_type_e import EnvType
 
 
 class EnvConfig(BaseSettings):
-    ENV_NAME: EnvType = EnvType.SIMPLE_TAG
+    ENV_NAME: EnvType = EnvType.COIN_GAME
     RENDER_MODE: str = ""
     RENDER_FPS: int = 30
 

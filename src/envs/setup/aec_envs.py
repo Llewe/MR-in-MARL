@@ -48,3 +48,15 @@ def _setup_simple_adversary() -> AECEnv:
         max_cycles=env_config.MAX_CYCLES,
         continuous_actions=env_config.CONTINUOUS_ACTIONS,
     )
+
+
+def _setup_coin_game() -> AECEnv:
+    from src.envs.aec.coin_game import env
+
+    return env(
+        render_mode=env_config.RENDER_MODE,
+        nb_players=2,
+        grid_size=4,
+        max_cycles=env_config.MAX_CYCLES,
+        randomize_coin=True,
+    )
