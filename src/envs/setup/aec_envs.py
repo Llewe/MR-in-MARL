@@ -55,8 +55,8 @@ def _setup_coin_game() -> AECEnv:
 
     return env(
         render_mode=env_config.RENDER_MODE,
-        nb_players=2,
-        grid_size=4,
+        nb_players=4,
+        grid_size=5,
         max_cycles=env_config.MAX_CYCLES,
         randomize_coin=True,
     )

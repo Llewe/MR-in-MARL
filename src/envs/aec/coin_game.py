@@ -2,10 +2,13 @@
 # https://github.com/arjun-prakash/pz_dilemma
 # https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/classic/rps/rps.py
 # https://github.com/tianyu-z/pettingzoo_dilemma_envs
+import math
 
 import gymnasium
 import numpy as np
 import random
+
+import pygame
 from gymnasium.spaces import Discrete
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
@@ -47,6 +50,13 @@ class raw_env(AECEnv):
         randomize_coin=False,
         allow_overlap_players=False,
     ):
+        pygame.init()
+        self.renderOn = False
+        self.viewer = None
+        self.width = 700
+        self.height = 700
+        self.screen = pygame.Surface([self.width, self.height])
+
         self.nb_players = nb_players
         self.max_cycles = max_cycles
         self.render_mode = "human"
@@ -200,6 +210,11 @@ class raw_env(AECEnv):
         }
         self.num_moves = 0
 
+    def enable_render(self, mode="human"):
+        if not self.renderOn and mode == "human":
+            self.screen = pygame.display.set_mode(self.screen.get_size())
+            self.renderOn = True
+
     def render(self):
         """
         Renders the environment. In human mode, it can print to terminal, open
@@ -210,41 +225,137 @@ class raw_env(AECEnv):
                 "You are calling render method without specifying any render mode."
             )
             return
-        print("This is a {} round".format(self.num_moves))
-        print("Coin (before taken) position: {}".format(self.coin_pos))
-        print("Coin (before taken) belongs to: {}".format(self.player_coin))
-        agent = self.agent_selection
-        if len(self.agents) == self.nb_players:
-            # print("Players information: ")
-            print(
-                "Agent {} position before action: {} ".format(
-                    agent,
-                    self.player_pos_old[self.agent_name_mapping[agent], :],
-                )
-            )
-            print(
-                "Agent {} action: {} ".format(
-                    agent, self._moves[self.actions_taken[agent]]
-                )
-            )
-            print(
-                "Agent {} position after action: {} ".format(
-                    agent, self.player_pos[self.agent_name_mapping[agent], :]
-                )
-            )
-            if self._agent_selector.is_last():
-                for a in self.agents:
-                    print(
-                        "Agent {} reward after action: {} ".format(a, self.rewards[a])
+        if self.render_mode == "text":
+            print("This is a {} round".format(self.num_moves))
+            print("Coin (before taken) position: {}".format(self.coin_pos))
+            print("Coin (before taken) belongs to: {}".format(self.player_coin))
+            agent = self.agent_selection
+            if len(self.agents) == self.nb_players:
+                # print("Players information: ")
+                print(
+                    "Agent {} position before action: {} ".format(
+                        agent,
+                        self.player_pos_old[self.agent_name_mapping[agent], :],
                     )
-                    print(
-                        "Agent {} cumulative rewards after action: {} ".format(
-                            a, self._cumulative_rewards[a]
+                )
+                print(
+                    "Agent {} action: {} ".format(
+                        agent, self._moves[self.actions_taken[agent]]
+                    )
+                )
+                print(
+                    "Agent {} position after action: {} ".format(
+                        agent, self.player_pos[self.agent_name_mapping[agent], :]
+                    )
+                )
+                if self._agent_selector.is_last():
+                    for a in self.agents:
+                        print(
+                            "Agent {} reward after action: {} ".format(
+                                a, self.rewards[a]
+                            )
                         )
-                    )
-        else:
-            print("Game over")
-        print("\n")
+                        print(
+                            "Agent {} cumulative rewards after action: {} ".format(
+                                a, self._cumulative_rewards[a]
+                            )
+                        )
+            else:
+                print("Game over")
+            print("\n")
+        elif self.render_mode == "human":
+            self.enable_render(self.render_mode)
+            self.draw()
+            pygame.display.flip()
+
+    def draw(self):
+        colour_background = (48, 48, 48)
+        color_grid = (255, 255, 255)
+        color_players = [
+            (233, 30, 99),
+            (156, 39, 176),
+            (103, 58, 183),
+            (63, 81, 181),
+            (33, 150, 243),
+            (0, 188, 212),
+            (0, 150, 136),
+        ]
+        color_coin = (255, 0, 0)
+
+        # clear screen
+        self.screen.fill(colour_background)
+
+        # draw grid
+        cell_size_w = self.width / self.grid_size
+        cell_size_h = self.height / self.grid_size
+
+        player_size = (
+            0.8 * cell_size_w / 2
+            if cell_size_w < cell_size_h
+            else 0.8 * cell_size_h / 2
+        )
+        size_coin = (
+            0.2 * cell_size_w / 2
+            if cell_size_w < cell_size_h
+            else 0.2 * cell_size_h / 2
+        )
+
+        for w in range(1, self.grid_size):
+            pos_w = w * cell_size_w
+
+            for h in range(1, self.grid_size):
+                pos_h = h * cell_size_h
+                pygame.draw.line(
+                    self.screen,
+                    color_grid,
+                    (pos_w, 0),
+                    (pos_w, self.height),
+                )
+                pygame.draw.line(
+                    self.screen,
+                    color_grid,
+                    (0, pos_h),
+                    (self.width, pos_h),
+                )
+        player_degree = 2*math.pi / self.nb_players
+        # draw players
+        for i, pos in enumerate(self.player_pos):
+            p_x = pos[0] * cell_size_w + cell_size_w / 2
+            p_y = pos[1] * cell_size_h + cell_size_h / 2
+
+            rec = pygame.Rect(
+                p_x - player_size, p_y - player_size, player_size * 2, player_size * 2
+            )
+
+            player_degree_start = i * player_degree
+            player_degree_end = (i + 1) * player_degree
+            pygame.draw.arc(
+                self.screen,
+                color_players[i],
+                rec,
+                start_angle=player_degree_start,
+                stop_angle=player_degree_end,
+                width=25,
+            )  # 350 is an arbitrary scale factor to get pygame to render similar sizes as pyglet
+
+        # draw coins
+        c_x = self.coin_pos[0] * cell_size_w + cell_size_w / 2
+        c_y = self.coin_pos[1] * cell_size_h + cell_size_h / 2
+
+        rec = pygame.Rect(
+            c_x - size_coin, c_y - size_coin, size_coin * 2, size_coin * 2
+        )
+
+        pygame.draw.arc(
+            self.screen,
+            color_players[self.player_coin],
+            rec,
+            start_angle=0,
+            stop_angle=360,
+            width=10,
+        )  # 350 is an arbitrary scale factor to get pygame to render similar sizes as pyglet
+
+        # update bounds to center around agent
 
     def observe(self, agent):
         # observation of one agent is the previous state of the other
@@ -327,6 +438,9 @@ class raw_env(AECEnv):
         # self._cumulative_rewards[self.agent_selection] = 0
 
         self.agent_selection = self._agent_selector.next()
+
+        if self.render_mode == "human":
+            self.render()
 
 
 if __name__ == "__main__":
