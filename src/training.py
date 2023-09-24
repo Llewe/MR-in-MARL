@@ -27,7 +27,6 @@ from src.utils.utils import (
 logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 
 
-gamma = 0.95
 all_steps = 0
 
 
@@ -226,7 +225,7 @@ def start_training() -> None:
 
                     # save model
                     logging.info("Saving model")
-                    agents.save(get_model_storage(run_name, run_tag, episode + 1))
+                    agents.save(get_model_storage(episode + 1))
 
         env.close()
         logging.info("Finished training")

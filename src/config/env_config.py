@@ -5,7 +5,7 @@ from src.enums.env_type_e import EnvType
 
 class BaseEnvConfig(BaseSettings):
     ENV_NAME: EnvType = EnvType.COIN_GAME
-    ENV_TAG: str = "default"
+    ENV_TAG: str = "2p 3x3"
 
 
 class EnvConfig(BaseSettings):

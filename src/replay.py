@@ -1,13 +1,12 @@
+import logging
 from os.path import join, dirname, realpath
 
 import pygame
 from pettingzoo import AECEnv
 
-import logging
 from agents.agents_helper import get_agents
-from src.interfaces.agents_i import IAgents
-
 from src import replay_config, env_config, log_config, build_env
+from src.interfaces.agents_i import IAgents
 
 logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 
@@ -38,7 +37,7 @@ def replay(aec_env: AECEnv, agent: IAgents, timeout=replay_config.TIMEOUT) -> No
 
 
 def load_agents(aec_env: AECEnv) -> IAgents:
-    agents: IAgents = get_agents(replay_config.AGENT_TYPE)
+    agents: IAgents = get_agents()
     agents.init_agents(
         action_space={a: aec_env.action_space(a) for a in aec_env.possible_agents},
         observation_space={

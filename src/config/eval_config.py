@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class EvalConfig(BaseSettings):
-    NUM_EPISODES: int = 20
+    NUM_EPISODES: int = 300
     EVAL_INTERVAL: int = 2000
 
 

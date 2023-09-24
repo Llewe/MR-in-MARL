@@ -4,9 +4,9 @@ from src.enums.agent_type_e import AgentType
 
 
 class TrainingConfig(BaseSettings):
-    EPISODES: int = 10000
+    EPISODES: int = 2000
     EPOCHS: int = 1
-    AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
+    AGENT_TYPE: AgentType = AgentType.RANDOM
 
 
 training_config = TrainingConfig()

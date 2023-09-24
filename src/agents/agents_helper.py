@@ -3,9 +3,14 @@ import os
 from os.path import join
 from typing import TypeVar, Type
 
-from src import training_config
+from src.config.base_ctrl_config import BaseCtrlConfig
+from src.config.ctrl_configs.actor_critic_config import ActorCriticConfig
+from src.config.ctrl_configs.ctrl_config import CtrlConfig
+from src.config.ctrl_configs.demo_ma_config import DemoMaConfig
 from src.enums.agent_type_e import AgentType
 from src.interfaces.agents_i import IAgents, C
+from src.utils.data_loader import load_pydantic_object, save_pydantic_object
+from src.utils.utils import get_ctrl_dir
 from .implementations import (
     RandomAgents,
     ActorCritic,
@@ -16,18 +21,15 @@ from .implementations.a2c_examples import (
     ActorCriticTd0,
     ActorCriticTdLamdaBack,
 )
-from src.config.ctrl_configs.actor_critic_config import ActorCriticConfig
-from src.config.ctrl_configs.ctrl_config import CtrlConfig
-from src.utils.data_loader import load_pydantic_object, save_pydantic_object
-from src.utils.utils import get_ctrl_dir
-from ..config.ctrl_configs.demo_ma_config import DemoMaConfig
 
 T = TypeVar("T", bound=IAgents)
 
 
-def get_agents(agent_type: AgentType = training_config.AGENT_TYPE) -> IAgents:
-    logging.info(f"Getting agents for {agent_type}")
-    type_class, config_class = get_agent_class(agent_type)
+def get_agents() -> IAgents:
+    base_ctrl_config = BaseCtrlConfig()
+
+    logging.info(f"Getting agents for {base_ctrl_config.AGENT_TYPE}")
+    type_class, config_class = get_agent_class(base_ctrl_config.AGENT_TYPE)
 
     config: C = load_ctrl_config(config_class)
 
