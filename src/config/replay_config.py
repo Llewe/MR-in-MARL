@@ -5,13 +5,13 @@ from src.enums.env_type_e import EnvType
 
 
 class ReplayConfig(BaseSettings):
-    AGENT_TYPE: AgentType = AgentType.DEMO_MANIPULATION_AGENT
+    AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
     ENV_NAME: EnvType = EnvType.COIN_GAME
 
-    EXPERIMENT_NAME: str = "2023-08-07T18:18:46 - Tina"
-    TIMEOUT: int = 6
-    EPISODE: int = 1000
-    STEPS: int = 25
+    EXPERIMENT_NAME: str = "2023-09-17T15:37:42 - Chris"
+    TIMEOUT: int = 100
+    EPISODE: int = 10001
+    STEPS: int = 500
 
 
 replay_config = ReplayConfig()

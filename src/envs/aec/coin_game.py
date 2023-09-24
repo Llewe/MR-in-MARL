@@ -3,16 +3,16 @@
 # https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/classic/rps/rps.py
 # https://github.com/tianyu-z/pettingzoo_dilemma_envs
 import math
+import random
 
 import gymnasium
 import numpy as np
-import random
-
 import pygame
 from gymnasium.spaces import Discrete
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
 from pettingzoo.utils.conversions import parallel_wrapper_fn
+from torch.utils.tensorboard import SummaryWriter
 
 SEED = 42
 from copy import deepcopy
@@ -49,6 +49,7 @@ class raw_env(AECEnv):
         grid_size=3,
         randomize_coin=False,
         allow_overlap_players=False,
+        summary_writer: SummaryWriter = None,
     ):
         pygame.init()
         self.renderOn = False
@@ -63,6 +64,9 @@ class raw_env(AECEnv):
         self.name = "coin_game_v0"
         self.randomize_coin = randomize_coin
         self.allow_overlap_players = allow_overlap_players
+        self.summary_writer = summary_writer
+
+        self.current_reset_counter = 0
         self._moves = [
             np.array([0, 1]),  # right
             np.array([0, -1]),  # left
@@ -123,6 +127,9 @@ class raw_env(AECEnv):
             self.agent_picker_buffer = np.array(range(self.nb_players))
             random.shuffle(self.agent_picker_buffer)
             self.agent_picker_idx = 0
+
+        self.agents_collected_coins: dict[str:int] = {agent: 0 for agent in self.agents}
+        self.steps_to_collect: dict[str:int] = {agent: 0 for agent in self.agents}
         self.reinit()
 
     def observation_space(self, agent):
@@ -148,7 +155,8 @@ class raw_env(AECEnv):
             ) % self.nb_players  # next coin belong to next agent
         self.grids_copy = deepcopy(self.grids)
         for j in range(self.nb_players):
-            self.grids_copy.remove(list(self.player_pos[j, :]))
+            if list(self.player_pos[j, :]) in self.grids_copy: #TODO commit this change to the original repo
+                self.grids_copy.remove(list(self.player_pos[j, :]))
         random.shuffle(self.grids_copy)
         self.coin_pos = np.array(self.grids_copy[0])
         return
@@ -209,6 +217,13 @@ class raw_env(AECEnv):
             for agent in self.agents
         }
         self.num_moves = 0
+
+        self.current_reset_counter += 1
+        if self.summary_writer:
+            self.log_episode_metrics(self.current_reset_counter)
+        self.agents_collected_coins: dict[str:int] = {agent: 0 for agent in self.agents}
+
+        self.steps_to_collect: dict[str:int] = {agent: 0 for agent in self.agents}
 
     def enable_render(self, mode="human"):
         if not self.renderOn and mode == "human":
@@ -317,7 +332,7 @@ class raw_env(AECEnv):
                     (0, pos_h),
                     (self.width, pos_h),
                 )
-        player_degree = 2*math.pi / self.nb_players
+        player_degree = 2 * math.pi / self.nb_players
         # draw players
         for i, pos in enumerate(self.player_pos):
             p_x = pos[0] * cell_size_w + cell_size_w / 2
@@ -378,6 +393,8 @@ class raw_env(AECEnv):
             self._was_dead_step(action)
             return
         agent = self.agent_selection
+        self.steps_to_collect[agent] += 1
+
         if self._agent_selector.is_first():
             self.rewards = {agent: 0 for agent in self.agents}
         # self.state[self.agent_selection] = action
@@ -409,12 +426,16 @@ class raw_env(AECEnv):
                     ):
                         self.generate_new_coin = True
                         self.rewards[a] += 1
+
+                        self.agents_collected_coins[a] += 1
+
                     for k in range(self.nb_players):
                         if k != self.agent_name_mapping[a]:
                             if self._same_pos(self.player_pos[k], self.coin_pos):
                                 self.generate_new_coin = True
                                 self.rewards[a] -= 2
                                 self.rewards["player_" + str(k)] += 1
+
             # if a coin is collected and all agents finish their actions, regenerate the coin
 
         if self._agent_selector.is_last():
@@ -435,12 +456,49 @@ class raw_env(AECEnv):
             # observe the current states
             self._generate_observation()  # each agent knows the all the state, action and reward of all the agents
 
-        # self._cumulative_rewards[self.agent_selection] = 0
+        #self._cumulative_rewards[self.agent_selection] = 0
 
         self.agent_selection = self._agent_selector.next()
 
         if self.render_mode == "human":
             self.render()
+
+    def log_episode_metrics(self, current_episode: int) -> None:
+        """
+        Log various episode metrics to tensorboard. This method should be called after every episode.
+        Parameters
+        ----------
+        writer: SummaryWriter
+        current_episode: int
+        Returns
+        -------
+
+        """
+        n_coins: int = 0
+        all_steps: int = 0
+        for agent_id in self.agents:
+            self.summary_writer.add_scalar(
+                f"coin_game/collected_coins/{agent_id}",
+                self.agents_collected_coins[agent_id],
+                current_episode,
+            )
+            save_collected_coins = max(self.agents_collected_coins[agent_id], 1)
+            self.summary_writer.add_scalar(
+                f"coin_game/steps_to_collect/{agent_id}",
+                self.steps_to_collect[agent_id] / save_collected_coins,
+                current_episode,
+            )
+            all_steps += self.steps_to_collect[agent_id]
+            n_coins += self.agents_collected_coins[agent_id]
+        self.summary_writer.add_scalar(
+            f"coin_game/collected_coins/all", n_coins, current_episode
+        )
+        save_all_collected_coins = max(n_coins, 1)
+        self.summary_writer.add_scalar(
+            f"coin_game/steps_to_collect/all",
+            all_steps / save_all_collected_coins,
+            current_episode,
+        )
 
 
 if __name__ == "__main__":

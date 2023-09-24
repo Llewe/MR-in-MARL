@@ -2,7 +2,7 @@ from typing import Callable
 
 from pettingzoo.utils.env import AgentID, ObsType, ActionType
 
-from .actor_critic import ActorCritic
+from src.agents.implementations.actor_critic import ActorCritic
 
 
 class MRAgent(ActorCritic):
@@ -52,7 +52,6 @@ class MRAgent(ActorCritic):
         last_action: ActionType,
         reward: float,
         done: bool,
-        gamma: float,
     ) -> None:
         # not the cleanest solution but it works for now
         if agent_id not in self.next_reward_offset_dict:
@@ -85,5 +84,4 @@ class MRAgent(ActorCritic):
             last_action=last_action,
             reward=reward,
             done=done,
-            gamma=gamma,
         )

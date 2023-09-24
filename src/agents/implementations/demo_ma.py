@@ -1,14 +1,17 @@
-from .mr_agent import MRAgent
+from src.agents.implementations.base_agents.mr_agent import MRAgent
 from pettingzoo.utils.env import AgentID, ObsType, ActionType
 import numpy as np
 
+from src.config.ctrl_configs.demo_ma_config import DemoMaConfig
 
-class DemoManipulationAgent(MRAgent):
-    manipulation_amount = 0.1
 
-    def __init__(self, *args, **kwargs):
-        self.set_callback("agent_0", self._man_agent_0)
-        super().__init__(*args, **kwargs)
+class DemoMa(MRAgent):
+    def __init__(self, config: DemoMaConfig):
+        super().__init__(config)
+
+    # def __init__(self, *args, **kwargs):
+    #    self.set_callback("agent_0", self._man_agent_0)
+    #    super().__init__(*args, **kwargs)
 
     def _man_agent_0(
         self, agent_id: AgentID, last_obs: ObsType, last_act: ActionType, reward: float
@@ -79,21 +82,21 @@ class DemoManipulationAgent(MRAgent):
             elif dot_product > 0:
                 # agent was moving to the target, but is now moving away from it
                 # punish the agent
-                return -np.abs(reward) * self.manipulation_amount
+                return -np.abs(reward) * self.config.MANIPULATION_AMOUNT
             elif new_dot_product > 0:
                 # agent was moving away from the target, but is now moving towards it
                 # reward the agent
-                return np.abs(reward) * self.manipulation_amount
+                return np.abs(reward) * self.config.MANIPULATION_AMOUNT
             else:
                 # agent was and is still moving away from the target
 
                 if new_dot_product > dot_product:
                     # agent direction is improving
                     # reward the agent
-                    return np.abs(reward) * self.manipulation_amount
+                    return np.abs(reward) * self.config.MANIPULATION_AMOUNT
                 else:
                     # agent direction is getting worse
                     # punish the agent
-                    return -np.abs(reward) * self.manipulation_amount
+                    return -np.abs(reward) * self.config.MANIPULATION_AMOUNT
 
         return 0.0

@@ -1,11 +1,15 @@
 from gymnasium import Space
 from pettingzoo.utils.env import AgentID, ObsType, ActionType
 
+from src.config.ctrl_configs.ctrl_config import CtrlConfig
 from src.interfaces.agents_i import IAgents
 from torch.utils.tensorboard import SummaryWriter
 
 
 class RandomAgents(IAgents):
+    def __init__(self, config: CtrlConfig):
+        pass
+
     action_space: dict[AgentID, Space]
     observation_space: dict[AgentID, Space]
 
@@ -32,7 +36,6 @@ class RandomAgents(IAgents):
         last_action: ActionType,
         reward: float,
         done: bool,
-        gamma: float,
     ) -> None:
         # Random agents don't learn
         pass

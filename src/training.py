@@ -1,24 +1,28 @@
-from time import time
+import logging
 from collections import defaultdict
-from datetime import datetime
-from os.path import join, dirname, realpath
 
 import numpy
-from torch.utils.tensorboard import SummaryWriter
 import pygame
 from pettingzoo import ParallelEnv, AECEnv
+from torch.utils.tensorboard import SummaryWriter
 
-import logging
 from agents.agents_helper import get_agents
-from src.interfaces.agents_i import IAgents
+from envs import build_env
 from src import (
     log_config,
-    actor_critic_config,
     training_config,
     env_config,
     eval_config,
 )
-from envs import build_env
+from src.config.ctrl_configs import actor_critic_config
+from src.config.env_config import BaseEnvConfig
+from src.interfaces.agents_i import IAgents
+from src.utils.utils import (
+    create_run_name,
+    get_log_folder,
+    get_model_storage,
+    get_ctrl_dir,
+)
 
 logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 
@@ -41,7 +45,6 @@ def _train_aec_episode(
     for agent_id in env.agent_iter():
         pygame.event.get()  # so that the window doesn't freeze
         observation, reward, termination, truncation, info = env.last()
-
         # lets update the agent from the last cycle, if there was one
         if agent_id in last_action:
             agents.update(
@@ -51,7 +54,6 @@ def _train_aec_episode(
                 last_action=last_action[agent_id],
                 reward=reward,
                 done=termination or truncation,
-                gamma=actor_critic_config.DISCOUNT_FACTOR,
             )
         if termination or truncation:
             action = None
@@ -130,16 +132,6 @@ def _eval_aec_agents(
         )
 
 
-def get_logging_folder(run_name: str) -> str:
-    file = join(
-        dirname(dirname(realpath(__file__))),
-        "resources",
-        "tensorboard",
-        run_name,
-    )
-    return file
-
-
 def baseline_writer():
     steps = 10000
     # simple:
@@ -151,7 +143,7 @@ def baseline_writer():
         "agent_0": 7.40,
         "agent_1": 7.40,
     }
-    log_location = get_logging_folder("baseline/simple_adversary")
+    log_location = get_log_folder("baseline/simple_adversary")
     # baseline_values = {
     #     "adversary_0": 4.51,
     #     "adversary_1": 4.51,
@@ -170,24 +162,6 @@ def baseline_writer():
                 )
 
 
-def create_run_name() -> str:
-    env_name: str = env_config.ENV_NAME
-    agent_name: str = training_config.AGENT_TYPE.value
-    cur_time: str = datetime.fromtimestamp(time()).isoformat(timespec="seconds")
-    tag: str = log_config.NAME_TAG
-    return f"{env_name}/{agent_name}/{cur_time} - {tag}"
-
-
-def get_model_storage(name: str, episode: int) -> str:
-    return join(
-        dirname(dirname(realpath(__file__))),
-        "resources",
-        "models",
-        name,
-        f"episode-{episode + 1}",
-    )
-
-
 def log_configs(writer: SummaryWriter) -> None:
     for key, value in actor_critic_config.__dict__.items():
         writer.add_text(key, str(value))
@@ -200,23 +174,31 @@ def log_configs(writer: SummaryWriter) -> None:
 def start_training() -> None:
     logging.info(f"Starting training")
 
-    run_name: str = create_run_name()
-    log_folder: str = get_logging_folder(run_name)
+    base_config = BaseEnvConfig()
 
-    logging.info(f"TensorBoard -> Logging to {log_folder}")
+    run_tag: str = base_config.ENV_TAG
 
-    # Building  the environment
-    env: ParallelEnv | AECEnv = build_env(env_config.ENV_NAME)
-
-    # Building the agents
-    agents = get_agents()
-
-    agents.init_agents(
-        action_space={a: env.action_space(a) for a in env.possible_agents},
-        observation_space={a: env.observation_space(a) for a in env.possible_agents},
+    run_name: str = create_run_name(
+        base_config.ENV_NAME, training_config.AGENT_TYPE, run_tag
     )
+    agent_dir: str = get_ctrl_dir()
 
-    with SummaryWriter(log_dir=log_folder) as writer:
+    logging.info(f"TensorBoard -> Logging to {agent_dir}")
+
+    with SummaryWriter(log_dir=agent_dir) as writer:
+        # Building  the environment
+        env: ParallelEnv | AECEnv = build_env(base_config.ENV_NAME, writer)
+
+        # Building the agents
+        agents = get_agents()
+
+        agents.init_agents(
+            action_space={a: env.action_space(a) for a in env.possible_agents},
+            observation_space={
+                a: env.observation_space(a) for a in env.possible_agents
+            },
+        )
+
         agents.set_logger(writer)
 
         log_configs(writer)
@@ -244,7 +226,7 @@ def start_training() -> None:
 
                     # save model
                     logging.info("Saving model")
-                    agents.save(get_model_storage(run_name, episode + 1))
+                    agents.save(get_model_storage(run_name, run_tag, episode + 1))
 
         env.close()
         logging.info("Finished training")

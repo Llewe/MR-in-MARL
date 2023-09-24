@@ -7,3 +7,4 @@ class AgentType(str, Enum):
     ACTOR_CRITIC_TD_LAMBDA_BACKWARD_VIEW = "actor_critic_td_lambda_backward_view"
     ACTOR_CRITIC = "actor_critic"
     DEMO_MANIPULATION_AGENT = "demo_manipulation_agent"
+    A2C = "a2c"

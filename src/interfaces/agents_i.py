@@ -1,11 +1,20 @@
 from abc import ABC, abstractmethod
+from typing import TypeVar
 
 from pettingzoo.utils.env import ActionType, ObsType, AgentID, ObsDict, ActionDict
 from torch.utils.tensorboard import SummaryWriter
 from gymnasium.spaces import Space
 
+from src.config.ctrl_configs.ctrl_config import CtrlConfig
+
+C = TypeVar("C", bound=CtrlConfig)
+
 
 class IAgents(ABC):
+    @abstractmethod
+    def __init__(self, config: C):
+        pass
+
     @abstractmethod
     def init_agents(
         self,
@@ -36,7 +45,6 @@ class IAgents(ABC):
         last_action: ActionType,
         reward: float,
         done: bool,
-        gamma: float,
     ) -> None:
         pass
 

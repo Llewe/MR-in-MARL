@@ -4,6 +4,6 @@ from .config import (
     env_config,
     eval_config,
     replay_config,
-    actor_critic_config,
 )
+from .config.ctrl_configs import actor_critic_config
 from .envs import build_env

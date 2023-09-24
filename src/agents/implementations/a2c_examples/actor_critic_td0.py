@@ -5,8 +5,8 @@ from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
 from torch.optim import Optimizer, Adam
 
-from src import actor_critic_config
-from src.agents.implementations.base_agents.agents_gym_i import IAgentsGym
+from src.config.ctrl_configs import actor_critic_config
+from src.agents.implementations.a2c_examples.agents_gym_i import IAgentsGym
 
 
 class ActorCriticTd0(IAgentsGym):
@@ -82,9 +82,9 @@ class ActorCriticTd0(IAgentsGym):
 
         # Berechne den TD-Fehler (Temporal Difference Error)
         td_error = (
-            reward
-            + actor_critic_config.DISCOUNT_FACTOR * critic_network(new_state_tensor)
-            - critic_network(state_tensor)
+                reward
+                + actor_critic_config.DISCOUNT_FACTOR * critic_network(new_state_tensor)
+                - critic_network(state_tensor)
         )
 
         # Aktualisiere den Critic (Value Function) mit dem TD-Fehler und dem Optimierer
