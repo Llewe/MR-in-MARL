@@ -5,11 +5,11 @@ class ActorCriticConfig(CtrlConfig):
 
     ACTOR_LR: float = 0.001
     CRITIC_LR: float = 0.001
-    ACTOR_HIDDEN_UNITS: int = 16
-    CRITIC_HIDDEN_UNITS: int = 16
+    ACTOR_HIDDEN_UNITS: int = 64
+    CRITIC_HIDDEN_UNITS: int = 64
     DISCOUNT_FACTOR: float = 0.99
 
-    CLIP_NORM: float = 1
+    CLIP_NORM: float = 1.0
 
     REWARD_NORMALIZATION: bool = False
 

@@ -6,19 +6,18 @@ import pygame
 from pettingzoo import ParallelEnv, AECEnv
 from torch.utils.tensorboard import SummaryWriter
 
-from agents.agents_helper import get_agents
-from envs import build_env
 from src import (
     log_config,
     training_config,
     env_config,
     eval_config,
 )
+from src.agents.agents_helper import get_agents
 from src.config.ctrl_configs import actor_critic_config
 from src.config.env_config import BaseEnvConfig
+from src.envs import build_env
 from src.interfaces.agents_i import IAgents
 from src.utils.utils import (
-    create_run_name,
     get_log_folder,
     get_model_storage,
     get_ctrl_dir,
@@ -175,11 +174,6 @@ def start_training() -> None:
 
     base_config = BaseEnvConfig()
 
-    run_tag: str = base_config.ENV_TAG
-
-    run_name: str = create_run_name(
-        base_config.ENV_NAME, training_config.AGENT_TYPE, run_tag
-    )
     agent_dir: str = get_ctrl_dir()
 
     logging.info(f"TensorBoard -> Logging to {agent_dir}")

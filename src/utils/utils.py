@@ -37,7 +37,7 @@ def get_ctrl_dir() -> str:
 
 def get_model_storage(episode: int) -> str:
     return join(
-        get_env_dir(),
+        get_ctrl_dir(),
         f"episode-{episode}",
     )
 

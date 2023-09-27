@@ -4,6 +4,7 @@ from os.path import join
 from typing import TypeVar, Type
 
 from src.config.base_ctrl_config import BaseCtrlConfig
+from src.config.ctrl_configs.a2c_config import A2cConfig
 from src.config.ctrl_configs.actor_critic_config import ActorCriticConfig
 from src.config.ctrl_configs.ctrl_config import CtrlConfig
 from src.config.ctrl_configs.demo_ma_config import DemoMaConfig
@@ -17,10 +18,6 @@ from .implementations import (
     DemoMa,
 )
 from .implementations.a2c import A2C
-from .implementations.a2c_examples import (
-    ActorCriticTd0,
-    ActorCriticTdLamdaBack,
-)
 
 T = TypeVar("T", bound=IAgents)
 
@@ -60,12 +57,12 @@ def get_agent_class(agent_type: AgentType) -> (Type[T], Type[C]):
             return DemoMa, DemoMaConfig
 
         case AgentType.ACTOR_CRITIC_TD0:
-            return ActorCriticTd0, CtrlConfig
+            raise NotImplementedError
 
         case AgentType.ACTOR_CRITIC_TD_LAMBDA_BACKWARD_VIEW:
-            return ActorCriticTdLamdaBack, CtrlConfig
+            raise NotImplementedError
 
         case AgentType.A2C:
-            return A2C, CtrlConfig
+            return A2C, A2cConfig
 
     raise NotImplementedError
