@@ -89,7 +89,7 @@ class A2C(IAgents):
         self.actor_networks = {
             agent_id: ActorNetwork(
                 A2C.get_space_size(observation_space[agent_id]),
-                action_space[agent_id],
+                A2C.get_space_size(action_space[agent_id]),
                 self.actor_critic_config.ACTOR_HIDDEN_UNITS,
                 self.config.ACTOR_LR,
             )
@@ -124,7 +124,10 @@ class A2C(IAgents):
         )
 
         # training
-        if self.current_episode > 0:
+        if (
+            self.current_episode > 0
+            and self.current_episode % self.config.UPDATE_FREQ == 0
+        ):
             for agent_id in self.actor_networks:
                 self.learn(agent_id, self.config.DISCOUNT_FACTOR)
 
@@ -156,7 +159,7 @@ class A2C(IAgents):
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         if explore and np.random.rand() < self.epsilon:
-            action = np.random.choice(self.actor_networks[agent_id].action_space.n)
+            action = np.random.choice(self.actor_networks[agent_id].num_actions)
             # log_prob = -np.log(1.0 / self.actor_networks[agent_id].action_space.n)
         else:
             policy_network = self.actor_networks[agent_id]
@@ -169,13 +172,13 @@ class A2C(IAgents):
             action = torch.multinomial(action_probs, 1).item()
             # action = torch.multinomial(action_probs, 1).item()
 
-        if self.writer:
-            self.writer.add_histogram(
-                f"actions/{agent_id}",
-                action,
-                global_step=self.current_episode,
-                max_bins=10,
-            )
+        # if self.writer:
+        #     self.writer.add_histogram(
+        #         f"actions/{agent_id}",
+        #         action,
+        #         global_step=self.current_episode,
+        #         max_bins=10,
+        #     )
 
         return action
 
@@ -192,7 +195,7 @@ class A2C(IAgents):
             scaled_reward: float = self.reward_norm[agent_id].normalize(reward)
         else:
             scaled_reward = reward
-        obs_curr: Tensor = torch.from_numpy(curr_observation).float().unsqueeze(0)
+        obs_curr: Tensor = torch.from_numpy(last_observation).float().unsqueeze(0)
 
         self.step_info[agent_id].add(scaled_reward, obs_curr, last_action)
 

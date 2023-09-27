@@ -13,9 +13,9 @@ class ActorCriticConfig(CtrlConfig):
 
     REWARD_NORMALIZATION: bool = False
 
-    EPSILON_INIT: float = 0.8
+    EPSILON_INIT: float = 0.6
     EPSILON_MIN: float = 0.1
-    EPSILON_DECAY: float = 0.0001
+    EPSILON_DECAY: float = 0.0005
 
 
 

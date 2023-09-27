@@ -6,6 +6,7 @@ from pettingzoo import AECEnv
 
 from agents.agents_helper import get_agents
 from src import replay_config, env_config, log_config, build_env
+from src.config import pygame_config
 from src.interfaces.agents_i import IAgents
 
 logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
@@ -45,13 +46,12 @@ def load_agents(aec_env: AECEnv) -> IAgents:
         },
     )
 
-    RUN_NAME = f"{replay_config.ENV_NAME}/{replay_config.AGENT_TYPE}/{replay_config.EXPERIMENT_NAME}"
+    RUN_NAME = f"{replay_config.ENV_NAME}/{replay_config.ENV_TAG}/{replay_config.AGENT_TYPE}/{replay_config.EXPERIMENT_NAME}"
 
     logging.info(f"Loading agents from {RUN_NAME}")
     model_storage = join(
         dirname(dirname(realpath(__file__))),
         "resources",
-        "models",
         RUN_NAME,
         f"episode-{replay_config.EPISODE}",
     )
@@ -66,8 +66,8 @@ if __name__ == "__main__":
 
     logging.info(f"Loading agents from {replay_config.ENV_NAME}")
 
-    env_config.RENDER_MODE = "human"
-    env_config.RENDER_FPS = 60
+    pygame_config.RENDER_MODE = "human"
+    pygame_config.RENDER_FPS = 60
     env_config.MAX_CYCLES = replay_config.STEPS
     env: AECEnv = build_env(replay_config.ENV_NAME)
 

@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 
 import numpy
+import numpy as np
 import pygame
 from pettingzoo import ParallelEnv, AECEnv
 from torch.utils.tensorboard import SummaryWriter
@@ -27,6 +28,65 @@ logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 
 
 all_steps = 0
+
+
+def _train_aec_episode_simple(
+    agents: IAgents, env: AECEnv, current_episode: int, writer: SummaryWriter
+):
+    env.reset()
+    agents.init_new_episode()
+
+    episode_reward = defaultdict(lambda: 0)
+    actions = defaultdict(list)
+    #last_observation = {}
+
+    for agent_id in env.agent_iter():
+        pygame.event.get()  # so that the window doesn't freeze
+        observation, reward, termination, truncation, info = env.last()
+
+
+        action = agents.act(agent_id=agent_id, observation=observation)
+        agents.update(
+            agent_id,
+            observation,
+            observation,
+            action,
+            reward,
+            termination or truncation,
+        )
+
+        if termination or truncation:
+            env.step(None)
+            continue
+
+        # action = agents.act(agent_id=agent_id, observation=observation)
+
+        #if agent_id in actions and agent_id in last_observation:
+            # agents.update(
+            #     agent_id,
+            #     last_observation[agent_id],
+            #     observation,
+            #     actions[agent_id][-1],
+            #     reward,
+            #     termination or truncation,
+            # )
+
+        env.step(action)
+
+        # logging
+        episode_reward[agent_id] += reward
+
+        if action is not None:
+            actions[agent_id].append(action)
+            # last_observation[agent_id]= observation
+
+    for agent_id in episode_reward:
+        writer.add_scalar(
+            f"rewards/{agent_id}", episode_reward[agent_id], current_episode
+        )
+        action = numpy.array(actions[agent_id])
+
+        writer.add_histogram(f"actions/{agent_id}", action, global_step=current_episode)
 
 
 def _train_aec_episode(
@@ -205,7 +265,7 @@ def start_training() -> None:
                     f" Episode: {episode}/{training_config.EPISODES}"
                 )
 
-                _train_aec_episode(agents, env, episode, writer)
+                _train_aec_episode_simple(agents, env, episode, writer)
 
                 if (episode + 1) % eval_config.EVAL_INTERVAL == 0:
                     logging.info("Evaluating agents")

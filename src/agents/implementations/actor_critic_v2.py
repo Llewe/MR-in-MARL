@@ -19,7 +19,8 @@ from src.interfaces.agents_i import IAgents
 
 # https://medium.com/geekculture/actor-critic-implementing-actor-critic-methods-82efb998c273
 
-class ActorCritic(IAgents):
+
+class ActorCriticV2(IAgents):
     config: ActorCriticConfig
 
     actor_networks: dict[AgentID, ActorNetwork]
@@ -65,8 +66,8 @@ class ActorCritic(IAgents):
     ):
         self.actor_networks = {
             agent_id: ActorNetwork(
-                ActorCritic.get_space_size(observation_space[agent_id]),
-                ActorCritic.get_space_size(action_space[agent_id]),
+                ActorCriticV2.get_space_size(observation_space[agent_id]),
+                ActorCriticV2.get_space_size(action_space[agent_id]),
                 self.config.ACTOR_HIDDEN_UNITS,
                 self.config.ACTOR_LR,
             )
@@ -75,7 +76,7 @@ class ActorCritic(IAgents):
 
         self.critic_networks = {
             agent_id: CriticNetwork(
-                ActorCritic.get_space_size(observation_space[agent_id]),
+                ActorCriticV2.get_space_size(observation_space[agent_id]),
                 # observation_space[agent_id].shape[0],
                 self.config.CRITIC_HIDDEN_UNITS,
                 self.config.CRITIC_LR,
@@ -132,20 +133,20 @@ class ActorCritic(IAgents):
             # convert observation to float tensor, add 1 dimension, allocate tensor on device
             obs_tensor = torch.from_numpy(observation).float().unsqueeze(0)
 
-            action_probs = policy_network(obs_tensor)  # [0].detach().numpy()
+            action_probs = policy_network(obs_tensor).detach()  # [0].detach().numpy()
             m = Categorical(probs=action_probs)
             action = m.sample()
 
             # log_prob = m.log_prob(action)
             action = action.item()
 
-        if self.writer:
-            self.writer.add_histogram(
-                f"actions/{agent_id}",
-                action,
-                global_step=self.current_episode,
-                max_bins=10,
-            )
+        # if self.writer:
+        #     self.writer.add_histogram(
+        #         f"actions/{agent_id}",
+        #         action,
+        #         global_step=self.current_episode,
+        #         max_bins=10,
+        #     )
 
         return action
 
@@ -154,13 +155,17 @@ class ActorCritic(IAgents):
         agent_id: AgentID,
         actor_net: ActorNetwork,
         last_action: ActionType,
-        obs_curr: Tensor,
+        obs_last: Tensor,
         advantage: Tensor,
     ):
-        action_probs = actor_net(obs_curr)
+        action_probs = actor_net(obs_last)
+        value = self.critic_networks[agent_id](obs_last).squeeze().detach()
 
         m1 = Categorical(action_probs)
-        actor_loss = -m1.log_prob(torch.tensor(last_action)) * advantage.detach()
+
+        adv = torch.tensor(last_action).detach() - value.detach()
+
+        actor_loss = (m1.log_prob(torch.tensor(last_action)) * adv.detach()) ** 2
 
         # only for logging
         self.actor_losses[agent_id].append(actor_loss.detach().numpy())
@@ -182,11 +187,12 @@ class ActorCritic(IAgents):
     ):
         value_last: Tensor = critic_net(obs_last).squeeze()
         value_curr: Tensor = critic_net(obs_curr).squeeze()
-
-        value_target: Tensor = scaled_reward + gamma * value_curr * (1 - done)
+        value_target: Tensor = torch.tensor(
+            scaled_reward, dtype=torch.float
+        ) + gamma * value_last * (1 - done)
 
         loss = mse_loss(
-            value_target, value_last
+            value_target.detach(), value_last
         )  # TODO here im not sure if if it needs to be value_last or value_curr
 
         # only for logging
@@ -197,7 +203,7 @@ class ActorCritic(IAgents):
         torch.nn.utils.clip_grad_norm_(critic_net.parameters(), self.config.CLIP_NORM)
         critic_net.optimizer.step()
 
-        advantage = value_target - value_last
+        advantage = scaled_reward - value_last.detach()
 
         return advantage.detach()
 
@@ -219,13 +225,11 @@ class ActorCritic(IAgents):
         critic_net: CriticNetwork = self.critic_networks[agent_id]
 
         obs_last: Tensor = torch.from_numpy(last_observation).float().unsqueeze(0)
-        obs_curr: Tensor = torch.from_numpy(curr_observation).float().unsqueeze(0)
 
         advantage: Tensor = self._update_critic(
             agent_id=agent_id,
             critic_net=critic_net,
             obs_last=obs_last,
-            obs_curr=obs_curr,
             scaled_reward=scaled_reward,
             done=done,
             gamma=self.config.DISCOUNT_FACTOR,
@@ -235,7 +239,7 @@ class ActorCritic(IAgents):
             agent_id=agent_id,
             actor_net=actor_net,
             last_action=last_action,
-            obs_curr=obs_curr,
+            obs_last=obs_last,
             advantage=advantage,
         )
 

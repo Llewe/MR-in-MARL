@@ -18,6 +18,8 @@ from .implementations import (
     DemoMa,
 )
 from .implementations.a2c import A2C
+from .implementations.a2c2 import A2C2
+from .implementations.actor_critic_v2 import ActorCriticV2
 
 T = TypeVar("T", bound=IAgents)
 
@@ -56,6 +58,9 @@ def get_agent_class(agent_type: AgentType) -> (Type[T], Type[C]):
         case AgentType.DEMO_MANIPULATION_AGENT:
             return DemoMa, DemoMaConfig
 
+        case AgentType.ACTOR_CRITIC_V2:
+            return ActorCriticV2, ActorCriticConfig
+
         case AgentType.ACTOR_CRITIC_TD0:
             raise NotImplementedError
 
@@ -64,5 +69,7 @@ def get_agent_class(agent_type: AgentType) -> (Type[T], Type[C]):
 
         case AgentType.A2C:
             return A2C, A2cConfig
+        case AgentType.A2C2:
+            return A2C2, A2cConfig
 
     raise NotImplementedError

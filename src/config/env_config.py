@@ -9,7 +9,7 @@ class BaseEnvConfig(BaseSettings):
 
 
 class EnvConfig(BaseSettings):
-    MAX_CYCLES: int = 60
+    MAX_CYCLES: int = 20
     CONTINUOUS_ACTIONS: bool = False
 
 
@@ -32,8 +32,8 @@ class SimpleAdversaryConfig(EnvConfig):
 
 
 class CoinGameConfig(EnvConfig):
-    PLAYERS: int = 2
-    GRID_SIZE: int = 3
+    PLAYERS: int = 1
+    GRID_SIZE: int = 2
     ALLOW_OVERLAP_PLAYERS: bool = True
 
 
