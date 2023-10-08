@@ -8,11 +8,15 @@ from src.config.env_config import (
     EnvConfig,
     SimpleAdversaryConfig,
     CoinGameConfig,
+    PrisonersConfig,
+    SamaritansConfig,
+    StagHuntConfig,
+    ChickenConfig,
 )
 
 
 def _setup_simple(env_config: EnvConfig) -> AECEnv:
-    import pettingzoo.mpe.simple_v3 as simple_v3
+    from pettingzoo.mpe import simple_v3
 
     return simple_v3.env(
         render_mode=pygame_config.RENDER_MODE,
@@ -59,6 +63,7 @@ def _setup_simple_adversary(adversary_config: SimpleAdversaryConfig) -> AECEnv:
 
 def _setup_coin_game(writer: SummaryWriter, coin_game_config: CoinGameConfig) -> AECEnv:
     from src.envs.aec.coin_game import raw_env
+
     return raw_env(
         render_mode=pygame_config.RENDER_MODE,
         nb_players=coin_game_config.PLAYERS,
@@ -68,3 +73,31 @@ def _setup_coin_game(writer: SummaryWriter, coin_game_config: CoinGameConfig) ->
         summary_writer=writer,
         allow_overlap_players=coin_game_config.ALLOW_OVERLAP_PLAYERS,
     )
+
+
+def _setup_prisoners(
+    writer: SummaryWriter, prisoners_config: PrisonersConfig
+) -> AECEnv:
+    from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
+
+    return raw_env(game="pd")
+
+
+def _setup_samaritans(
+    writer: SummaryWriter, samaritans_config: SamaritansConfig
+) -> AECEnv:
+    from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
+
+    return raw_env(game="sd")
+
+
+def _setup_stag_hunt(writer: SummaryWriter, stag_hunt_config: StagHuntConfig) -> AECEnv:
+    from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
+
+    return raw_env(game="stag")
+
+
+def _setup_chicken(writer: SummaryWriter, chicken_config: ChickenConfig) -> AECEnv:
+    from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
+
+    return raw_env(game="chicken")

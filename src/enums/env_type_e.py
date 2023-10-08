@@ -9,6 +9,11 @@ class EnvType(str, Enum):
 
     COIN_GAME = "coin_game"
 
+    PRISONERS_DILEMMA = "prisoners_dilemma"
+    SAMARITANS_DILEMMA = "samaritans_dilemma"
+    STAG_HUNT = "stag_hunt"
+    CHICKEN = "chicken"
+
     P_SIMPLE = "p_simple"
     P_SIMPLE_TAG = "p_simple_tag"
     P_SIMPLE_SPREAD = "p_simple_spread"

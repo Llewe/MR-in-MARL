@@ -10,18 +10,18 @@ packages = [{ include = 'src' }]
 
 [tool.poetry.dependencies]
 python = ">=3.10.11,<3.12"
-pydantic = {extras = ["dotenv"], version = "^2.1.1"}
+pydantic = {extras = ["dotenv"], version = "^2.4.2"}
 pydantic-settings = "^2.0.2"
 numpy = "^1.25.2"
 torch = [
     { version = "==2.0.1", markers = "platform_machine!='x86_64' or sys_platform=='darwin'", source = "pypi" },
     { version = "==2.0.1+cpu", markers = "platform_machine=='x86_64' and sys_platform!='darwin'", source = "torchcpu" },
 ]
-pettingzoo = "^1.23.1"
-pygame = "^2.5.0"
+pettingzoo = {extras = ["mpe"], version = "^1.24.1"}
+pygame = "^2.3.0"
 stable-baselines3 = "^2.0.0"
 supersuit = "^3.9.0"
-tensorboard = "^2.13.0"
+tensorboard = "^2.14.1"
 names  = "^0.3.0"
 pyyaml = "^6.0"
 

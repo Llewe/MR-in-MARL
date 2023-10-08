@@ -5,11 +5,11 @@ from src.enums.env_type_e import EnvType
 
 class BaseEnvConfig(BaseSettings):
     ENV_NAME: EnvType = EnvType.COIN_GAME
-    ENV_TAG: str = "2p 3x3"
+    ENV_TAG: str = "4p 5x5"
 
 
 class EnvConfig(BaseSettings):
-    MAX_CYCLES: int = 20
+    MAX_CYCLES: int = 25
     CONTINUOUS_ACTIONS: bool = False
 
 
@@ -32,9 +32,27 @@ class SimpleAdversaryConfig(EnvConfig):
 
 
 class CoinGameConfig(EnvConfig):
+    PLAYERS: int = 4
+    GRID_SIZE: int = 5
+    ALLOW_OVERLAP_PLAYERS: bool = True
+
+
+class PrisonersConfig(EnvConfig):
     PLAYERS: int = 1
     GRID_SIZE: int = 2
     ALLOW_OVERLAP_PLAYERS: bool = True
+
+
+class SamaritansConfig(EnvConfig):
+    pass
+
+
+class StagHuntConfig(EnvConfig):
+    pass
+
+
+class ChickenConfig(EnvConfig):
+    pass
 
 
 env_config = EnvConfig()

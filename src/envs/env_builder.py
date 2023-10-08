@@ -12,6 +12,10 @@ from src.config.env_config import (
     SimpleSpreadConfig,
     SimpleAdversaryConfig,
     CoinGameConfig,
+    PrisonersConfig,
+    SamaritansConfig,
+    StagHuntConfig,
+    ChickenConfig,
 )
 from src.enums.env_type_e import EnvType
 from src.envs.setup import (
@@ -23,6 +27,12 @@ from src.envs.setup import (
     _setup_parallel_simple_tag,
     _setup_parallel_simple_spread,
     _setup_coin_game,
+)
+from src.envs.setup.aec_envs import (
+    _setup_samaritans,
+    _setup_prisoners,
+    _setup_stag_hunt,
+    _setup_chicken,
 )
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
 from src.utils.utils import get_env_dir
@@ -56,6 +66,17 @@ def build_env(
 
         case EnvType.COIN_GAME:
             return _setup_coin_game(writer, config)
+
+        case EnvType.PRISONERS_DILEMMA:
+            return _setup_prisoners(writer, config)
+
+        case EnvType.SAMARITANS_DILEMMA:
+            return _setup_samaritans(writer, config)
+        case EnvType.STAG_HUNT:
+            return _setup_stag_hunt(writer, config)
+        case EnvType.CHICKEN:
+            return _setup_chicken(writer, config)
+
     raise NotImplementedError
 
 
@@ -71,6 +92,15 @@ def get_env_class(env_name: EnvType) -> Type[T]:
             return SimpleAdversaryConfig
         case EnvType.COIN_GAME:
             return CoinGameConfig
+        case EnvType.PRISONERS_DILEMMA:
+            return PrisonersConfig
+        case EnvType.SAMARITANS_DILEMMA:
+            return SamaritansConfig
+        case EnvType.STAG_HUNT:
+            return StagHuntConfig
+        case EnvType.CHICKEN:
+            return ChickenConfig
+
     raise NotImplementedError
 
 

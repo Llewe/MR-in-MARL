@@ -199,8 +199,14 @@ class A2C2(IAgents):
         for t in reversed(range(len(rewards))):
             running_add = running_add * gamma + rewards[t]
             discounted_returns[t] = running_add
-        discounted_returns -= np.mean(discounted_returns)
-        discounted_returns /= np.std(discounted_returns)
+        # Adding a small constant to avoid division by zero
+        mean_returns = np.mean(discounted_returns)
+        std_returns = np.std(discounted_returns) + 1e-8
+
+        # Normalize using mean and standard deviation with added constant
+        discounted_returns -= mean_returns
+        discounted_returns /= std_returns
+
         return discounted_returns
 
     def _update_critic(self, agent_id, gamma: float, returns) -> None:
