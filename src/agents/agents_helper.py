@@ -11,7 +11,7 @@ from src.config.ctrl_configs.demo_ma_config import DemoMaConfig
 from src.enums.agent_type_e import AgentType
 from src.interfaces.agents_i import IAgents, C
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
-from src.utils.utils import get_ctrl_dir
+from src.utils.loggers.utils import get_ctrl_dir
 from .implementations import (
     RandomAgents,
     ActorCritic,
@@ -20,6 +20,8 @@ from .implementations import (
 from .implementations.a2c import A2C
 from .implementations.a2c2 import A2C2
 from .implementations.actor_critic_v2 import ActorCriticV2
+from .implementations.demo_ma_coin import DemoMaCoin
+from ..config.ctrl_configs.demo_ma_coin import DemoMaCoinConfig
 
 T = TypeVar("T", bound=IAgents)
 
@@ -71,5 +73,7 @@ def get_agent_class(agent_type: AgentType) -> (Type[T], Type[C]):
             return A2C, A2cConfig
         case AgentType.A2C2:
             return A2C2, A2cConfig
+        case AgentType.DEMO_MANIPULATION_COIN:
+            return DemoMaCoin, DemoMaCoinConfig
 
     raise NotImplementedError

@@ -35,7 +35,7 @@ from src.envs.setup.aec_envs import (
     _setup_chicken,
 )
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
-from src.utils.utils import get_env_dir
+from src.utils.loggers.utils import get_env_dir
 
 T = TypeVar("T", bound=EnvConfig)
 

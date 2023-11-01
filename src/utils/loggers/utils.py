@@ -12,7 +12,7 @@ def get_env_dir() -> str:
 
     data_dir = join(
         dirname(dirname(realpath(__file__))),
-        f"../resources",
+        f"../../resources",
         base_config.ENV_NAME.value,
         base_config.ENV_TAG,
     )

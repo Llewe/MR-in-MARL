@@ -2,7 +2,6 @@ import logging
 from collections import defaultdict
 
 import numpy
-import numpy as np
 import pygame
 from pettingzoo import ParallelEnv, AECEnv
 from torch.utils.tensorboard import SummaryWriter
@@ -18,11 +17,14 @@ from src.config.ctrl_configs import actor_critic_config
 from src.config.env_config import BaseEnvConfig
 from src.envs import build_env
 from src.interfaces.agents_i import IAgents
-from src.utils.utils import (
+from src.utils.loggers.obs_logger import ObsLogger
+from src.utils.loggers.simple_env_logger import SimpleEnvLogger
+from src.utils.loggers.utils import (
     get_log_folder,
     get_model_storage,
     get_ctrl_dir,
 )
+from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
 
 logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 
@@ -31,19 +33,25 @@ all_steps = 0
 
 
 def _train_aec_episode_simple(
-    agents: IAgents, env: AECEnv, current_episode: int, writer: SummaryWriter
+    agents: IAgents,
+    env: AECEnv,
+    current_episode: int,
+    writer: SummaryWriter,
+    obs_logger: ObsLogger,
 ):
     env.reset()
     agents.init_new_episode()
 
     episode_reward = defaultdict(lambda: 0)
     actions = defaultdict(list)
-    #last_observation = {}
+    # last_observation = {}
 
+    obs_logger.clear_buffer()
     for agent_id in env.agent_iter():
         pygame.event.get()  # so that the window doesn't freeze
         observation, reward, termination, truncation, info = env.last()
 
+        obs_logger.add_observation(agent_id, observation)
 
         action = agents.act(agent_id=agent_id, observation=observation)
         agents.update(
@@ -61,15 +69,15 @@ def _train_aec_episode_simple(
 
         # action = agents.act(agent_id=agent_id, observation=observation)
 
-        #if agent_id in actions and agent_id in last_observation:
-            # agents.update(
-            #     agent_id,
-            #     last_observation[agent_id],
-            #     observation,
-            #     actions[agent_id][-1],
-            #     reward,
-            #     termination or truncation,
-            # )
+        # if agent_id in actions and agent_id in last_observation:
+        # agents.update(
+        #     agent_id,
+        #     last_observation[agent_id],
+        #     observation,
+        #     actions[agent_id][-1],
+        #     reward,
+        #     termination or truncation,
+        # )
 
         env.step(action)
 
@@ -80,6 +88,8 @@ def _train_aec_episode_simple(
             actions[agent_id].append(action)
             # last_observation[agent_id]= observation
 
+    obs_logger.log_episode(current_episode, "train")
+
     for agent_id in episode_reward:
         writer.add_scalar(
             f"rewards/{agent_id}", episode_reward[agent_id], current_episode
@@ -89,72 +99,20 @@ def _train_aec_episode_simple(
         writer.add_histogram(f"actions/{agent_id}", action, global_step=current_episode)
 
 
-def _train_aec_episode(
-    agents: IAgents, env: AECEnv, current_episode: int, writer: SummaryWriter
-) -> dict:
-    env.reset()
-    agents.init_new_episode()
-
-    episode_reward = defaultdict(lambda: 0)
-    last_action = {}
-    last_observation = {}
-    actions = defaultdict(list)
-
-    for agent_id in env.agent_iter():
-        pygame.event.get()  # so that the window doesn't freeze
-        observation, reward, termination, truncation, info = env.last()
-        # lets update the agent from the last cycle, if there was one
-        if agent_id in last_action:
-            agents.update(
-                agent_id=agent_id,
-                last_observation=last_observation[agent_id],
-                curr_observation=observation,
-                last_action=last_action[agent_id],
-                reward=reward,
-                done=termination or truncation,
-            )
-        if termination or truncation:
-            action = None
-        else:
-            action = agents.act(agent_id=agent_id, observation=observation)
-
-        last_action[agent_id] = action
-        last_observation[agent_id] = observation
-        global all_steps
-        all_steps += 1
-        writer.add_scalar(f"all_rewards", reward, all_steps)
-        episode_reward[agent_id] += reward
-
-        if action is not None:
-            actions[agent_id].append(action)
-
-        env.step(action)
-
-    for agent_id in episode_reward:
-        writer.add_scalar(
-            f"rewards/{agent_id}", episode_reward[agent_id], current_episode
-        )
-        action = numpy.array(actions[agent_id])
-        writer.add_histogram(
-            f"actions/{agent_id}", action, global_step=current_episode, max_bins=10
-        )
-
-    return episode_reward
-
-
 def _eval_aec_agents(
     agents: IAgents,
     env: AECEnv,
     writer: SummaryWriter,
     current_episode: int,
+    obs_logger: ObsLogger,
     num_eval_episodes: int,
 ):
     rewards = {}
     for agent_name in env.possible_agents:
         rewards[agent_name] = []
-
+    obs_logger.clear_buffer()
     for steps in range(num_eval_episodes):
-        env.reset()
+        env.reset(options={"eval": False})
 
         episode_reward = {}
         for agent_name in env.possible_agents:
@@ -163,6 +121,8 @@ def _eval_aec_agents(
         for agent_name in env.agent_iter():
             pygame.event.get()  # so that the window doesn't freeze
             observation, reward, termination, truncation, info = env.last()
+
+            obs_logger.add_observation(agent_name, observation)
 
             episode_reward[agent_name] += reward
 
@@ -174,6 +134,7 @@ def _eval_aec_agents(
                 )
 
             env.step(action)
+
         for agent_id in env.possible_agents:
             writer.add_scalar(
                 f"eval/rewards/episode-{current_episode}/{agent_id}",
@@ -182,6 +143,8 @@ def _eval_aec_agents(
             )
             rewards[agent_id].append(episode_reward[agent_id])
 
+    obs_logger.log_episode(current_episode, "eval")
+    env.reset(options={"eval": True})  # reset to write to tensorboard
     for agent_id in env.possible_agents:
         writer.add_scalar(
             f"eval/rewards/mean/{agent_id}",
@@ -242,6 +205,15 @@ def start_training() -> None:
         # Building  the environment
         env: ParallelEnv | AECEnv = build_env(base_config.ENV_NAME, writer)
 
+        obs_logger: ObsLogger
+
+        if isinstance(env.unwrapped, SimpleEnv):
+            logging.info("Using SimpleEnvLogger")
+            obs_logger = SimpleEnvLogger(env.unwrapped, writer)  # type: ignore
+        else:
+            logging.info("Using ObsLogger")
+            obs_logger = ObsLogger(writer)
+
         # Building the agents
         agents = get_agents()
 
@@ -265,7 +237,7 @@ def start_training() -> None:
                     f" Episode: {episode}/{training_config.EPISODES}"
                 )
 
-                _train_aec_episode_simple(agents, env, episode, writer)
+                _train_aec_episode_simple(agents, env, episode, writer, obs_logger)
 
                 if (episode + 1) % eval_config.EVAL_INTERVAL == 0:
                     logging.info("Evaluating agents")
@@ -274,6 +246,7 @@ def start_training() -> None:
                         env,
                         writer,
                         episode + 1,
+                        obs_logger,
                         num_eval_episodes=eval_config.NUM_EPISODES,
                     )
 

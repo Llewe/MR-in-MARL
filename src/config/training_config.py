@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class TrainingConfig(BaseSettings):
-    EPISODES: int = 40000
+    EPISODES: int = 150000
     EPOCHS: int = 1
 
 

@@ -10,3 +10,4 @@ class AgentType(str, Enum):
     DEMO_MANIPULATION_AGENT = "demo_manipulation_agent"
     A2C = "a2c"
     A2C2 = "a2c2"
+    DEMO_MANIPULATION_COIN = "demo_manipulation_coin"
