@@ -1,12 +1,8 @@
-# reference
-# https://github.com/arjun-prakash/pz_dilemma
-# https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/classic/rps/rps.py
-# https://github.com/tianyu-z/pettingzoo_dilemma_envs
+import logging
 import math
 import random
 from dataclasses import dataclass
 from enum import Enum
-from time import sleep
 from typing import Any, Dict, List, Optional
 
 import gymnasium
@@ -91,9 +87,11 @@ class GlobalState:
 
 @dataclass(slots=True)
 class HistoryState:
-    agent_id: AgentID
-    global_state: GlobalState
-    action_taken: Action
+    board_step: int
+    rewards: dict[AgentID, float]
+    collected_coins: dict[AgentID, bool]
+    coin_owner: AgentID
+    actions: dict[AgentID, Action]
 
 
 class CoinGamePygameRenderer:
@@ -243,7 +241,7 @@ class CoinGame(AECEnv):
     state: GlobalState
 
     # Action, State Log
-    actions_taken: List[HistoryState]
+    current_history: List[HistoryState]
 
     # Execution Variables
     agent_selector: AgentSelector
@@ -290,6 +288,8 @@ class CoinGame(AECEnv):
         self.randomize_coin = randomize_coin
         self.allow_overlap_players = allow_overlap_players
         self.summary_writer = summary_writer
+
+        self.current_history = []
 
         if render_mode == "human":
             self.pygame_renderer = CoinGamePygameRenderer(
@@ -405,41 +405,7 @@ class CoinGame(AECEnv):
         self.state.cal_obs()
 
     def _render_text(self) -> None:
-        print("This is a {} round".format(self.num_moves))
-        print("Coin (before taken) position: {}".format(self.coin_pos))
-        print("Coin (before taken) belongs to: {}".format(self.player_coin))
-        agent = self.agent_selection
-        if len(self.agents) == self.nb_players:
-            # print("Players information: ")
-            print(
-                "Agent {} position before action: {} ".format(
-                    agent,
-                    self.player_pos_old[self.agent_name_mapping[agent], :],
-                )
-            )
-            print(
-                "Agent {} action: {} ".format(
-                    agent, self._moves[self.actions_taken[agent]]
-                )
-            )
-            print(
-                "Agent {} position after action: {} ".format(
-                    agent, self.player_pos[self.agent_name_mapping[agent], :]
-                )
-            )
-            if self._agent_selector.is_last():
-                for a in self.agents:
-                    print(
-                        "Agent {} reward after action: {} ".format(a, self.rewards[a])
-                    )
-                    print(
-                        "Agent {} cumulative rewards after action: {} ".format(
-                            a, self._cumulative_rewards[a]
-                        )
-                    )
-        else:
-            print("Game over")
-        print("\n")
+        raise NotImplementedError("Text rendering is not implemented yet.")
 
     def _render_pygame(self) -> None:
         if self.pygame_renderer is not None:
@@ -472,6 +438,11 @@ class CoinGame(AECEnv):
         options: dict | None = None,
     ) -> None:
         self.reinit(options=options)
+        if options is None:
+            self.current_history.clear()
+            logging.warning("Resetting history. No options in reset -> no logging.")
+        else:
+            self.log(options)
 
     def _check_bounds(self, new_pos: int) -> int:
         if self.walls:
@@ -523,6 +494,8 @@ class CoinGame(AECEnv):
 
         # Check if the new position is occupied by a coin :)
         if (pos_x, pos_y) == (self.state.coin_state.x, self.state.coin_state.y):
+            self.current_history[-1].collected_coins[agent] = True
+
             self.state.coin_is_collected = True
             self.rewards[agent] += 1
             if self.state.coin_state.owner is not agent:
@@ -539,7 +512,19 @@ class CoinGame(AECEnv):
             # Resetting the rewards for each agent if its the first of this "time" step
             self.rewards = {agent: 0 for agent in self.agents}
 
+            self.current_history.append(
+                HistoryState(
+                    board_step=self.state.steps_on_board,
+                    rewards={},
+                    collected_coins={a: False for a in self.agents},
+                    coin_owner=self.state.coin_state.owner,
+                    actions={},
+                )
+            )
+
         self._move_reward_agent(agent, Action(action))
+
+        self.current_history[-1].actions[agent] = Action(action)
 
         if self.agent_selector.is_last():
             self.state.steps_on_board += 1
@@ -558,62 +543,103 @@ class CoinGame(AECEnv):
 
                 self._accumulate_rewards()
 
+            for a, r in self._cumulative_rewards.items():
+                self.current_history[-1].rewards[a] = r
+
             # update observations
             self.state.cal_obs()
 
         # Switch to next agent
         self.agent_selection = self.agent_selector.next()
 
-    def log_episode_metrics(self, current_episode: int, eval: bool = False) -> None:
+    def log(self, options: dict) -> None:
         """
         Log various episode metrics to tensorboard. This method should be called after every episode.
         Parameters
         ----------
-        writer: SummaryWriter
-        current_episode: int
-        eval: bool
+        options: dict
+
         Returns
         -------
 
         """
-        n_coins: int = 0
-        all_steps: int = 0
+        if self.summary_writer is None:
+            self.current_history.clear()
+            logging.warning("No summary writer. Not logging.")
+            return
 
-        log_name: str = "eval" if eval else "train"
-        log_name = f"coin_game-{log_name}"
+        episode: int = 0
+        epoch: int = 0
+        tag: str = ""
+        reset: bool = True
+
+        if "episode" in options:
+            episode = options["episode"]
+
+        if "epoch" in options:
+            epoch = options["epoch"]
+
+        if "tag" in options:
+            tag = options["tag"]
+
+        if "reset" in options:
+            reset = options["reset"]
+
+        log_name = f"coin_game-{tag}"
+
+        cumulative_rewards = {agent: 0.0 for agent in self.agents}
+        cnt_collected_coins = {agent: 0.0 for agent in self.agents}
+
+        collected_coins_owner = {
+            agent: {agent: 0.0 for agent in self.agents} for agent in self.agents
+        }
+
+        divider: float = (
+            1  # This is used if multiple episodes are logged at once (e.g. one epoch)
+        )
+
+        if len(self.current_history) > self.max_cycles:
+            divider = len(self.current_history) // self.max_cycles
+            if divider * self.max_cycles != len(self.current_history):
+                raise ValueError(
+                    "The length of the current history is not a multiple of the max_cycles."
+                )
+
+        for history in self.current_history:
+            for agent_id in self.agents:
+                cumulative_rewards[agent_id] += history.rewards[agent_id]
+                cnt_collected_coins[agent_id] += history.collected_coins[agent_id]
+                if history.collected_coins[agent_id]:
+                    collected_coins_owner[agent_id][history.coin_owner] += 1
+
+        if divider != 1:
+            cumulative_rewards = {a: r / divider for a, r in cumulative_rewards.items()}
+            cnt_collected_coins = {
+                a: c / divider for a, c in cnt_collected_coins.items()
+            }
+            collected_coins_owner = {
+                aa: {a: c / divider for a, c in cco.items()}
+                for aa, cco in collected_coins_owner.items()
+            }
 
         for agent_id in self.agents:
-            collected_coins = self.agents_collected_coins[agent_id]
-            steps = self.steps_to_collect[agent_id]
-            if eval:
-                save_current_reset_eval_counter = max(
-                    self.current_reset_eval_counter, 1
-                )
-                collected_coins = collected_coins / save_current_reset_eval_counter
-                steps = steps / save_current_reset_eval_counter
-
+            self.summary_writer.add_scalar(
+                f"{log_name}/cumulative_reward/{agent_id}",
+                cumulative_rewards[agent_id],
+                epoch,
+            )
             self.summary_writer.add_scalar(
                 f"{log_name}/collected_coins/{agent_id}",
-                collected_coins,
-                current_episode,
-            )
-            self.summary_writer.add_scalar(
-                f"{log_name}/steps_to_collect/{agent_id}",
-                steps / max(collected_coins, 1),
-                current_episode,
+                cnt_collected_coins[agent_id],
+                epoch,
             )
 
-            all_steps += steps
-            n_coins += collected_coins
-        self.summary_writer.add_scalar(
-            f"{log_name}/collected_coins/all", n_coins, current_episode
-        )
-        save_all_collected_coins = max(n_coins, 1)
-        self.summary_writer.add_scalar(
-            f"{log_name}/steps_to_collect/all",
-            all_steps / save_all_collected_coins,
-            current_episode,
-        )
+            for owner, cnt in collected_coins_owner[agent_id].items():
+                self.summary_writer.add_scalar(
+                    f"{log_name}/collected_coins_owner/{agent_id}/{owner}",
+                    cnt,
+                    epoch,
+                )
 
 
 if __name__ == "__main__":
@@ -627,12 +653,7 @@ if __name__ == "__main__":
     # randomize_coin: bool = False,
     allow_overlap_players: bool = False,
     """
-    env = env(
-        n_players=2,
-        grid_size=3,
-        render_mode="human",
-        allow_overlap_players=True,
-    )
+    env = env(n_players=2, grid_size=3, render_mode="human", allow_overlap_players=True)
 
     env.reset()
 
@@ -647,7 +668,5 @@ if __name__ == "__main__":
                 continue
             else:
                 act = random.choice(list(range(len(Action))))
-                print(reward)
                 env.step(act)
-                sleep(0.1)
             env.render()
