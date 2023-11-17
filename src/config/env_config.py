@@ -5,11 +5,11 @@ from src.enums.env_type_e import EnvType
 
 class BaseEnvConfig(BaseSettings):
     ENV_NAME: EnvType = EnvType.SIMPLE_TAG
-    ENV_TAG: str = "1vs3 - 2 obstacles - 150steps"
+    ENV_TAG: str = "1vs3 - 2 obstacles - 50steps"
 
 
 class EnvConfig(BaseSettings):
-    MAX_CYCLES: int = 150
+    MAX_CYCLES: int = 50
     CONTINUOUS_ACTIONS: bool = False
 
 

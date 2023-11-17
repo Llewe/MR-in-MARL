@@ -5,8 +5,9 @@ from os.path import join
 import numpy as np
 import torch
 from gymnasium import Space
-from pettingzoo.utils.env import AgentID, ObsType, ActionType
+from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch import Tensor
+from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
 from torch.utils.tensorboard import SummaryWriter
 
@@ -15,7 +16,8 @@ from src.agents.implementations.utils.reward_normalization import RewardNormaliz
 from src.config.ctrl_configs.a2c_config import A2cConfig
 from src.config.ctrl_configs.actor_critic_config import ActorCriticConfig
 from src.interfaces.agents_i import IAgents
-from torch.distributions import Categorical
+from src.utils.gym_utils import get_space_size
+
 
 # https://medium.com/geekculture/actor-critic-implementing-actor-critic-methods-82efb998c273
 
@@ -70,17 +72,6 @@ class A2C2(IAgents):
         self.epsilon_final = config.EPSILON_MIN
         self.epsilon_decay_rate = config.EPSILON_DECAY
 
-    @classmethod
-    def get_space_size(cls, space: Space) -> int:
-        from gymnasium import spaces
-
-        if isinstance(space, spaces.Discrete):
-            return space.n
-        elif isinstance(space, spaces.Box):
-            return space.shape[0]
-        else:
-            raise ValueError("Unsupported space type")
-
     def init_agents(
         self,
         action_space: dict[AgentID, Space],
@@ -88,8 +79,8 @@ class A2C2(IAgents):
     ):
         self.actor_networks = {
             agent_id: ActorNetwork(
-                A2C2.get_space_size(observation_space[agent_id]),
-                A2C2.get_space_size(action_space[agent_id]),
+                get_space_size(observation_space[agent_id]),
+                get_space_size(action_space[agent_id]),
                 self.actor_critic_config.ACTOR_HIDDEN_UNITS,
                 self.config.ACTOR_LR,
             )
@@ -98,7 +89,7 @@ class A2C2(IAgents):
 
         self.critic_networks = {
             agent_id: CriticNetwork(
-                A2C2.get_space_size(observation_space[agent_id]),
+                get_space_size(observation_space[agent_id]),
                 # observation_space[agent_id].shape[0],
                 self.config.CRITIC_HIDDEN_UNITS,
                 self.config.CRITIC_LR,
