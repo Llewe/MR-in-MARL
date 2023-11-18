@@ -7,7 +7,7 @@ class A2cConfig(CtrlConfig):
     ACTOR_HIDDEN_UNITS: int = 64
     CRITIC_HIDDEN_UNITS: int = 64
     DISCOUNT_FACTOR: float = 0.95
-    UPDATE_FREQ: int = 6
+    UPDATE_FREQ: int = 1
 
     CLIP_NORM: float = 1
 

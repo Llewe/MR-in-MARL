@@ -526,6 +526,9 @@ class CoinGame(AECEnv):
 
         self.current_history[-1].actions[agent] = Action(action)
 
+        if self.render_mode != "":
+            self.render()
+
         if self.agent_selector.is_last():
             self.state.steps_on_board += 1
 
@@ -563,27 +566,31 @@ class CoinGame(AECEnv):
         -------
 
         """
+
         if self.summary_writer is None:
             self.current_history.clear()
             logging.warning("No summary writer. Not logging.")
             return
 
-        episode: int = 0
+        write_log: bool = True
+        if "write_log" not in options:
+            self.current_history.clear()
+            logging.warning("No write_log in options. Not logging.")
+            return
+        else:
+            write_log = options["write_log"]
+
+        if not write_log:
+            return  # Log everything at another time
+
         epoch: int = 0
         tag: str = ""
-        reset: bool = True
-
-        if "episode" in options:
-            episode = options["episode"]
 
         if "epoch" in options:
             epoch = options["epoch"]
 
         if "tag" in options:
             tag = options["tag"]
-
-        if "reset" in options:
-            reset = options["reset"]
 
         log_name = f"coin_game-{tag}"
 
@@ -640,6 +647,8 @@ class CoinGame(AECEnv):
                     cnt,
                     epoch,
                 )
+
+        self.current_history.clear()
 
 
 if __name__ == "__main__":

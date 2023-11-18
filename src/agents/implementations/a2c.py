@@ -106,7 +106,7 @@ class A2C(IAgents):
             agent_id: RewardNormalization() for agent_id in self.actor_networks
         }
 
-    def init_new_episode(self):
+    def init_new_epoch(self):
         # update epsilon
         self.epsilon = max(
             self.epsilon_final,

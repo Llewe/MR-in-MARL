@@ -1,14 +1,16 @@
 from collections import defaultdict
-from typing import List, Dict
+from dataclasses import dataclass, field
+from typing import List
 
+import numpy as np
 from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
 from pettingzoo.utils.env import AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
 from src.utils.loggers.obs_logger import ObsLogger
-import numpy as np
 
 
+@dataclass
 class VelPos:
     x: float
     y: float
@@ -22,9 +24,10 @@ class VelPos:
         self.vel_y = vel_y
 
 
+@dataclass
 class PosInfo:
     agent_vel_pos: VelPos
-    other_entity_vel_pos: dict[str | AgentID, VelPos] = {}
+    other_entity_vel_pos: dict[str | AgentID, VelPos] = field(default_factory=dict)
 
 
 class SimpleEnvLogger(ObsLogger):
@@ -104,7 +107,6 @@ class SimpleEnvLogger(ObsLogger):
                 scalar_value=mean_distance,
                 global_step=episode,
             )
-
 
     @staticmethod
     def _get_agent_group_mapping(

@@ -1,38 +1,39 @@
 import logging
 import os
 from os.path import join
-from typing import Union, TypeVar, Type
+from typing import Type, TypeVar, Union
 
 from pettingzoo import AECEnv, ParallelEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from src.config.env_config import (
-    EnvConfig,
-    SimpleTagConfig,
-    SimpleSpreadConfig,
-    SimpleAdversaryConfig,
+    ChickenConfig,
     CoinGameConfig,
+    EnvConfig,
     PrisonersConfig,
     SamaritansConfig,
+    SimpleAdversaryConfig,
+    SimpleSpreadConfig,
+    SimpleTagConfig,
     StagHuntConfig,
-    ChickenConfig,
 )
 from src.enums.env_type_e import EnvType
 from src.envs.setup import (
-    _setup_simple,
-    _setup_simple_tag,
-    _setup_simple_spread,
-    _setup_simple_adversary,
-    _setup_parallel_simple,
-    _setup_parallel_simple_tag,
-    _setup_parallel_simple_spread,
     _setup_coin_game,
+    _setup_parallel_simple,
+    _setup_parallel_simple_spread,
+    _setup_parallel_simple_tag,
+    _setup_simple,
+    _setup_simple_adversary,
+    _setup_simple_spread,
+    _setup_simple_tag,
 )
 from src.envs.setup.aec_envs import (
-    _setup_samaritans,
-    _setup_prisoners,
-    _setup_stag_hunt,
     _setup_chicken,
+    _setup_my_coin_game,
+    _setup_prisoners,
+    _setup_samaritans,
+    _setup_stag_hunt,
 )
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
 from src.utils.loggers.utils import get_env_dir
@@ -67,6 +68,9 @@ def build_env(
         case EnvType.COIN_GAME:
             return _setup_coin_game(writer, config)
 
+        case EnvType.MY_COIN_GAME:
+            return _setup_my_coin_game(writer, config)
+
         case EnvType.PRISONERS_DILEMMA:
             return _setup_prisoners(writer, config)
 
@@ -91,6 +95,8 @@ def get_env_class(env_name: EnvType) -> Type[T]:
         case EnvType.SIMPLE_ADVERSARY:
             return SimpleAdversaryConfig
         case EnvType.COIN_GAME:
+            return CoinGameConfig
+        case EnvType.MY_COIN_GAME:
             return CoinGameConfig
         case EnvType.PRISONERS_DILEMMA:
             return PrisonersConfig

@@ -52,7 +52,7 @@ class A2C2(IAgents):
     reward_norm: dict[AgentID, RewardNormalization]
 
     writer: SummaryWriter | None = None
-    current_episode: int
+    current_epoch: int
 
     actor_losses: dict[AgentID, list]
     critic_losses: dict[AgentID, list]
@@ -98,7 +98,7 @@ class A2C2(IAgents):
         }
         self.step_info = {agent_id: A2C2.RolloutBuffer() for agent_id in action_space}
 
-        self.current_episode = 0
+        self.current_epoch = 0
 
         self.actor_losses = {agent_id: [] for agent_id in self.actor_networks}
         self.critic_losses = {agent_id: [] for agent_id in self.actor_networks}
@@ -107,18 +107,15 @@ class A2C2(IAgents):
             agent_id: RewardNormalization() for agent_id in self.actor_networks
         }
 
-    def init_new_episode(self):
+    def init_new_epoch(self):
         # update epsilon
         self.epsilon = max(
             self.epsilon_final,
-            self.epsilon_initial - self.epsilon_decay_rate * self.current_episode,
+            self.epsilon_initial - self.epsilon_decay_rate * self.current_epoch,
         )
 
         # training
-        if (
-            self.current_episode > 0
-            and self.current_episode % self.config.UPDATE_FREQ == 0
-        ):
+        if self.current_epoch > 0 and self.current_epoch % self.config.UPDATE_FREQ == 0:
             for agent_id in self.actor_networks:
                 self.learn(agent_id, self.config.DISCOUNT_FACTOR)
 
@@ -126,7 +123,7 @@ class A2C2(IAgents):
         self.writer.add_scalar(
             f"actor_critic/epsilon",
             self.epsilon,
-            global_step=self.current_episode,
+            global_step=self.current_epoch,
         )
 
         for agent_id in self.actor_networks:
@@ -134,7 +131,7 @@ class A2C2(IAgents):
                 self.writer.add_scalar(
                     f"actor_loss/{agent_id}",
                     np.mean(self.actor_losses[agent_id]),
-                    global_step=self.current_episode,
+                    global_step=self.current_epoch,
                 )
                 self.actor_losses[agent_id].clear()
 
@@ -142,11 +139,11 @@ class A2C2(IAgents):
                 self.writer.add_scalar(
                     f"critic_loss/{agent_id}",
                     np.mean(self.critic_losses[agent_id]),
-                    global_step=self.current_episode,
+                    global_step=self.current_epoch,
                 )
                 self.critic_losses[agent_id].clear()
 
-        self.current_episode += 1
+        self.current_epoch += 1
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         if explore and np.random.rand() < self.epsilon:

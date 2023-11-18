@@ -8,6 +8,7 @@ class EnvType(str, Enum):
     SIMPLE_ADVERSARY = "simple_adversary"
 
     COIN_GAME = "coin_game"
+    MY_COIN_GAME = "my_coin_game"
 
     PRISONERS_DILEMMA = "prisoners_dilemma"
     SAMARITANS_DILEMMA = "samaritans_dilemma"

@@ -1,10 +1,11 @@
 import torch
 from gymnasium import Space
-from pettingzoo.utils.env import ObsDict, ActionDict, AgentID, ObsType, ActionType
+from pettingzoo.utils.env import ActionDict, ActionType, AgentID, ObsDict, ObsType
 from torch.distributions import Categorical
-from src.interfaces.agents_i import IAgents
+
 from src.agents.implementations.utils.policy_network import PolicyNetwork
 from src.agents.implementations.utils.state_value_network import StateValueNetwork
+from src.interfaces.agents_i import IAgents
 
 ACTOR_LAMBDA = 0.8
 CRITIC_LAMBDA = 0.8
@@ -39,7 +40,7 @@ class ActorCriticTdLamdaBack(IAgents):
             for agent_id in observation_space
         }
 
-    def init_new_episode(self):
+    def init_new_epoch(self):
         for agent_id in self.policy_networks:
             self.actor_trace[agent_id] = []
             self.critic_trace[agent_id] = []
@@ -63,9 +64,16 @@ class ActorCriticTdLamdaBack(IAgents):
         # return action
         return action.item(), m.log_prob(action)
 
-    def update(self, agent_id: AgentID, last_observation: ObsType,
-               curr_observation: ObsType, last_action: ActionType, reward: float,
-               done: bool, gamma: float) -> None:
+    def update(
+        self,
+        agent_id: AgentID,
+        last_observation: ObsType,
+        curr_observation: ObsType,
+        last_action: ActionType,
+        reward: float,
+        done: bool,
+        gamma: float,
+    ) -> None:
         policy_network = self.policy_networks[agent_id]
         stateval_network = self.stateval_networks[agent_id]
 

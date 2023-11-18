@@ -1,12 +1,12 @@
 import logging
-from os.path import join, dirname, realpath
+from os.path import dirname, join, realpath
 
 import pygame
 from pettingzoo import AECEnv
 
 from agents.agents_helper import get_agents
-from src import replay_config, env_config, log_config, build_env
-from src.config import pygame_config
+from src import build_env, env_config, log_config, replay_config
+from src.config.pygame_config import update_pygame_config
 from src.interfaces.agents_i import IAgents
 
 logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
 
 def replay(aec_env: AECEnv, agent: IAgents, timeout=replay_config.TIMEOUT) -> None:
     i: int = 0
+    pygame.init()
     while True:
         i += 1
         aec_env.reset()
@@ -65,9 +66,10 @@ if __name__ == "__main__":
     logging.info("Starting MR-in-MARL")
 
     logging.info(f"Loading agents from {replay_config.ENV_NAME}")
-
-    pygame_config.RENDER_MODE = "human"
-    pygame_config.RENDER_FPS = 60
+    update_pygame_config(
+        render_mode="human",
+        render_fps=60,
+    )
     env_config.MAX_CYCLES = replay_config.STEPS
     env: AECEnv = build_env(replay_config.ENV_NAME)
 

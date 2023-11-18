@@ -1,12 +1,12 @@
 import torch
 from gymnasium.spaces import Space
-from pettingzoo.utils.env import ObsDict, ActionDict, AgentID, ObsType, ActionType
+from pettingzoo.utils.env import ActionDict, ActionType, AgentID, ObsDict, ObsType
 from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
-from torch.optim import Optimizer, Adam
+from torch.optim import Adam, Optimizer
 
-from src.config.ctrl_configs import actor_critic_config
 from src.agents.implementations.a2c_examples.agents_gym_i import IAgentsGym
+from src.config.ctrl_configs import actor_critic_config
 
 
 class ActorCriticTd0(IAgentsGym):
@@ -39,7 +39,7 @@ class ActorCriticTd0(IAgentsGym):
 
         self.I = {agent_id: 1 for agent_id in action_space}
 
-    def init_new_episode(self):
+    def init_new_epoch(self):
         for agent_id in self.policy_networks:
             self.I[agent_id] = 1
 
@@ -82,9 +82,9 @@ class ActorCriticTd0(IAgentsGym):
 
         # Berechne den TD-Fehler (Temporal Difference Error)
         td_error = (
-                reward
-                + actor_critic_config.DISCOUNT_FACTOR * critic_network(new_state_tensor)
-                - critic_network(state_tensor)
+            reward
+            + actor_critic_config.DISCOUNT_FACTOR * critic_network(new_state_tensor)
+            - critic_network(state_tensor)
         )
 
         # Aktualisiere den Critic (Value Function) mit dem TD-Fehler und dem Optimierer

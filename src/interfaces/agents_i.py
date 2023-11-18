@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import TypeVar
 
-from pettingzoo.utils.env import ActionType, ObsType, AgentID, ObsDict, ActionDict
-from torch.utils.tensorboard import SummaryWriter
 from gymnasium.spaces import Space
+from pettingzoo.utils.env import ActionType, AgentID, ObsType
+from torch.utils.tensorboard import SummaryWriter
 
 from src.config.ctrl_configs.ctrl_config import CtrlConfig
 
@@ -24,7 +24,7 @@ class IAgents(ABC):
         pass
 
     @abstractmethod
-    def init_new_episode(self):
+    def init_new_epoch(self):
         pass
 
     @abstractmethod

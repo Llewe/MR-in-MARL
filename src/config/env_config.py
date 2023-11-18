@@ -4,12 +4,12 @@ from src.enums.env_type_e import EnvType
 
 
 class BaseEnvConfig(BaseSettings):
-    ENV_NAME: EnvType = EnvType.SIMPLE_TAG
-    ENV_TAG: str = "1vs3 - 2 obstacles - 50steps"
+    ENV_NAME: EnvType = EnvType.MY_COIN_GAME
+    ENV_TAG: str = "2x2"
 
 
 class EnvConfig(BaseSettings):
-    MAX_CYCLES: int = 50
+    MAX_CYCLES: int = 150
     CONTINUOUS_ACTIONS: bool = False
 
 
@@ -32,9 +32,10 @@ class SimpleAdversaryConfig(EnvConfig):
 
 
 class CoinGameConfig(EnvConfig):
-    PLAYERS: int = 4
-    GRID_SIZE: int = 5
+    PLAYERS: int = 2
+    GRID_SIZE: int = 3
     ALLOW_OVERLAP_PLAYERS: bool = True
+    WALLS: bool = True
 
 
 class PrisonersConfig(EnvConfig):

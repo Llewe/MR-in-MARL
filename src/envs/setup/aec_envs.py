@@ -1,18 +1,18 @@
 from pettingzoo import AECEnv
 from torch.utils.tensorboard import SummaryWriter
 
-from src.config.pygame_config import pygame_config
 from src.config.env_config import (
-    SimpleTagConfig,
-    SimpleSpreadConfig,
-    EnvConfig,
-    SimpleAdversaryConfig,
+    ChickenConfig,
     CoinGameConfig,
+    EnvConfig,
     PrisonersConfig,
     SamaritansConfig,
+    SimpleAdversaryConfig,
+    SimpleSpreadConfig,
+    SimpleTagConfig,
     StagHuntConfig,
-    ChickenConfig,
 )
+from src.config.pygame_config import pygame_config
 
 
 def _setup_simple(env_config: EnvConfig) -> AECEnv:
@@ -72,6 +72,26 @@ def _setup_coin_game(writer: SummaryWriter, coin_game_config: CoinGameConfig) ->
         randomize_coin=True,
         summary_writer=writer,
         allow_overlap_players=coin_game_config.ALLOW_OVERLAP_PLAYERS,
+    )
+
+
+def _setup_my_coin_game(
+    writer: SummaryWriter, coin_game_config: CoinGameConfig
+) -> AECEnv:
+    from src.envs.aec.my_coin_game import CoinGame
+
+    print("setting up my coin game")
+    print(pygame_config.RENDER_MODE)
+    return CoinGame(
+        with_none_action=True,
+        walls=coin_game_config.WALLS,
+        max_cycles=coin_game_config.MAX_CYCLES,
+        render_mode=pygame_config.RENDER_MODE,
+        n_players=coin_game_config.PLAYERS,
+        grid_size=coin_game_config.GRID_SIZE,
+        randomize_coin=True,
+        allow_overlap_players=coin_game_config.ALLOW_OVERLAP_PLAYERS,
+        summary_writer=writer,
     )
 
 

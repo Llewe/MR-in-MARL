@@ -1,9 +1,9 @@
 from gymnasium import Space
-from pettingzoo.utils.env import AgentID, ObsType, ActionType
+from pettingzoo.utils.env import ActionType, AgentID, ObsType
+from torch.utils.tensorboard import SummaryWriter
 
 from src.config.ctrl_configs.ctrl_config import CtrlConfig
 from src.interfaces.agents_i import IAgents
-from torch.utils.tensorboard import SummaryWriter
 
 
 class RandomAgents(IAgents):
@@ -21,7 +21,7 @@ class RandomAgents(IAgents):
         self.action_space = action_space
         self.observation_space = observation_space
 
-    def init_new_episode(self):
+    def init_new_epoch(self):
         # Random agents don't learn
         pass
 

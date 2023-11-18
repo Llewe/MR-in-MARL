@@ -82,7 +82,7 @@ class ActorCriticV2(IAgents):
             agent_id: RewardNormalization() for agent_id in self.actor_networks
         }
 
-    def init_new_episode(self):
+    def init_new_epoch(self):
         for agent_id in self.actor_networks:
             if len(self.actor_losses[agent_id]) > 0:
                 self.writer.add_scalar(

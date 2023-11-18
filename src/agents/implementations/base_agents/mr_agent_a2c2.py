@@ -1,6 +1,6 @@
 from typing import Callable
 
-from pettingzoo.utils.env import AgentID, ObsType, ActionType
+from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
 from src.agents.implementations.a2c2 import A2C2
 
@@ -75,7 +75,7 @@ class MRAgentA2C2(A2C2):
             self.writer.add_scalar(
                 f"manipulation/{a_callback_id}/on/{agent_id}",
                 reward_offset,
-                global_step=self.current_episode,
+                global_step=self.current_epoch,
             )
 
             self.next_reward_offset_dict[a_callback_id] -= reward_offset
@@ -85,7 +85,7 @@ class MRAgentA2C2(A2C2):
         self.writer.add_scalar(
             f"manipulation/amount/{agent_id}",
             self.next_reward_offset_dict[agent_id],
-            global_step=self.current_episode,
+            global_step=self.current_epoch,
         )
 
         # override the reward with the accumulated reward offset
