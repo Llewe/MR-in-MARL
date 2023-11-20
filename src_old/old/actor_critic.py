@@ -21,7 +21,7 @@ from src.utils.gym_utils import get_space_size
 # https://medium.com/geekculture/actor-critic-implementing-actor-critic-methods-82efb998c273
 
 
-class ActorCriticV2(IAgents):
+class ActorCritic(IAgents):
     config: ActorCriticConfig
 
     actor_networks: dict[AgentID, ActorNetwork]
@@ -82,7 +82,7 @@ class ActorCriticV2(IAgents):
             agent_id: RewardNormalization() for agent_id in self.actor_networks
         }
 
-    def init_new_epoch(self):
+    def epoch_started(self):
         for agent_id in self.actor_networks:
             if len(self.actor_losses[agent_id]) > 0:
                 self.writer.add_scalar(
@@ -123,20 +123,20 @@ class ActorCriticV2(IAgents):
             # convert observation to float tensor, add 1 dimension, allocate tensor on device
             obs_tensor = torch.from_numpy(observation).float().unsqueeze(0)
 
-            action_probs = policy_network(obs_tensor).detach()  # [0].detach().numpy()
+            action_probs = policy_network(obs_tensor)  # [0].detach().numpy()
             m = Categorical(probs=action_probs)
             action = m.sample()
 
             # log_prob = m.log_prob(action)
             action = action.item()
 
-        # if self.writer:
-        #     self.writer.add_histogram(
-        #         f"actions/{agent_id}",
-        #         action,
-        #         global_step=self.current_episode,
-        #         max_bins=10,
-        #     )
+        if self.writer:
+            self.writer.add_histogram(
+                f"actions/{agent_id}",
+                action,
+                global_step=self.current_episode,
+                max_bins=10,
+            )
 
         return action
 
@@ -145,17 +145,13 @@ class ActorCriticV2(IAgents):
         agent_id: AgentID,
         actor_net: ActorNetwork,
         last_action: ActionType,
-        obs_last: Tensor,
+        obs_curr: Tensor,
         advantage: Tensor,
     ):
-        action_probs = actor_net(obs_last)
-        value = self.critic_networks[agent_id](obs_last).squeeze().detach()
+        action_probs = actor_net(obs_curr)
 
         m1 = Categorical(action_probs)
-
-        adv = torch.tensor(last_action).detach() - value.detach()
-
-        actor_loss = (m1.log_prob(torch.tensor(last_action)) * adv.detach()) ** 2
+        actor_loss = -m1.log_prob(torch.tensor(last_action)) * advantage.detach()
 
         # only for logging
         self.actor_losses[agent_id].append(actor_loss.detach().numpy())
@@ -177,12 +173,11 @@ class ActorCriticV2(IAgents):
     ):
         value_last: Tensor = critic_net(obs_last).squeeze()
         value_curr: Tensor = critic_net(obs_curr).squeeze()
-        value_target: Tensor = torch.tensor(
-            scaled_reward, dtype=torch.float
-        ) + gamma * value_last * (1 - done)
+
+        value_target: Tensor = scaled_reward + gamma * value_curr * (1 - done)
 
         loss = mse_loss(
-            value_target.detach(), value_last
+            value_target, value_last
         )  # TODO here im not sure if if it needs to be value_last or value_curr
 
         # only for logging
@@ -193,7 +188,7 @@ class ActorCriticV2(IAgents):
         torch.nn.utils.clip_grad_norm_(critic_net.parameters(), self.config.CLIP_NORM)
         critic_net.optimizer.step()
 
-        advantage = scaled_reward - value_last.detach()
+        advantage = value_target - value_last
 
         return advantage.detach()
 
@@ -215,11 +210,13 @@ class ActorCriticV2(IAgents):
         critic_net: CriticNetwork = self.critic_networks[agent_id]
 
         obs_last: Tensor = torch.from_numpy(last_observation).float().unsqueeze(0)
+        obs_curr: Tensor = torch.from_numpy(curr_observation).float().unsqueeze(0)
 
         advantage: Tensor = self._update_critic(
             agent_id=agent_id,
             critic_net=critic_net,
             obs_last=obs_last,
+            obs_curr=obs_curr,
             scaled_reward=scaled_reward,
             done=done,
             gamma=self.config.DISCOUNT_FACTOR,
@@ -229,7 +226,7 @@ class ActorCriticV2(IAgents):
             agent_id=agent_id,
             actor_net=actor_net,
             last_action=last_action,
-            obs_last=obs_last,
+            obs_curr=obs_curr,
             advantage=advantage,
         )
 

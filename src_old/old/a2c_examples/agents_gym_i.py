@@ -3,9 +3,9 @@ from abc import ABC
 from gymnasium.spaces import Space
 from pettingzoo.utils.env import AgentID
 
-from src.config.ctrl_configs import actor_critic_config
-from src.agents.implementations.utils.policy_network import PolicyNetwork
+from src.agents.implementations.old.policy_network import PolicyNetwork
 from src.agents.implementations.utils.state_value_network import StateValueNetwork
+from src.config.ctrl_configs import actor_critic_config
 from src.interfaces import IAgents
 
 

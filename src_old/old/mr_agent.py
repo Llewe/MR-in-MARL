@@ -1,8 +1,8 @@
 from typing import Callable
 
-from pettingzoo.utils.env import AgentID, ObsType, ActionType
+from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
-from src.agents.implementations.actor_critic import ActorCritic
+from src.agents.implementations.old.actor_critic import ActorCritic
 
 
 class MRAgent(ActorCritic):

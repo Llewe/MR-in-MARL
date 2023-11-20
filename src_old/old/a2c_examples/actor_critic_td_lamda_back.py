@@ -3,7 +3,7 @@ from gymnasium import Space
 from pettingzoo.utils.env import ActionDict, ActionType, AgentID, ObsDict, ObsType
 from torch.distributions import Categorical
 
-from src.agents.implementations.utils.policy_network import PolicyNetwork
+from src.agents.implementations.old.policy_network import PolicyNetwork
 from src.agents.implementations.utils.state_value_network import StateValueNetwork
 from src.interfaces.agents_i import IAgents
 
@@ -40,7 +40,7 @@ class ActorCriticTdLamdaBack(IAgents):
             for agent_id in observation_space
         }
 
-    def init_new_epoch(self):
+    def epoch_started(self):
         for agent_id in self.policy_networks:
             self.actor_trace[agent_id] = []
             self.critic_trace[agent_id] = []

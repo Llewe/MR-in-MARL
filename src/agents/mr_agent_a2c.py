@@ -1,11 +1,21 @@
+from collections import defaultdict
+from dataclasses import dataclass
 from typing import Callable
 
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
-from src.agents.implementations.a2c2 import A2C2
+from src.agents.a2c import A2C
 
 
-class MRAgentA2C2(A2C2):
+@dataclass
+class RewardHistory:
+    reward_env: float
+    reward_after_man: float
+    manipulated_by_agent: dict[AgentID, float]
+    manipulation_debts: float
+
+
+class MRAgentA2C(A2C):
     """
     Manipulating rewards agent
     This agent controller is used to manipulate the rewards of other agents
@@ -20,7 +30,9 @@ class MRAgentA2C2(A2C2):
         AgentID, Callable[[AgentID, ObsType, ActionType, float], float]
     ] = {}
 
-    next_reward_offset_dict: dict[AgentID, float] = {}
+    next_reward_offset_dict: dict[AgentID, float] = defaultdict(float)
+
+    reward_histories: dict[AgentID, list[RewardHistory]] = {}
 
     def set_callback(
         self,
@@ -48,14 +60,11 @@ class MRAgentA2C2(A2C2):
         self,
         agent_id: AgentID,
         last_observation: ObsType,
-        curr_observation: ObsType,
         last_action: ActionType,
         reward: float,
         done: bool,
     ) -> None:
-        # not the cleanest solution but it works for now
-        if agent_id not in self.next_reward_offset_dict:
-            self.next_reward_offset_dict[agent_id] = 0
+        manipulated_by_agent: dict[AgentID, float] = defaultdict(float)
 
         # loop throw all callbacks and update the rewards individually
         for a_callback_id in self.mr_callbacks:
@@ -63,34 +72,24 @@ class MRAgentA2C2(A2C2):
             if a_callback_id == agent_id:
                 continue
 
-            # not the cleanest solution but it works for now
-            if a_callback_id not in self.next_reward_offset_dict:
-                self.next_reward_offset_dict[a_callback_id] = 0
-
             reward_offset = self.mr_callbacks[a_callback_id](
                 agent_id, last_observation, last_action, reward
-            )
-
-            # log what the agent did
-            self.writer.add_scalar(
-                f"manipulation/{a_callback_id}/on/{agent_id}",
-                reward_offset,
-                global_step=self.current_epoch,
             )
 
             self.next_reward_offset_dict[a_callback_id] -= reward_offset
             self.next_reward_offset_dict[agent_id] += reward_offset
 
-        # logging
-        self.writer.add_scalar(
-            f"manipulation/amount/{agent_id}",
-            self.next_reward_offset_dict[agent_id],
-            global_step=self.current_epoch,
-        )
-
         # override the reward with the accumulated reward offset
         manipulated_reward = reward + self.next_reward_offset_dict[agent_id]
         self.next_reward_offset_dict[agent_id] = 0
+
+        self.reward_histories[agent_id].append(
+            RewardHistory(
+                reward_env=reward,
+                reward_after_man=manipulated_reward,
+                manipulated_by_agent=manipulated_by_agent,
+            )
+        )
 
         super().update(
             agent_id=agent_id,
@@ -100,3 +99,14 @@ class MRAgentA2C2(A2C2):
             reward=manipulated_reward,
             done=done,
         )
+
+    def epoch_started(self, epoch: int) -> None:
+        super().epoch_started(epoch)
+
+        self.reward_histories.clear()
+
+        for agent_id in self.next_reward_offset_dict:
+            self.reward_histories[agent_id] = []
+
+    def epoch_finished(self, epoch: int) -> None:
+        super().epoch_finished(epoch)

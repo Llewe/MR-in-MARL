@@ -1,18 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar
 
 from gymnasium.spaces import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
-from src.config.ctrl_configs.ctrl_config import CtrlConfig
-
-C = TypeVar("C", bound=CtrlConfig)
+from src.config.ctrl_config import CtrlConfig
 
 
 class IAgents(ABC):
     @abstractmethod
-    def __init__(self, config: C):
+    def __init__(self, config: CtrlConfig):
         pass
 
     @abstractmethod
@@ -20,11 +17,15 @@ class IAgents(ABC):
         self,
         action_space: dict[AgentID, Space],
         observation_space: dict[AgentID, Space],
-    ):
+    ) -> None:
         pass
 
     @abstractmethod
-    def init_new_epoch(self):
+    def epoch_started(self, epoch: int) -> None:
+        pass
+
+    @abstractmethod
+    def epoch_finished(self, epoch: int) -> None:
         pass
 
     @abstractmethod
@@ -41,7 +42,6 @@ class IAgents(ABC):
         self,
         agent_id: AgentID,
         last_observation: ObsType,
-        curr_observation: ObsType,
         last_action: ActionType,
         reward: float,
         done: bool,

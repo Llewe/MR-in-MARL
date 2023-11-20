@@ -1,12 +1,5 @@
 from pydantic_settings import BaseSettings
 
-from src.enums.env_type_e import EnvType
-
-
-class BaseEnvConfig(BaseSettings):
-    ENV_NAME: EnvType = EnvType.MY_COIN_GAME
-    ENV_TAG: str = "2x2"
-
 
 class EnvConfig(BaseSettings):
     MAX_CYCLES: int = 150
@@ -32,8 +25,8 @@ class SimpleAdversaryConfig(EnvConfig):
 
 
 class CoinGameConfig(EnvConfig):
-    PLAYERS: int = 2
-    GRID_SIZE: int = 3
+    PLAYERS: int = 4
+    GRID_SIZE: int = 5
     ALLOW_OVERLAP_PLAYERS: bool = True
     WALLS: bool = True
 
@@ -54,6 +47,3 @@ class StagHuntConfig(EnvConfig):
 
 class ChickenConfig(EnvConfig):
     pass
-
-
-env_config = EnvConfig()

@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from os import makedirs
 from os.path import join
 
@@ -11,18 +12,15 @@ from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
 from torch.utils.tensorboard import SummaryWriter
 
-from src.agents.implementations.utils.network import ActorNetwork, CriticNetwork
-from src.agents.implementations.utils.reward_normalization import RewardNormalization
-from src.config.ctrl_configs.a2c_config import A2cConfig
-from src.config.ctrl_configs.actor_critic_config import ActorCriticConfig
+from src.agents.utils.network import ActorNetwork, CriticNetwork
+from src.agents.utils.reward_normalization import RewardNormalization
+from src.config.ctrl_config import A2cConfig
 from src.interfaces.agents_i import IAgents
 from src.utils.gym_utils import get_space_size
 
 
-# https://medium.com/geekculture/actor-critic-implementing-actor-critic-methods-82efb998c273
-
-
-class A2C2(IAgents):
+class A2C(IAgents):
+    @dataclass
     class RolloutBuffer:
         rewards: list[float]
         observations: list[ObsType]
@@ -44,7 +42,6 @@ class A2C2(IAgents):
             self.actions.clear()
 
     config: A2cConfig
-    actor_critic_config = ActorCriticConfig()
 
     actor_networks: dict[AgentID, ActorNetwork]
     critic_networks: dict[AgentID, CriticNetwork]
@@ -52,7 +49,6 @@ class A2C2(IAgents):
     reward_norm: dict[AgentID, RewardNormalization]
 
     writer: SummaryWriter | None = None
-    current_epoch: int
 
     actor_losses: dict[AgentID, list]
     critic_losses: dict[AgentID, list]
@@ -76,12 +72,12 @@ class A2C2(IAgents):
         self,
         action_space: dict[AgentID, Space],
         observation_space: dict[AgentID, Space],
-    ):
+    ) -> None:
         self.actor_networks = {
             agent_id: ActorNetwork(
                 get_space_size(observation_space[agent_id]),
                 get_space_size(action_space[agent_id]),
-                self.actor_critic_config.ACTOR_HIDDEN_UNITS,
+                self.config.ACTOR_HIDDEN_UNITS,
                 self.config.ACTOR_LR,
             )
             for agent_id in action_space
@@ -96,9 +92,7 @@ class A2C2(IAgents):
             )
             for agent_id in observation_space
         }
-        self.step_info = {agent_id: A2C2.RolloutBuffer() for agent_id in action_space}
-
-        self.current_epoch = 0
+        self.step_info = {agent_id: A2C.RolloutBuffer() for agent_id in action_space}
 
         self.actor_losses = {agent_id: [] for agent_id in self.actor_networks}
         self.critic_losses = {agent_id: [] for agent_id in self.actor_networks}
@@ -107,23 +101,31 @@ class A2C2(IAgents):
             agent_id: RewardNormalization() for agent_id in self.actor_networks
         }
 
-    def init_new_epoch(self):
+    def epoch_started(self, epoch: int) -> None:
         # update epsilon
         self.epsilon = max(
             self.epsilon_final,
-            self.epsilon_initial - self.epsilon_decay_rate * self.current_epoch,
+            self.epsilon_initial - self.epsilon_decay_rate * epoch,
         )
+        # clear buffers
+        for agent_id in self.step_info:
+            self.step_info[agent_id].clear()
+            self.actor_losses[agent_id].clear()
+            self.critic_losses[agent_id].clear()
 
+    def epoch_finished(self, epoch: int) -> None:
         # training
-        if self.current_epoch > 0 and self.current_epoch % self.config.UPDATE_FREQ == 0:
-            for agent_id in self.actor_networks:
-                self.learn(agent_id, self.config.DISCOUNT_FACTOR)
+        for agent_id in self.actor_networks:
+            self.learn(agent_id, self.config.DISCOUNT_FACTOR)
+
+        if self.writer is None:
+            return
 
         # logging
         self.writer.add_scalar(
             f"actor_critic/epsilon",
             self.epsilon,
-            global_step=self.current_epoch,
+            global_step=epoch,
         )
 
         for agent_id in self.actor_networks:
@@ -131,7 +133,7 @@ class A2C2(IAgents):
                 self.writer.add_scalar(
                     f"actor_loss/{agent_id}",
                     np.mean(self.actor_losses[agent_id]),
-                    global_step=self.current_epoch,
+                    global_step=epoch,
                 )
                 self.actor_losses[agent_id].clear()
 
@@ -139,11 +141,9 @@ class A2C2(IAgents):
                 self.writer.add_scalar(
                     f"critic_loss/{agent_id}",
                     np.mean(self.critic_losses[agent_id]),
-                    global_step=self.current_epoch,
+                    global_step=epoch,
                 )
                 self.critic_losses[agent_id].clear()
-
-        self.current_epoch += 1
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         if explore and np.random.rand() < self.epsilon:
@@ -168,7 +168,6 @@ class A2C2(IAgents):
         self,
         agent_id: AgentID,
         last_observation: ObsType,
-        curr_observation: ObsType,
         last_action: ActionType,
         reward: float,
         done: bool,
@@ -236,6 +235,8 @@ class A2C2(IAgents):
         m1 = Categorical(actor_probs)
         actor_loss = (-m1.log_prob(actions) * (advantages.detach())).sum()
 
+        self.actor_losses[agent_id].append(actor_loss.detach())
+
         actor.optimizer.zero_grad()
         actor_loss.backward()
         torch.nn.utils.clip_grad_norm_(actor.parameters(), self.config.CLIP_NORM)
@@ -267,7 +268,7 @@ class A2C2(IAgents):
                 path,
                 f"actor_net_{ids}.pth",
             )
-            torch.save(actor_net, model_path)
+            torch.save(actor_net.state_dict(), model_path)
 
         for ids in self.actor_networks:
             critic_net = self.critic_networks[ids]
@@ -276,7 +277,7 @@ class A2C2(IAgents):
                 f"critic_net_{ids}.pth",
             )
 
-            torch.save(critic_net, model_path)
+            torch.save(critic_net.state_dict(), model_path)
 
     def load(self, path: str) -> None:
         logging.info(f"Loading actor critic from {path}")
@@ -286,14 +287,16 @@ class A2C2(IAgents):
                 path,
                 f"actor_net_{ids}.pth",
             )
-            self.actor_networks[ids] = torch.load(model_path)
+            self.actor_networks[ids].load_state_dict(torch.load(model_path))
+            self.actor_networks[ids].eval()
 
         for ids in self.actor_networks:
             model_path = join(
                 path,
                 f"critic_net_{ids}.pth",
             )
-            self.critic_networks[ids] = torch.load(model_path)
+            self.critic_networks[ids].load_state_dict(torch.load(model_path))
+            self.critic_networks[ids].eval()
 
     def set_logger(self, writer: SummaryWriter) -> None:
         self.writer = writer

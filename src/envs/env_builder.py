@@ -6,6 +6,7 @@ from typing import Type, TypeVar, Union
 from pettingzoo import AECEnv, ParallelEnv
 from torch.utils.tensorboard import SummaryWriter
 
+from src.cfg_manager import get_cfg
 from src.config.env_config import (
     ChickenConfig,
     CoinGameConfig,
@@ -36,7 +37,6 @@ from src.envs.setup.aec_envs import (
     _setup_stag_hunt,
 )
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
-from src.utils.loggers.utils import get_env_dir
 
 T = TypeVar("T", bound=EnvConfig)
 
@@ -111,7 +111,7 @@ def get_env_class(env_name: EnvType) -> Type[T]:
 
 
 def load_env_config(env_name: EnvType) -> T:
-    data_dir: str = get_env_dir()
+    data_dir: str = get_cfg().get_env_dir()
     config_file: str = join(data_dir, "env_config.yml")
 
     c: Type[T] = get_env_class(env_name)

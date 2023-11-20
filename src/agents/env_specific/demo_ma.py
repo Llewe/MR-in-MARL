@@ -1,11 +1,11 @@
-from src.agents.implementations.base_agents.mr_agent import MRAgent
-from pettingzoo.utils.env import AgentID, ObsType, ActionType
 import numpy as np
+from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
-from src.config.ctrl_configs.demo_ma_config import DemoMaConfig
+from src.agents.mr_agent_a2c import MRAgentA2C
+from src.config.ctrl_config import DemoMaConfig
 
 
-class DemoMa(MRAgent):
+class DemoMa(MRAgentA2C):
     def __init__(self, config: DemoMaConfig):
         super().__init__(config)
 

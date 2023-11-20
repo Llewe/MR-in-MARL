@@ -8,17 +8,15 @@ from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
 from pettingzoo.utils.env import AgentID
 from torch.utils.tensorboard import SummaryWriter
 
-from src import env_config, eval_config, log_config, training_config
-from src.agents.agents_helper import get_agents
-from src.config.ctrl_configs import actor_critic_config
-from src.config.env_config import BaseEnvConfig
+from src.agents.utils.agents_helper import get_agents
+from src.cfg_manager import CfgManager, get_cfg, set_cfg
+from src.config.training_config import TrainingConfig
 from src.envs import build_env
 from src.interfaces.agents_i import IAgents
 from src.utils.loggers.obs_logger import ObsLogger
 from src.utils.loggers.simple_env_logger import SimpleEnvLogger
-from src.utils.loggers.utils import get_ctrl_dir, get_log_folder, get_model_storage
 
-logging.basicConfig(level=logging.getLevelName(log_config.LOG_LEVEL))
+_training_config = TrainingConfig()
 
 
 all_steps = 0
@@ -31,16 +29,15 @@ def _train_aec_epoch(
     writer: SummaryWriter,
     obs_logger: ObsLogger,
 ) -> None:
-    if current_epoch != 0:
-        agents.init_new_epoch()
+    agents.epoch_started(current_epoch)
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
-    env.reset()
+    env.reset(options={"history_reset": True})
 
-    for episode in range(1, training_config.EPISODES + 1):
+    for episode in range(1, _training_config.EPISODES + 1):
         logging.info(
-            f"Epoch {current_epoch}/{training_config.EPOCHS}"
-            f" Episode: {episode}/{training_config.EPISODES}"
+            f"Epoch {current_epoch}/{_training_config.EPOCHS}"
+            f" Episode: {episode}/{_training_config.EPISODES}"
         )
 
         _train_aec_episode_simple(
@@ -55,6 +52,8 @@ def _train_aec_epoch(
             "tag": "train",
         }
     )
+
+    agents.epoch_finished(current_epoch)
 
 
 def _train_aec_episode_simple(
@@ -72,7 +71,6 @@ def _train_aec_episode_simple(
             "tag": "train",
         }
     )
-    agents.init_new_epoch()
 
     episode_reward: dict[AgentID, float] = defaultdict(lambda: 0)
     actions = defaultdict(list)
@@ -88,7 +86,6 @@ def _train_aec_episode_simple(
         action = agents.act(agent_id=agent_id, observation=observation)
         agents.update(
             agent_id,
-            observation,
             observation,
             action,
             reward,
@@ -134,7 +131,7 @@ def _eval_aec_agents(
     obs_logger.clear_buffer()
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
-    env.reset()
+    env.reset(options={"history_reset": True})
 
     for steps in range(num_eval_episodes):
         env.reset(
@@ -175,7 +172,7 @@ def _eval_aec_agents(
             rewards[agent_id].append(episode_reward[agent_id])
 
     obs_logger.log_episode(current_epoch, "eval")
-    env.reset(options={"eval": True})  # reset to write to tensorboard
+
     for agent_id in env.possible_agents:
         writer.add_scalar(
             f"eval/rewards/mean/{agent_id}",
@@ -193,57 +190,21 @@ def _eval_aec_agents(
     )
 
 
-def baseline_writer():
-    steps = 10000
-    # simple:
-    # baseline_values = {"agent_0": -39.79}
-    # log_location = get_logging_file("baseline/simple")
-    # simple_adversary:
-    baseline_values = {
-        "adversary_0": -28.19,
-        "agent_0": 7.40,
-        "agent_1": 7.40,
-    }
-    log_location = get_log_folder("baseline/simple_adversary")
-    # baseline_values = {
-    #     "adversary_0": 4.51,
-    #     "adversary_1": 4.51,
-    #     "adversary_2": 4.51,
-    #     "agent_0": -16.25,
-    # }
-    # log_location = get_logging_file("baseline/simple_tag")
-
-    log_name = "rewards"
-
-    with SummaryWriter(log_dir=log_location) as writer:
-        for i in range(steps):
-            for agent_name in baseline_values:
-                writer.add_scalar(
-                    f"{log_name}/{agent_name}", baseline_values[agent_name], i
-                )
-
-
 def log_configs(writer: SummaryWriter) -> None:
-    for key, value in actor_critic_config.__dict__.items():
-        writer.add_text(key, str(value))
-    for key, value in training_config.__dict__.items():
-        writer.add_text(key, str(value))
-    for key, value in env_config.__dict__.items():
+    for key, value in _training_config.__dict__.items():
         writer.add_text(key, str(value))
 
 
 def start_training() -> None:
     logging.info(f"Starting training")
 
-    base_config = BaseEnvConfig()
-
-    agent_dir: str = get_ctrl_dir()
+    agent_dir: str = get_cfg().get_ctrl_dir()
 
     logging.info(f"TensorBoard -> Logging to {agent_dir}")
 
     with SummaryWriter(log_dir=agent_dir) as writer:
         # Building  the environment
-        env: ParallelEnv | AECEnv = build_env(base_config.ENV_NAME, writer)
+        env: ParallelEnv | AECEnv = build_env(get_cfg().exp_config.ENV_NAME, writer)
 
         obs_logger: ObsLogger
 
@@ -270,10 +231,10 @@ def start_training() -> None:
 
         pygame.init()
 
-        for epoch in range(1, training_config.EPOCHS + 1):
+        for epoch in range(1, _training_config.EPOCHS + 1):
             _train_aec_epoch(agents, env, epoch, writer, obs_logger)
 
-            if epoch % eval_config.EVAL_INTERVAL == 0:
+            if epoch % _training_config.EVAL_EPOCH_INTERVAL == 0:
                 logging.info("Evaluating agents")
                 _eval_aec_agents(
                     agents,
@@ -281,18 +242,19 @@ def start_training() -> None:
                     writer,
                     epoch,
                     obs_logger,
-                    num_eval_episodes=eval_config.NUM_EPISODES,
+                    num_eval_episodes=_training_config.EVAL_EPISODES,
                 )
 
                 # save model
                 logging.info("Saving model")
-                agents.save(get_model_storage(epoch))
+                agents.save(get_cfg().get_model_storage(epoch))
 
         env.close()
         logging.info("Finished training")
 
 
 if __name__ == "__main__":
+    set_cfg(CfgManager(_training_config))
+    logging.basicConfig(level=logging.getLevelName(get_cfg().get_log_level()))
     logging.info("Starting MR-in-MARL")
     start_training()
-    # baseline_writer()

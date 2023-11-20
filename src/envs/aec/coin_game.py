@@ -401,7 +401,9 @@ class raw_env(AECEnv):
         print(self.observations["player_2"])
         print("player_3")
         print(self.observations["player_3"])
-        print("it looks like this env is buggy -> at some point everyone is coin holder")
+        print(
+            "it looks like this env is buggy -> at some point everyone is coin holder"
+        )
 
         return np.array(self.observations[agent])
 

@@ -1,6 +1,5 @@
 import torch
-from gymnasium import Space
-from torch.nn import Module, Linear, Sequential, ELU
+from torch.nn import ELU, Linear, Module, Sequential
 from torch.nn.functional import softmax
 
 

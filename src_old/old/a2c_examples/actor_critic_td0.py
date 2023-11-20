@@ -5,7 +5,7 @@ from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
 from torch.optim import Adam, Optimizer
 
-from src.agents.implementations.a2c_examples.agents_gym_i import IAgentsGym
+from src.agents.implementations.old.a2c_examples.agents_gym_i import IAgentsGym
 from src.config.ctrl_configs import actor_critic_config
 
 
@@ -39,7 +39,7 @@ class ActorCriticTd0(IAgentsGym):
 
         self.I = {agent_id: 1 for agent_id in action_space}
 
-    def init_new_epoch(self):
+    def epoch_started(self):
         for agent_id in self.policy_networks:
             self.I[agent_id] = 1
 

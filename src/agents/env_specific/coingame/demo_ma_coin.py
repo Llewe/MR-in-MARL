@@ -1,11 +1,10 @@
-import numpy as np
-from pettingzoo.utils.env import AgentID, ObsType, ActionType
+from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
-from src.agents.implementations.base_agents.mr_agent_a2c2 import MRAgentA2C2
-from src.config.ctrl_configs.demo_ma_coin import DemoMaCoinConfig
+from src.agents.mr_agent_a2c import MRAgentA2C
+from src.config.ctrl_config import DemoMaCoinConfig
 
 
-class DemoMaCoin(MRAgentA2C2):
+class DemoMaCoin(MRAgentA2C):
     def __init__(self, config: DemoMaCoinConfig):
         super().__init__(config)
 
@@ -18,7 +17,6 @@ class DemoMaCoin(MRAgentA2C2):
 
         manipulation = 0.0
         if reward > 0.0:
-
             reward_p0 = last_obs[6]
             reward_p1 = last_obs[13]
             reward_p2 = last_obs[20]

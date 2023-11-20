@@ -441,6 +441,8 @@ class CoinGame(AECEnv):
         if options is None:
             self.current_history.clear()
             logging.warning("Resetting history. No options in reset -> no logging.")
+        elif "history_reset" in options and options["history_reset"]:
+            self.current_history.clear()
         else:
             self.log(options)
 

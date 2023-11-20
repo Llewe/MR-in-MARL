@@ -2,7 +2,7 @@ from gymnasium import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
-from src.config.ctrl_configs.ctrl_config import CtrlConfig
+from src.config.ctrl_config import CtrlConfig
 from src.interfaces.agents_i import IAgents
 
 
@@ -21,8 +21,12 @@ class RandomAgents(IAgents):
         self.action_space = action_space
         self.observation_space = observation_space
 
-    def init_new_epoch(self):
-        # Random agents don't learn
+    def epoch_started(self, epoch: int):
+        # Nothing interesting to do here
+        pass
+
+    def epoch_finished(self, epoch: int):
+        # Nothing interesting to do here
         pass
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
@@ -32,7 +36,6 @@ class RandomAgents(IAgents):
         self,
         agent_id: AgentID,
         last_observation: ObsType,
-        curr_observation: ObsType,
         last_action: ActionType,
         reward: float,
         done: bool,

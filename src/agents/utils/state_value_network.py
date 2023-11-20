@@ -1,5 +1,7 @@
-from torch.nn import Module, Linear, Sequential, ELU
-from torch.nn.functional import relu
+from torch.nn import ELU, Linear, Module, Sequential
+
+
+# from torch.nn.functional import relu
 
 
 def preprocessing_module(nr_input_features, nr_hidden_units):
