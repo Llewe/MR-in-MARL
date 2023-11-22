@@ -98,7 +98,7 @@ def _setup_prisoners(
 ) -> AECEnv:
     from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
 
-    return raw_env(game="pd")
+    return raw_env(game="pd", max_cycles=prisoners_config.MAX_CYCLES)
 
 
 def _setup_samaritans(
@@ -106,16 +106,16 @@ def _setup_samaritans(
 ) -> AECEnv:
     from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
 
-    return raw_env(game="sd")
+    return raw_env(game="sd", max_cycles=samaritans_config.MAX_CYCLES)
 
 
 def _setup_stag_hunt(writer: SummaryWriter, stag_hunt_config: StagHuntConfig) -> AECEnv:
     from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
 
-    return raw_env(game="stag")
+    return raw_env(game="stag", max_cycles=stag_hunt_config.MAX_CYCLES)
 
 
 def _setup_chicken(writer: SummaryWriter, chicken_config: ChickenConfig) -> AECEnv:
     from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
 
-    return raw_env(game="chicken")
+    return raw_env(game="chicken", max_cycles=chicken_config.MAX_CYCLES)

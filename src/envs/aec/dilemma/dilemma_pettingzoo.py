@@ -5,16 +5,15 @@
 import gymnasium
 import numpy as np
 from gymnasium.spaces import Discrete
-
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
 from pettingzoo.utils.conversions import parallel_wrapper_fn
 
 from src.envs.aec.dilemma.games import (
+    Chicken,
     Prisoners_Dilemma,
     Samaritans_Dilemma,
     Stag_Hunt,
-    Chicken,
 )
 
 
@@ -61,7 +60,7 @@ class raw_env(AECEnv):
         self.agent_name_mapping = dict(zip(self.agents, list(range(self.num_agents))))
         self.action_spaces = {agent: Discrete(num_actions) for agent in self.agents}
         self.observation_spaces = {
-            agent: Discrete(1 + num_actions) for agent in self.agents
+            agent: Discrete(num_actions) for agent in self.agents
         }
 
         self.render_mode = render_mode
@@ -178,7 +177,7 @@ if __name__ == "__main__":
 
     # Reset the environment and get the initial observation
     obs = env.reset()
-
+    print(env.observation_spaces)
     # Run the environment for 10 steps
     for _ in range(10):
         # Sample a random action
@@ -186,7 +185,7 @@ if __name__ == "__main__":
 
         # Step the environment and get the reward, observation, and done flag
         observations, rewards, terminations, truncations, infos = env.step(actions)
-
+        print(observations)
         # Print the reward
         # print(rewards)
         print("observations: ", observations)

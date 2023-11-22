@@ -32,9 +32,7 @@ class CoinGameConfig(EnvConfig):
 
 
 class PrisonersConfig(EnvConfig):
-    PLAYERS: int = 1
-    GRID_SIZE: int = 2
-    ALLOW_OVERLAP_PLAYERS: bool = True
+    pass
 
 
 class SamaritansConfig(EnvConfig):

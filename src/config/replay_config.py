@@ -7,9 +7,9 @@ class ReplayConfig(ExpConfig):
     LOG_LEVEL: str = "INFO"
 
     AGENT_TYPE: AgentType = AgentType.A2C
-    ENV_NAME: EnvType = EnvType.MY_COIN_GAME
-    ENV_TAG: str = "4x4"
-    EXP_UNIQUE_NAME: str = "2023-11-19T15:54:29 - Lindsey"
+    ENV_NAME: EnvType = EnvType.SIMPLE_TAG
+    ENV_TAG: str = "1vs3 - 2 obstacles - 150steps"
+    EXP_UNIQUE_NAME: str = "2023-11-21T10:35:17 - Robin"
     TIMEOUT: int = 100
-    EPOCH: int = 500
+    EPOCH: int = 35000
     STEPS: int = 500

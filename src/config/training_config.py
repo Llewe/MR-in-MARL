@@ -16,10 +16,10 @@ class TrainingConfig(ExpConfig):
     EVAL_EPISODES: int = 250
     EVAL_EPOCH_INTERVAL: int = 500
 
-    AGENT_TYPE: AgentType = AgentType.A2C
+    AGENT_TYPE: AgentType = AgentType.RANDOM
 
-    ENV_NAME: EnvType = EnvType.MY_COIN_GAME
-    ENV_TAG: str = "4x4"
+    ENV_NAME: EnvType = EnvType.PRISONERS_DILEMMA
+    ENV_TAG: str = "default"
 
     EXP_UNIQUE_NAME: str = (
         f"{datetime.fromtimestamp(time()).isoformat(timespec='seconds')} - {EXP_TAG}"

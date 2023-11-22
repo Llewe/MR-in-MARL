@@ -13,7 +13,7 @@ from src.cfg_manager import CfgManager, get_cfg, set_cfg
 from src.config.training_config import TrainingConfig
 from src.envs import build_env
 from src.interfaces.agents_i import IAgents
-from src.utils.loggers.obs_logger import ObsLogger
+from src.utils.loggers.obs_logger import IObsLogger
 from src.utils.loggers.simple_env_logger import SimpleEnvLogger
 
 _training_config = TrainingConfig()
@@ -27,12 +27,16 @@ def _train_aec_epoch(
     env: AECEnv,
     current_epoch: int,
     writer: SummaryWriter,
-    obs_logger: ObsLogger,
+    obs_logger: IObsLogger,
 ) -> None:
     agents.epoch_started(current_epoch)
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
     env.reset(options={"history_reset": True})
+
+    obs_logger.clear_buffer()
+
+    epoch_reward: dict[AgentID, float] = defaultdict(lambda: 0)
 
     for episode in range(1, _training_config.EPISODES + 1):
         logging.info(
@@ -40,9 +44,12 @@ def _train_aec_epoch(
             f" Episode: {episode}/{_training_config.EPISODES}"
         )
 
-        _train_aec_episode_simple(
+        episode_reward: dict[AgentID, float] = _train_aec_episode_simple(
             agents, env, current_epoch, episode, writer, obs_logger
         )
+
+        for agent_id in episode_reward:
+            epoch_reward[agent_id] += episode_reward[agent_id]
 
     # by resetting some envs (e.g. coin game) will log some env specific data
     env.reset(
@@ -53,6 +60,13 @@ def _train_aec_epoch(
         }
     )
 
+    for agent_id in epoch_reward:
+        writer.add_scalar(
+            f"train-real-rewards/{agent_id}", epoch_reward[agent_id], current_epoch
+        )
+
+    obs_logger.log_epoch(current_epoch, "train")
+
     agents.epoch_finished(current_epoch)
 
 
@@ -62,8 +76,8 @@ def _train_aec_episode_simple(
     current_epoch: int,
     current_episode: int,
     writer: SummaryWriter,
-    obs_logger: ObsLogger,
-) -> None:
+    obs_logger: IObsLogger,
+) -> dict[AgentID, float]:
     env.reset(
         options={
             "write_log": False,
@@ -73,10 +87,8 @@ def _train_aec_episode_simple(
     )
 
     episode_reward: dict[AgentID, float] = defaultdict(lambda: 0)
-    actions = defaultdict(list)
     # last_observation = {}
 
-    obs_logger.clear_buffer()
     for agent_id in env.agent_iter():
         pygame.event.get()  # so that the window doesn't freeze
         observation, reward, termination, truncation, info = env.last()
@@ -101,19 +113,7 @@ def _train_aec_episode_simple(
         # logging
         episode_reward[agent_id] += reward
 
-        if action is not None:
-            actions[agent_id].append(action)
-            # last_observation[agent_id]= observation
-
-    obs_logger.log_episode(current_episode, "train")
-
-    for agent_id in episode_reward:
-        writer.add_scalar(
-            f"rewards/{agent_id}", episode_reward[agent_id], current_episode
-        )
-        action = numpy.array(actions[agent_id])
-
-        writer.add_histogram(f"actions/{agent_id}", action, global_step=current_episode)
+    return episode_reward
 
 
 def _eval_aec_agents(
@@ -121,10 +121,12 @@ def _eval_aec_agents(
     env: AECEnv,
     writer: SummaryWriter,
     current_epoch: int,
-    obs_logger: ObsLogger,
+    obs_logger: IObsLogger,
     num_eval_episodes: int,
 ) -> None:
     rewards: dict[AgentID, list[float]] = {}
+
+    actions = defaultdict(list)
 
     for agent_name in env.possible_agents:
         rewards[agent_name] = []
@@ -160,6 +162,7 @@ def _eval_aec_agents(
                 action = agents.act(
                     agent_id=agent_name, observation=observation, explore=False
                 )
+                actions[agent_name].append(action)
 
             env.step(action)
 
@@ -171,13 +174,18 @@ def _eval_aec_agents(
             )
             rewards[agent_id].append(episode_reward[agent_id])
 
-    obs_logger.log_episode(current_epoch, "eval")
+    obs_logger.log_epoch(current_epoch, "eval")
 
     for agent_id in env.possible_agents:
         writer.add_scalar(
             f"eval/rewards/mean/{agent_id}",
             numpy.mean(rewards[agent_id]),
             current_epoch,
+        )
+        action = numpy.array(actions[agent_id])
+
+        writer.add_histogram(
+            f"eval-actions/{agent_id}", action, global_step=current_epoch
         )
 
     # by resetting some envs (e.g. coin game) will log some env specific data
@@ -206,14 +214,14 @@ def start_training() -> None:
         # Building  the environment
         env: ParallelEnv | AECEnv = build_env(get_cfg().exp_config.ENV_NAME, writer)
 
-        obs_logger: ObsLogger
+        obs_logger: IObsLogger
 
         if isinstance(env.unwrapped, SimpleEnv):
             logging.info("Using SimpleEnvLogger")
             obs_logger = SimpleEnvLogger(env.unwrapped, writer)  # type: ignore
         else:
-            logging.info("Using ObsLogger")
-            obs_logger = ObsLogger(writer)
+            logging.info("Using IObsLogger")
+            obs_logger = IObsLogger(writer)
 
         # Building the agents
         agents = get_agents()
