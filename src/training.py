@@ -90,7 +90,9 @@ def _train_aec_episode_simple(
     # last_observation = {}
 
     for agent_id in env.agent_iter():
-        pygame.event.get()  # so that the window doesn't freeze
+        if get_cfg().get_render_mode() != "":
+            pygame.event.get()  # so that the window doesn't freeze
+
         observation, reward, termination, truncation, info = env.last()
 
         obs_logger.add_observation(agent_id, observation)
@@ -149,7 +151,8 @@ def _eval_aec_agents(
             episode_reward[agent_name] = 0
 
         for agent_name in env.agent_iter():
-            pygame.event.get()  # so that the window doesn't freeze
+            if get_cfg().get_render_mode() != "":
+                pygame.event.get()  # so that the window doesn't freeze
             observation, reward, termination, truncation, info = env.last()
 
             obs_logger.add_observation(agent_name, observation)
@@ -236,8 +239,8 @@ def start_training() -> None:
         agents.set_logger(writer)
 
         log_configs(writer)
-
-        pygame.init()
+        if get_cfg().get_render_mode() != "":
+            pygame.init()
 
         for epoch in range(1, _training_config.EPOCHS + 1):
             _train_aec_epoch(agents, env, epoch, writer, obs_logger)

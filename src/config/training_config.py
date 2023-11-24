@@ -18,7 +18,7 @@ class TrainingConfig(ExpConfig):
 
     AGENT_TYPE: AgentType = AgentType.RANDOM
 
-    ENV_NAME: EnvType = EnvType.PRISONERS_DILEMMA
+    ENV_NAME: EnvType = EnvType.MELTING_POD_COINS
     ENV_TAG: str = "default"
 
     EXP_UNIQUE_NAME: str = (
