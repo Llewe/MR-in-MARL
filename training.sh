@@ -20,7 +20,5 @@ train() {
         unset "$var"
     done
 }
-train AGENT_TYPE=random ENV_NAME=coins
-train AGENT_TYPE=a2c ENV_NAME=coins
-train AGENT_TYPE=random ENV_NAME=commons_harvest__open
-train AGENT_TYPE=a2c ENV_NAME=commons_harvest__open
+train AGENT_TYPE=random ENV_NAME=my_coin_game
+train AGENT_TYPE=a2c ENV_NAME=my_coin_game

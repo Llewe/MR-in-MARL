@@ -1,6 +1,4 @@
 from pettingzoo import AECEnv
-from pettingzoo.utils import parallel_to_aec
-from shimmy.meltingpot_compatibility import MeltingPotCompatibilityV0
 from torch.utils.tensorboard import SummaryWriter
 
 from src.cfg_manager import get_cfg
@@ -121,13 +119,3 @@ def _setup_chicken(writer: SummaryWriter, chicken_config: ChickenConfig) -> AECE
     from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
 
     return raw_env(game="chicken", max_cycles=chicken_config.MAX_CYCLES)
-
-
-def _setup_melting_pod(name: str, env_config: EnvConfig) -> AECEnv:
-    return parallel_to_aec(
-        MeltingPotCompatibilityV0(
-            substrate_name=name,
-            render_mode=get_cfg().get_render_mode(),
-            max_cycles=env_config.MAX_CYCLES,
-        )
-    )
