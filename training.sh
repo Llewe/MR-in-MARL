@@ -1,14 +1,26 @@
-export AGENT_TYPE=actor_critic EPISODES=10000 DISCOUNT_FACTO=0 EPSILON_INIT=0.5 ACTOR_LR=0.0001 CRITIC_LR=0.0001 AGENT_TAG=discount_0_lr_0.0001_eps_0.5
-poetry run python src/training.py
-export AGENT_TYPE=actor_critic EPISODES=10000 DISCOUNT_FACTO=0.95 REWARD_NORMALIZATION=0 EPSILON_INIT=0.5 ACTOR_LR=0.0001 CRITIC_LR=0.0001 AGENT_TAG=discount_0.95_reward_norm_0_lr_0.0001_eps_0.5
-poetry run python src/training.py
-export AGENT_TYPE=actor_critic EPISODES=10000 DISCOUNT_FACTO=0.5 REWARD_NORMALIZATION=0 EPSILON_INIT=0.5 ACTOR_LR=0.0001 CRITIC_LR=0.0001 AGENT_TAG=discount_0.5_reward_norm_0_lr_0.0001_eps_0.5
-poetry run python src/training.py
-export AGENT_TYPE=actor_critic EPISODES=10000 DISCOUNT_FACTO=0 REWARD_NORMALIZATION=0 EPSILON_INIT=0.5 ACTOR_LR=0.0001 CRITIC_LR=0.0001 AGENT_TAG=discount_0_reward_norm_0_lr_0.0001_eps_0.5
-poetry run python src/training.py
-export AGENT_TYPE=actor_critic EPISODES=10000 DISCOUNT_FACTO=0.95 REWARD_NORMALIZATION=0 EPSILON_INIT=0.5 ACTOR_LR=0.001 CRITIC_LR=0.001 AGENT_TAG=discount_0.95_reward_norm_0_lr_0.001_eps_0.5
-poetry run python src/training.py
-export AGENT_TYPE=actor_critic EPISODES=10000 DISCOUNT_FACTO=0.5 REWARD_NORMALIZATION=0 EPSILON_INIT=0.5 ACTOR_LR=0.001 CRITIC_LR=0.001 AGENT_TAG=discount_0.5_reward_norm_0_lr_0.001_eps_0.5
-poetry run python src/training.py
-export AGENT_TYPE=actor_critic EPISODES=10000 DISCOUNT_FACTO=0 REWARD_NORMALIZATION=0 EPSILON_INIT=0.5 ACTOR_LR=0.001 CRITIC_LR=0.001 AGENT_TAG=discount_0_reward_norm_0_lr_0.001_eps_0.5
-poetry run python src/training.py
+#!/bin/bash
+log_counter=1
+train() {
+    local log_file="./resources/logs/$(date -d "today" "+%Y.%m.%d-%H.%M.%S"_$log_counter).log"
+    ((log_counter++))
+
+    local command="poetry run python src/training.py"
+
+    # Loop through the provided parameters and export them
+    for var in "$@"; do
+        export "$var"
+        command+=" $var"
+    done
+
+    # Run the command with the specified environment variables
+    nohup $command > "$log_file" 2>&1 &
+
+    # Unset the environment variables after the command has run
+    for var in "$@"; do
+        unset "$var"
+    done
+}
+train AGENT_TYPE=random ENV_NAME=coins
+train AGENT_TYPE=a2c ENV_NAME=coins
+train AGENT_TYPE=random ENV_NAME=commons_harvest__open
+train AGENT_TYPE=a2c ENV_NAME=commons_harvest__open
