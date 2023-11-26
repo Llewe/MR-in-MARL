@@ -72,7 +72,7 @@ class Mate(A2C):
     ):  # history, next_history is missing
         if self.mate_mode == MateConfig.Mode.STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
-            if is_empty:
+            if not is_empty:
                 self.last_rewards_observed[agent_id].append(reward)
                 return True
             last_reward = numpy.mean(self.last_rewards_observed[agent_id])
@@ -124,7 +124,8 @@ class Mate(A2C):
 
         """
         if step == 1:
-            self.last_rewards_observed = {a: [] for a in self.step_info.keys()}
+            for v in self.last_rewards_observed.values():
+                v.clear()
 
         original_rewards: dict[AgentID, float] = {
             a: self.step_info[a].rewards[-1] for a in self.step_info.keys()
@@ -202,7 +203,7 @@ class Mate(A2C):
                 MateConfig.DefectMode.DEFECT_ALL,
                 MateConfig.DefectMode.DEFECT_RESPONSE,
             ]
-            receive_enabled = receive_enabled
+
             if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
                 filtered_trust_responses = [
                     trust_responses[x]

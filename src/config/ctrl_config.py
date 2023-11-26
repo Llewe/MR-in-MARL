@@ -8,8 +8,8 @@ class CtrlConfig(BaseSettings):
 
 
 class A2cConfig(CtrlConfig):
-    ACTOR_LR: float = 0.0001
-    CRITIC_LR: float = 0.0001
+    ACTOR_LR: float = 0.001
+    CRITIC_LR: float = 0.001
     ACTOR_HIDDEN_UNITS: int = 64
     CRITIC_HIDDEN_UNITS: int = 64
     DISCOUNT_FACTOR: float = 0.95
