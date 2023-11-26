@@ -20,5 +20,6 @@ train() {
         unset "$var"
     done
 }
-train AGENT_TYPE=random ENV_NAME=my_coin_game
-train AGENT_TYPE=a2c ENV_NAME=my_coin_game
+train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=1
+train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=2
+train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=0.2
