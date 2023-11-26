@@ -38,7 +38,7 @@ class IAgents(ABC):
         pass
 
     @abstractmethod
-    def update(
+    def step_agent(
         self,
         agent_id: AgentID,
         last_observation: ObsType,
@@ -46,6 +46,10 @@ class IAgents(ABC):
         reward: float,
         done: bool,
     ) -> None:
+        pass
+
+    @abstractmethod
+    def step_finished(self, step: int) -> None:
         pass
 
     @abstractmethod

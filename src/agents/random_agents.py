@@ -32,7 +32,7 @@ class RandomAgents(IAgents):
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         return self.action_space[agent_id].sample()
 
-    def update(
+    def step_agent(
         self,
         agent_id: AgentID,
         last_observation: ObsType,
@@ -41,6 +41,9 @@ class RandomAgents(IAgents):
         done: bool,
     ) -> None:
         # Random agents don't learn
+        pass
+
+    def step_finished(self, step: int) -> None:
         pass
 
     def save(self, path: str) -> None:

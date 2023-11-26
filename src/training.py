@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from typing import Union
 
 import numpy
 import pygame
@@ -89,6 +90,8 @@ def _train_aec_episode_simple(
     episode_reward: dict[AgentID, float] = defaultdict(lambda: 0)
     # last_observation = {}
 
+    first_agent: Union[AgentID, None] = None
+    timestep: int = 0
     for agent_id in env.agent_iter():
         if get_cfg().get_render_mode() != "":
             pygame.event.get()  # so that the window doesn't freeze
@@ -98,7 +101,7 @@ def _train_aec_episode_simple(
         obs_logger.add_observation(agent_id, observation)
 
         action = agents.act(agent_id=agent_id, observation=observation)
-        agents.update(
+        agents.step_agent(
             agent_id,
             observation,
             action,
@@ -111,6 +114,13 @@ def _train_aec_episode_simple(
             continue
 
         env.step(action)
+
+        # new timestep detection
+        if first_agent is None:
+            first_agent = agent_id
+        if first_agent == env.agent_selection:
+            timestep += 1
+            agents.step_finished(timestep)
 
         # logging
         episode_reward[agent_id] += reward

@@ -56,7 +56,7 @@ class MRAgentA2C(A2C):
         """
         self.mr_callbacks[agent_id] = callback
 
-    def update(
+    def step_agent(
         self,
         agent_id: AgentID,
         last_observation: ObsType,
@@ -91,7 +91,7 @@ class MRAgentA2C(A2C):
             )
         )
 
-        super().update(
+        super().step_agent(
             agent_id=agent_id,
             last_observation=last_observation,
             curr_observation=curr_observation,

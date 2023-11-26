@@ -1,3 +1,5 @@
+from enum import Enum
+
 from pydantic_settings import BaseSettings
 
 
@@ -19,6 +21,26 @@ class A2cConfig(CtrlConfig):
     EPSILON_INIT: float = 0.8
     EPSILON_MIN: float = 0.1
     EPSILON_DECAY: float = 1.5e-05
+
+
+class MateConfig(A2cConfig):
+    class Mode(str, Enum):
+        STATIC_MODE = "static"
+        TD_ERROR_MODE = "td_error"
+        VALUE_DECOMPOSE_MODE = "value_decompose"
+
+    class DefectMode(str, Enum):
+        NO_DEFECT = "no_defect"
+        DEFECT_ALL = (
+            "defect_all"  # Does not send or receive any acknowledgment messages
+        )
+        DEFECT_RESPONSE = "defect_response"  # Sends acknowledgment requests but does not respond to incoming requests
+        DEFECT_RECEIVE = "defect_receive"  # Sends acknowledgment requests but does not receive any responses
+        DEFECT_SEND = "defect_send"  # Receives acknowledgment requests but does send any requests itself
+
+    MODE: Mode = Mode.STATIC_MODE
+    DEFECT_MODE: DefectMode = DefectMode.NO_DEFECT
+    TOKEN_VALUE: float = 1
 
 
 class DemoMaCoinConfig(A2cConfig):

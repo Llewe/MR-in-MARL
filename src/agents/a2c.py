@@ -164,7 +164,7 @@ class A2C(IAgents):
 
         return action
 
-    def update(
+    def step_agent(
         self,
         agent_id: AgentID,
         last_observation: ObsType,
@@ -179,6 +179,9 @@ class A2C(IAgents):
         obs_curr: Tensor = torch.from_numpy(last_observation).float().unsqueeze(0)
 
         self.step_info[agent_id].add(scaled_reward, obs_curr, last_action)
+
+    def step_finished(self, step: int) -> None:
+        pass
 
     def compute_returns(self, rewards, gamma: float):
         discounted_returns = np.zeros_like(rewards, dtype=np.float32)

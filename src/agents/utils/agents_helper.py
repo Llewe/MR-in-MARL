@@ -6,6 +6,7 @@ from typing import Tuple, Type
 from src.agents.a2c import A2C
 from src.agents.env_specific.coingame.demo_ma_coin import DemoMaCoin
 from src.agents.env_specific.demo_ma import DemoMa
+from src.agents.mate import Mate
 from src.agents.random_agents import RandomAgents
 from src.cfg_manager import get_cfg
 from src.config.ctrl_config import (
@@ -13,6 +14,7 @@ from src.config.ctrl_config import (
     CtrlConfig,
     DemoMaCoinConfig,
     DemoMaConfig,
+    MateConfig,
 )
 from src.enums.agent_type_e import AgentType
 from src.interfaces.agents_i import IAgents
@@ -46,6 +48,9 @@ def get_agent_class(agent_type: AgentType) -> Tuple[Type[IAgents], Type[CtrlConf
             return RandomAgents, CtrlConfig
         case AgentType.A2C:
             return A2C, A2cConfig
+
+        case AgentType.MATE:
+            return Mate, MateConfig
 
         case AgentType.DEMO_MANIPULATION_AGENT:
             return DemoMa, DemoMaConfig
