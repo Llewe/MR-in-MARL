@@ -18,6 +18,9 @@ class Mate(A2C):
 
     nr_agents: int
 
+    agent_id_mapping: dict[AgentID, int]
+    neighborhood: dict[AgentID, list[AgentID]]
+
     def __init__(self, config: MateConfig):
         super(Mate, self).__init__(config)
 
@@ -32,6 +35,15 @@ class Mate(A2C):
     ) -> None:
         super(Mate, self).init_agents(action_space, observation_space)
         self.nr_agents = len(action_space.keys())
+
+        self.agent_id_mapping = {}
+        self.neighborhood = {}
+
+        for i, agent_id in enumerate(action_space.keys()):
+            self.agent_id_mapping[agent_id] = i
+            self.neighborhood[agent_id] = [
+                x for x in action_space.keys() if x != agent_id
+            ]
 
         self.trust_request_matrix = numpy.zeros(
             (self.nr_agents, self.nr_agents), dtype=numpy.float32
@@ -147,7 +159,8 @@ class Mate(A2C):
         if self.defect_mode != MateConfig.DefectMode.NO_DEFECT:
             defector_id = numpy.random.randint(0, self.nr_agents)
 
-        for i, agent_id in enumerate(self.step_info.keys()):
+        for agent_id in self.agent_id_mapping.keys():
+            i = self.agent_id_mapping[agent_id]
             reward = original_rewards[agent_id]
 
             # for i, reward, history, next_history in zip(
@@ -164,13 +177,14 @@ class Mate(A2C):
             if requests_enabled and self.can_rely_on(
                 agent_id, reward
             ):  # Analyze the "winners" of that step
-                for j in range(self.nr_agents):
-                    if i != j:
-                        self.trust_request_matrix[j][i] += self.token_value
-                        # transition["request_messages_sent"] += 1 logging
+                for neighbor in self.neighborhood[agent_id]:
+                    j = self.agent_id_mapping[neighbor]
+                    self.trust_request_matrix[j][i] += self.token_value
+                    # transition["request_messages_sent"] += 1 logging
 
         # 2. Send trust responses
-        for i, agent_id in enumerate(self.step_info.keys()):
+        for agent_id in self.agent_id_mapping.keys():
+            i = self.agent_id_mapping[agent_id]
             # for i, history, next_history in zip(
             #     range(self.nr_agents), joint_histories, next_joint_histories
             # ):
@@ -180,39 +194,46 @@ class Mate(A2C):
             ]
 
             trust_requests = [
-                self.trust_request_matrix[i][j] for j in range(self.nr_agents)
+                self.trust_request_matrix[i][self.agent_id_mapping[j]]
+                for j in self.neighborhood[agent_id]
             ]
             if len(trust_requests) > 0:
                 mate_rewards[agent_id] += numpy.max(trust_requests)
 
-            if respond_enabled:
+            if respond_enabled and len(self.neighborhood[agent_id]) > 0:
                 if self.can_rely_on(agent_id, mate_rewards[agent_id]):
                     accept_trust = self.token_value
                 else:
                     accept_trust = -self.token_value
-                for j in range(self.nr_agents):
-                    if i != j and self.trust_request_matrix[i][j] > 0:
+                for neighbor in self.neighborhood[agent_id]:
+                    j = self.agent_id_mapping[neighbor]
+                    if self.trust_request_matrix[i][j] > 0:
                         self.trust_response_matrix[j][i] = accept_trust
                         # if accept_trust > 0:
                         #     transition["response_messages_sent"] += 1
         # 3. Receive trust responses
-        for i, agent_id in enumerate(self.step_info.keys()):
+        for agent_id in self.agent_id_mapping.keys():
+            i = self.agent_id_mapping[agent_id]
             trust_responses = self.trust_response_matrix[i]
-            neighborhood = range(self.nr_agents)
+
             receive_enabled = i != defector_id or self.defect_mode not in [
                 MateConfig.DefectMode.DEFECT_ALL,
                 MateConfig.DefectMode.DEFECT_RESPONSE,
             ]
 
-            if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
+            if (
+                receive_enabled
+                and len(self.neighborhood[agent_id]) > 0
+                and trust_responses.any()
+            ):
                 filtered_trust_responses = [
-                    trust_responses[x]
-                    for x in neighborhood
-                    if abs(trust_responses[x]) > 0
+                    trust_responses[self.agent_id_mapping[x]]
+                    for x in self.neighborhood[agent_id]
+                    if abs(trust_responses[self.agent_id_mapping[x]]) > 0
                 ]
                 if len(filtered_trust_responses) > 0:
                     mate_rewards[agent_id] += min(filtered_trust_responses)
 
         #  write mate rewards to step_info
-        for agent_id in self.step_info.keys():
+        for agent_id in self.agent_id_mapping.keys():
             self.step_info[agent_id].rewards[-1] = mate_rewards[agent_id]

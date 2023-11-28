@@ -20,5 +20,9 @@ train() {
         unset "$var"
     done
 }
+train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=1
+train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=0.2
+train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=2
 train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=1 ACTOR_LR=0.0001 CRITIC_LR=0.0001
-train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=1 EPSILON_INIT=0 EPSILON_MIN=0
+train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=0.2 ACTOR_LR=0.0001 CRITIC_LR=0.0001
+train AGENT_TYPE=mate ENV_NAME=my_coin_game TOKEN_VALUE=2 ACTOR_LR=0.0001 CRITIC_LR=0.0001
