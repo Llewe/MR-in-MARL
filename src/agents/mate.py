@@ -91,7 +91,14 @@ class Mate(A2C):
             self.last_rewards_observed[agent_id].append(reward)
             return reward >= last_reward
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
-            raise NotImplementedError
+            if len(self.step_info[agent_id].rewards) < 2:
+                return True
+            obs_new = self.step_info[agent_id].observations[-1].detach()
+
+            obs_old = self.step_info[agent_id].observations[-2].detach()
+            v_new = self.critic_networks[agent_id](obs_new)
+            v_old = self.critic_networks[agent_id](obs_old)
+            return reward + self.config.DISCOUNT_FACTOR * v_new - v_old >= 0
             # history = torch.tensor(
             #     numpy.asarray([history]), dtype=torch.float32, device=self.device
             # )

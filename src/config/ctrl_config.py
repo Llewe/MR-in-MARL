@@ -38,9 +38,18 @@ class MateConfig(A2cConfig):
         DEFECT_RECEIVE = "defect_receive"  # Sends acknowledgment requests but does not receive any responses
         DEFECT_SEND = "defect_send"  # Receives acknowledgment requests but does send any requests itself
 
-    MODE: Mode = Mode.STATIC_MODE
+    MODE: Mode = Mode.TD_ERROR_MODE
     DEFECT_MODE: DefectMode = DefectMode.NO_DEFECT
-    TOKEN_VALUE: float = 1
+    TOKEN_VALUE: float = 0.4
+
+
+class GiftingConfig(A2cConfig):
+    class Mode(str, Enum):
+        ZERO_SUM_MODE = "zero_sum"
+        BUDGET_MODE = "budget"
+
+    GIFT_REWARD: float = 1
+    GIFT_MODE: Mode = Mode.ZERO_SUM_MODE
 
 
 class DemoMaCoinConfig(A2cConfig):

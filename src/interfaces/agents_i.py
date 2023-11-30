@@ -37,6 +37,16 @@ class IAgents(ABC):
     ) -> ActionType:
         pass
 
+    def act_parallel(
+        self,
+        observations: dict[AgentID, ObsType],
+        explore: bool = True,
+    ) -> dict[AgentID, ActionType]:
+        return {
+            agent_id: self.act(agent_id, observation, explore)
+            for agent_id, observation in observations.items()
+        }
+
     @abstractmethod
     def step_agent(
         self,
@@ -47,6 +57,22 @@ class IAgents(ABC):
         done: bool,
     ) -> None:
         pass
+
+    def step_agent_parallel(
+        self,
+        last_observations: dict[AgentID, ObsType],
+        last_actions: dict[AgentID, ActionType],
+        rewards: dict[AgentID, float],
+        dones: dict[AgentID, bool],
+    ) -> None:
+        for agent_id in last_observations.keys():
+            self.step_agent(
+                agent_id,
+                last_observations[agent_id],
+                last_actions[agent_id],
+                rewards[agent_id],
+                dones[agent_id],
+            )
 
     @abstractmethod
     def step_finished(self, step: int) -> None:

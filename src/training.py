@@ -6,7 +6,7 @@ import numpy
 import pygame
 from pettingzoo import AECEnv, ParallelEnv
 from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
-from pettingzoo.utils.env import AgentID
+from pettingzoo.utils.env import ActionType, AgentID
 from torch.utils.tensorboard import SummaryWriter
 
 from src.agents.utils.agents_helper import get_agents
@@ -20,15 +20,13 @@ from src.utils.loggers.simple_env_logger import SimpleEnvLogger
 _training_config = TrainingConfig()
 
 
-all_steps = 0
-
-
-def _train_aec_epoch(
+def _train_epoch(
     agents: IAgents,
-    env: AECEnv,
+    env: Union[AECEnv, ParallelEnv],
     current_epoch: int,
     writer: SummaryWriter,
     obs_logger: IObsLogger,
+    parallel: bool = False,
 ) -> None:
     agents.epoch_started(current_epoch)
 
@@ -44,10 +42,14 @@ def _train_aec_epoch(
             f"Epoch {current_epoch}/{_training_config.EPOCHS}"
             f" Episode: {episode}/{_training_config.EPISODES}"
         )
-
-        episode_reward: dict[AgentID, float] = _train_aec_episode_simple(
-            agents, env, current_epoch, episode, writer, obs_logger
-        )
+        if parallel:
+            episode_reward: dict[AgentID, float] = _train_parallel_episode(
+                agents, env, current_epoch, episode, writer, obs_logger
+            )
+        else:
+            episode_reward = _train_aec_episode_simple(
+                agents, env, current_epoch, episode, writer, obs_logger
+            )
 
         for agent_id in episode_reward:
             epoch_reward[agent_id] += episode_reward[agent_id]
@@ -71,9 +73,60 @@ def _train_aec_epoch(
     agents.epoch_finished(current_epoch)
 
 
+def _train_parallel_episode(
+    agents: IAgents,
+    env: ParallelEnv,
+    current_epoch: int,
+    current_episode: int,
+    writer: SummaryWriter,
+    obs_logger: IObsLogger,
+) -> dict[AgentID, float]:
+    episode_reward: dict[AgentID, float] = defaultdict(lambda: 0)
+    timestep: int = 0
+
+    observations, infos = env.reset(
+        options={
+            "write_log": False,
+            "epoch": current_epoch,
+            "tag": "train",
+        }
+    )
+
+    while env.agents:
+        if get_cfg().get_render_mode() != "":
+            pygame.event.get()  # so that the window doesn't freeze
+
+        timestep += 1
+        actions: dict[AgentID, ActionType] = agents.act_parallel(
+            observations, explore=True
+        )
+
+        for agent_id, observation in observations.items():
+            obs_logger.add_observation(agent_id, observation)
+
+        new_observations, rewards, terminations, truncations, infos = env.step(actions)
+
+        agents.step_agent_parallel(
+            observations,
+            actions,
+            rewards,
+            terminations,
+        )
+        agents.step_finished(timestep)
+
+        observations = new_observations
+
+        for agent_id, reward in rewards.items():
+            episode_reward[agent_id] += reward
+
+    env.close()
+
+    return episode_reward
+
+
 def _train_aec_episode_simple(
     agents: IAgents,
-    env: AECEnv,
+    env: ParallelEnv,
     current_epoch: int,
     current_episode: int,
     writer: SummaryWriter,
@@ -86,6 +139,11 @@ def _train_aec_episode_simple(
             "tag": "train",
         }
     )
+
+    while env.agents:
+        actions = {agent: env.action_space(agent).sample() for agent in env.agents}
+
+        observations, rewards, terminations, truncations, infos = env.step(actions)
 
     episode_reward: dict[AgentID, float] = defaultdict(lambda: 0)
     # last_observation = {}
@@ -126,6 +184,93 @@ def _train_aec_episode_simple(
         episode_reward[agent_id] += reward
 
     return episode_reward
+
+
+def _eval_parallel_agents(
+    agents: IAgents,
+    env: ParallelEnv,
+    writer: SummaryWriter,
+    current_epoch: int,
+    obs_logger: IObsLogger,
+    num_eval_episodes: int,
+) -> None:
+    rewards: dict[AgentID, list[float]] = {}
+
+    actions: dict[AgentID, list[ActionType]] = defaultdict(list)
+
+    for agent_name in env.possible_agents:
+        rewards[agent_name] = []
+    obs_logger.clear_buffer()
+
+    # For coin game this resets the history.Important in case e.g. eval is done in between
+    env.reset(options={"history_reset": True})
+
+    for steps in range(num_eval_episodes):
+        observations, infos = env.reset(
+            options={
+                "write_log": False,
+                "epoch": current_epoch,
+                "tag": "eval",
+            }
+        )
+
+        episode_reward = {}
+        for agent_name in env.possible_agents:
+            episode_reward[agent_name] = 0
+
+        while env.agents:
+            if get_cfg().get_render_mode() != "":
+                pygame.event.get()  # so that the window doesn't freeze
+
+            a: dict[AgentID, ActionType] = agents.act_parallel(
+                observations, explore=False
+            )
+
+            for agent_id, observation in observations.items():
+                obs_logger.add_observation(agent_id, observation)
+
+            new_observations, r, terminations, truncations, infos = env.step(a)
+
+            observations = new_observations
+
+            for agent_id, action in a.items():
+                actions[agent_id].append(action)
+
+            for agent_id, reward in r.items():
+                episode_reward[agent_id] += reward
+
+        env.close()
+
+        for agent_id in env.possible_agents:
+            writer.add_scalar(
+                f"eval/rewards/epoch-{current_epoch}/{agent_id}",
+                episode_reward[agent_id],
+                steps,
+            )
+            rewards[agent_id].append(episode_reward[agent_id])
+
+    obs_logger.log_epoch(current_epoch, "eval")
+
+    for agent_id in env.possible_agents:
+        writer.add_scalar(
+            f"eval/rewards/mean/{agent_id}",
+            numpy.mean(rewards[agent_id]),
+            current_epoch,
+        )
+        action = numpy.array(actions[agent_id])
+
+        writer.add_histogram(
+            f"eval-actions/{agent_id}", action, global_step=current_epoch
+        )
+
+    # by resetting some envs (e.g. coin game) will log some env specific data
+    env.reset(
+        options={
+            "write_log": True,
+            "epoch": current_epoch,
+            "tag": "eval",
+        }
+    )
 
 
 def _eval_aec_agents(
@@ -227,6 +372,7 @@ def start_training() -> None:
         # Building  the environment
         env: ParallelEnv | AECEnv = build_env(get_cfg().exp_config.ENV_NAME, writer)
 
+        parallel: bool = isinstance(env, ParallelEnv)
         obs_logger: IObsLogger
 
         if isinstance(env.unwrapped, SimpleEnv):
@@ -253,18 +399,28 @@ def start_training() -> None:
             pygame.init()
 
         for epoch in range(1, _training_config.EPOCHS + 1):
-            _train_aec_epoch(agents, env, epoch, writer, obs_logger)
+            _train_epoch(agents, env, epoch, writer, obs_logger, parallel=parallel)
 
             if epoch % _training_config.EVAL_EPOCH_INTERVAL == 0:
                 logging.info("Evaluating agents")
-                _eval_aec_agents(
-                    agents,
-                    env,
-                    writer,
-                    epoch,
-                    obs_logger,
-                    num_eval_episodes=_training_config.EVAL_EPISODES,
-                )
+                if parallel:
+                    _eval_parallel_agents(
+                        agents,
+                        env,
+                        writer,
+                        epoch,
+                        obs_logger,
+                        num_eval_episodes=_training_config.EVAL_EPISODES,
+                    )
+                else:
+                    _eval_aec_agents(
+                        agents,
+                        env,
+                        writer,
+                        epoch,
+                        obs_logger,
+                        num_eval_episodes=_training_config.EVAL_EPISODES,
+                    )
 
                 # save model
                 logging.info("Saving model")

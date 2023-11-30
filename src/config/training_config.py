@@ -18,7 +18,7 @@ class TrainingConfig(ExpConfig):
 
     AGENT_TYPE: AgentType = AgentType.MATE
 
-    ENV_NAME: EnvType = EnvType.MY_COIN_GAME
+    ENV_NAME: EnvType = EnvType.P_MY_COIN_GAME
     ENV_TAG: str = "default"
 
     EXP_UNIQUE_NAME: str = (

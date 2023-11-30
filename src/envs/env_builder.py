@@ -21,9 +21,6 @@ from src.config.env_config import (
 from src.enums.env_type_e import EnvType
 from src.envs.setup import (
     _setup_coin_game,
-    _setup_parallel_simple,
-    _setup_parallel_simple_spread,
-    _setup_parallel_simple_tag,
     _setup_simple,
     _setup_simple_adversary,
     _setup_simple_spread,
@@ -36,6 +33,7 @@ from src.envs.setup.aec_envs import (
     _setup_samaritans,
     _setup_stag_hunt,
 )
+from src.envs.setup.parallel_envs import _p_setup_my_coin_game
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
 
 T = TypeVar("T", bound=EnvConfig)
@@ -71,6 +69,9 @@ def build_env(
         case EnvType.MY_COIN_GAME:
             return _setup_my_coin_game(writer, config)
 
+        case EnvType.P_MY_COIN_GAME:
+            return _p_setup_my_coin_game(writer, config)
+
         case EnvType.PRISONERS_DILEMMA:
             return _setup_prisoners(writer, config)
 
@@ -95,6 +96,8 @@ def get_env_class(env_name: EnvType) -> Type[T]:
         case EnvType.COIN_GAME:
             return CoinGameConfig
         case EnvType.MY_COIN_GAME:
+            return CoinGameConfig
+        case EnvType.P_MY_COIN_GAME:
             return CoinGameConfig
         case EnvType.PRISONERS_DILEMMA:
             return PrisonersConfig
