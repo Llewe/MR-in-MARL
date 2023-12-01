@@ -1,4 +1,7 @@
+from typing import Optional
+
 import numpy
+import torch
 from gymnasium import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
@@ -75,12 +78,18 @@ class Mate(A2C):
             agent_id, last_observation, last_action, reward, done
         )
 
-    def step_finished(self, step: int) -> None:
-        super(Mate, self).step_finished(step)
-        self.mate(step)
+    def step_finished(
+        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ) -> None:
+        super(Mate, self).step_finished(step, next_observations)
+        self.mate(step, next_observations)
 
     def can_rely_on(
-        self, agent_id: AgentID, reward: float
+        self,
+        agent_id: AgentID,
+        reward: float,
+        last_observations: dict[AgentID, ObsType],
+        next_observations: dict[AgentID, ObsType],
     ):  # history, next_history is missing
         if self.mate_mode == MateConfig.Mode.STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
@@ -93,9 +102,9 @@ class Mate(A2C):
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
             if len(self.step_info[agent_id].rewards) < 2:
                 return True
-            obs_new = self.step_info[agent_id].observations[-1].detach()
+            obs_new = torch.from_numpy(next_observations[agent_id]).float().unsqueeze(0)
 
-            obs_old = self.step_info[agent_id].observations[-2].detach()
+            obs_old = last_observations[agent_id].detach()
             v_new = self.critic_networks[agent_id](obs_new)
             v_old = self.critic_networks[agent_id](obs_old)
             return reward + self.config.DISCOUNT_FACTOR * v_new - v_old >= 0
@@ -111,7 +120,9 @@ class Mate(A2C):
         if self.mate_mode == MateConfig.Mode.VALUE_DECOMPOSE_MODE:
             return False
 
-    def mate(self, step: int):
+    def mate(
+        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ):
         """
         V = approximated value function
         N = sum of all neighbors agents
@@ -160,6 +171,23 @@ class Mate(A2C):
         self.trust_request_matrix[:] = 0
         self.trust_response_matrix[:] = 0
 
+        last_obs_index: int
+
+        if next_observations is None:
+            last_obs_index = -2
+            next_observations = {
+                agent_id: self.step_info[agent_id].observations[-1]
+                for agent_id in self.step_info.keys()
+            }
+
+        else:
+            last_obs_index = -1
+
+        last_observations: dict[AgentID, ObsType] = {
+            agent_id: self.step_info[agent_id].observations[last_obs_index]
+            for agent_id in self.step_info.keys()
+        }
+
         # 1. Send trust requests
         defector_id: int = -1
 
@@ -182,7 +210,7 @@ class Mate(A2C):
             ]
 
             if requests_enabled and self.can_rely_on(
-                agent_id, reward
+                agent_id, reward, last_observations, next_observations
             ):  # Analyze the "winners" of that step
                 for neighbor in self.neighborhood[agent_id]:
                     j = self.agent_id_mapping[neighbor]
@@ -208,7 +236,12 @@ class Mate(A2C):
                 mate_rewards[agent_id] += numpy.max(trust_requests)
 
             if respond_enabled and len(self.neighborhood[agent_id]) > 0:
-                if self.can_rely_on(agent_id, mate_rewards[agent_id]):
+                if self.can_rely_on(
+                    agent_id,
+                    mate_rewards[agent_id],
+                    last_observations,
+                    next_observations,
+                ):
                     accept_trust = self.token_value
                 else:
                     accept_trust = -self.token_value

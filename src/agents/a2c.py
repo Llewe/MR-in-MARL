@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from os import makedirs
 from os.path import join
+from typing import Optional
 
 import numpy as np
 import torch
@@ -180,7 +181,9 @@ class A2C(IAgents):
 
         self.step_info[agent_id].add(scaled_reward, obs_curr, last_action)
 
-    def step_finished(self, step: int) -> None:
+    def step_finished(
+        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ) -> None:
         pass
 
     def compute_returns(self, rewards, gamma: float):

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from gymnasium.spaces import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
@@ -75,7 +76,9 @@ class IAgents(ABC):
             )
 
     @abstractmethod
-    def step_finished(self, step: int) -> None:
+    def step_finished(
+        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ) -> None:
         pass
 
     @abstractmethod

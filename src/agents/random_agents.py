@@ -1,3 +1,5 @@
+from typing import Optional
+
 from gymnasium import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
@@ -43,7 +45,9 @@ class RandomAgents(IAgents):
         # Random agents don't learn
         pass
 
-    def step_finished(self, step: int) -> None:
+    def step_finished(
+        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ) -> None:
         pass
 
     def save(self, path: str) -> None:

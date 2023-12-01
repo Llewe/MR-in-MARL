@@ -112,7 +112,7 @@ def _train_parallel_episode(
             rewards,
             terminations,
         )
-        agents.step_finished(timestep)
+        agents.step_finished(timestep, new_observations)
 
         observations = new_observations
 
