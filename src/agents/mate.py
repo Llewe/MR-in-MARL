@@ -1,9 +1,11 @@
+from collections import defaultdict
 from typing import Optional
 
 import numpy
 import torch
 from gymnasium import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
+from torch import Tensor
 
 from src.agents.a2c import A2C
 from src.config.ctrl_config import MateConfig
@@ -84,12 +86,46 @@ class Mate(A2C):
         super(Mate, self).step_finished(step, next_observations)
         self.mate(step, next_observations)
 
+    def get_state_values(
+        self,
+        last_observations: dict[AgentID, Tensor],
+        next_observations: dict[AgentID, Tensor],
+    ) -> dict[AgentID, tuple[float, float]]:
+        """
+        Calculates the state values for the given observations
+        Parameters
+        ----------
+        last_observations: dict[AgentID, Tensor]
+        next_observations: dict[AgentID, Tensor]
+
+        Returns
+        -------
+        dict[AgentID, tuple[float, float]]
+            A dictionary containing the state values for each agent
+            Float 1: Value of the last observation
+            Float 2: Value of the next observation
+
+        """
+        state_values: dict[AgentID, tuple[float, float]] = {
+            agent_id: (
+                self.critic_networks[agent_id](
+                    last_observations[agent_id].detach()
+                ).item(),
+                self.critic_networks[agent_id](
+                    next_observations[agent_id].detach()
+                ).item(),
+            )
+            for agent_id in self.agent_id_mapping.keys()
+        }
+
+        return state_values
+
     def can_rely_on(
         self,
         agent_id: AgentID,
         reward: float,
-        last_observations: dict[AgentID, ObsType],
-        next_observations: dict[AgentID, ObsType],
+        v_old: float,
+        v_new: float,
     ):  # history, next_history is missing
         if self.mate_mode == MateConfig.Mode.STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
@@ -102,11 +138,7 @@ class Mate(A2C):
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
             if len(self.step_info[agent_id].rewards) < 2:
                 return True
-            obs_new = torch.from_numpy(next_observations[agent_id]).float().unsqueeze(0)
 
-            obs_old = last_observations[agent_id].detach()
-            v_new = self.critic_networks[agent_id](obs_new)
-            v_old = self.critic_networks[agent_id](obs_old)
             return reward + self.config.DISCOUNT_FACTOR * v_new - v_old >= 0
             # history = torch.tensor(
             #     numpy.asarray([history]), dtype=torch.float32, device=self.device
@@ -182,11 +214,23 @@ class Mate(A2C):
 
         else:
             last_obs_index = -1
+            next_observations = {  # type: ignore
+                agent_id: torch.from_numpy(next_observations[agent_id])
+                .float()
+                .unsqueeze(0)
+                for agent_id in self.step_info.keys()
+            }
 
         last_observations: dict[AgentID, ObsType] = {
             agent_id: self.step_info[agent_id].observations[last_obs_index]
             for agent_id in self.step_info.keys()
         }
+
+        state_values: dict[AgentID, tuple[float, float]]
+        if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
+            state_values = self.get_state_values(last_observations, next_observations)
+        else:
+            state_values = defaultdict(lambda: (0, 0))
 
         # 1. Send trust requests
         defector_id: int = -1
@@ -194,9 +238,9 @@ class Mate(A2C):
         if self.defect_mode != MateConfig.DefectMode.NO_DEFECT:
             defector_id = numpy.random.randint(0, self.nr_agents)
 
-        for agent_id in self.agent_id_mapping.keys():
-            i = self.agent_id_mapping[agent_id]
+        for agent_id, i in self.agent_id_mapping.items():
             reward = original_rewards[agent_id]
+            neighborhood = self.neighborhood[agent_id]
 
             # for i, reward, history, next_history in zip(
             #     range(self.nr_agents),
@@ -210,16 +254,17 @@ class Mate(A2C):
             ]
 
             if requests_enabled and self.can_rely_on(
-                agent_id, reward, last_observations, next_observations
+                agent_id, reward, state_values[agent_id][0], state_values[agent_id][1]
             ):  # Analyze the "winners" of that step
-                for neighbor in self.neighborhood[agent_id]:
+                for neighbor in neighborhood:
                     j = self.agent_id_mapping[neighbor]
                     self.trust_request_matrix[j][i] += self.token_value
                     # transition["request_messages_sent"] += 1 logging
 
         # 2. Send trust responses
-        for agent_id in self.agent_id_mapping.keys():
-            i = self.agent_id_mapping[agent_id]
+        for agent_id, i in self.agent_id_mapping.items():
+            neighborhood = self.neighborhood[agent_id]
+
             # for i, history, next_history in zip(
             #     range(self.nr_agents), joint_histories, next_joint_histories
             # ):
@@ -230,30 +275,30 @@ class Mate(A2C):
 
             trust_requests = [
                 self.trust_request_matrix[i][self.agent_id_mapping[j]]
-                for j in self.neighborhood[agent_id]
+                for j in neighborhood
             ]
             if len(trust_requests) > 0:
                 mate_rewards[agent_id] += numpy.max(trust_requests)
 
-            if respond_enabled and len(self.neighborhood[agent_id]) > 0:
+            if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(
                     agent_id,
                     mate_rewards[agent_id],
-                    last_observations,
-                    next_observations,
+                    state_values[agent_id][0],
+                    state_values[agent_id][1],
                 ):
                     accept_trust = self.token_value
                 else:
                     accept_trust = -self.token_value
-                for neighbor in self.neighborhood[agent_id]:
+                for neighbor in neighborhood:
                     j = self.agent_id_mapping[neighbor]
                     if self.trust_request_matrix[i][j] > 0:
                         self.trust_response_matrix[j][i] = accept_trust
                         # if accept_trust > 0:
                         #     transition["response_messages_sent"] += 1
         # 3. Receive trust responses
-        for agent_id in self.agent_id_mapping.keys():
-            i = self.agent_id_mapping[agent_id]
+        for agent_id, i in self.agent_id_mapping.items():
+            neighborhood = self.neighborhood[agent_id]
             trust_responses = self.trust_response_matrix[i]
 
             receive_enabled = i != defector_id or self.defect_mode not in [
@@ -261,14 +306,10 @@ class Mate(A2C):
                 MateConfig.DefectMode.DEFECT_RESPONSE,
             ]
 
-            if (
-                receive_enabled
-                and len(self.neighborhood[agent_id]) > 0
-                and trust_responses.any()
-            ):
+            if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
                 filtered_trust_responses = [
                     trust_responses[self.agent_id_mapping[x]]
-                    for x in self.neighborhood[agent_id]
+                    for x in neighborhood
                     if abs(trust_responses[self.agent_id_mapping[x]]) > 0
                 ]
                 if len(filtered_trust_responses) > 0:

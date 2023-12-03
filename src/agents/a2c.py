@@ -24,7 +24,7 @@ class A2C(IAgents):
     @dataclass
     class RolloutBuffer:
         rewards: list[float]
-        observations: list[ObsType]
+        observations: list[Tensor]
         actions: list[ActionType]
 
         def __init__(self):
@@ -32,7 +32,7 @@ class A2C(IAgents):
             self.observations = []
             self.actions = []
 
-        def add(self, reward: float, observation: ObsType, action: ActionType):
+        def add(self, reward: float, observation: Tensor, action: ActionType):
             self.rewards.append(reward)
             self.observations.append(observation)
             self.actions.append(action)
@@ -156,12 +156,12 @@ class A2C(IAgents):
             # convert observation to float tensor, add 1 dimension, allocate tensor on device
             obs_tensor = torch.from_numpy(observation).float().unsqueeze(0)
 
-            action_probs = policy_network(obs_tensor).detach()  # [0].detach().numpy()
+            action_probs = policy_network(obs_tensor)  # [0].detach().numpy()
             m = Categorical(probs=action_probs)
-            action = m.sample()
+            action_t: Tensor = m.sample()
 
             # log_prob = m.log_prob(action)
-            action = action.item()
+            action = action_t.item()
 
         return action
 
@@ -186,7 +186,8 @@ class A2C(IAgents):
     ) -> None:
         pass
 
-    def compute_returns(self, rewards, gamma: float):
+    @staticmethod
+    def compute_returns(rewards, gamma: float):
         discounted_returns = np.zeros_like(rewards, dtype=np.float32)
         running_add = 0
         for t in reversed(range(len(rewards))):
@@ -226,20 +227,18 @@ class A2C(IAgents):
 
         obs = torch.tensor(
             np.vstack(self.step_info[agent_id].observations), dtype=torch.float32
-        ).detach()
+        )
 
-        actions = torch.tensor(
-            self.step_info[agent_id].actions, dtype=torch.int64
-        ).detach()
+        actions = torch.tensor(self.step_info[agent_id].actions, dtype=torch.int64)
 
-        critic_values = critic(obs).squeeze().detach()
+        critic_values = critic(obs.detach()).squeeze().detach()
 
-        actor_probs = actor(obs)
+        actor_probs = actor(obs.detach())
 
-        advantages = returns.detach() - critic_values.detach()
+        advantages = returns.detach() - critic_values
 
         m1 = Categorical(actor_probs)
-        actor_loss = (-m1.log_prob(actions) * (advantages.detach())).sum()
+        actor_loss = (-m1.log_prob(actions) * advantages).sum()
 
         self.actor_losses[agent_id].append(actor_loss.detach())
 
