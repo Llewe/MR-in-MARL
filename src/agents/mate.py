@@ -88,7 +88,7 @@ class Mate(A2C):
 
     def get_state_values(
         self,
-        last_observations: dict[AgentID, Tensor],
+        last_obs_index: int,
         next_observations: dict[AgentID, Tensor],
     ) -> dict[AgentID, tuple[float, float]]:
         """
@@ -108,9 +108,7 @@ class Mate(A2C):
         """
         state_values: dict[AgentID, tuple[float, float]] = {
             agent_id: (
-                self.critic_networks[agent_id](
-                    last_observations[agent_id].detach()
-                ).item(),
+                self.step_info[agent_id].values[last_obs_index].item(),
                 self.critic_networks[agent_id](
                     next_observations[agent_id].detach()
                 ).item(),
@@ -228,7 +226,7 @@ class Mate(A2C):
 
         state_values: dict[AgentID, tuple[float, float]]
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
-            state_values = self.get_state_values(last_observations, next_observations)
+            state_values = self.get_state_values(last_obs_index, next_observations)
         else:
             state_values = defaultdict(lambda: (0, 0))
 

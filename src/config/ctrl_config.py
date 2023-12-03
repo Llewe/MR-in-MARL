@@ -40,7 +40,7 @@ class MateConfig(A2cConfig):
 
     MODE: Mode = Mode.TD_ERROR_MODE
     DEFECT_MODE: DefectMode = DefectMode.NO_DEFECT
-    TOKEN_VALUE: float = 0.4
+    TOKEN_VALUE: float = 1
 
 
 class GiftingConfig(A2cConfig):
@@ -62,7 +62,7 @@ class DemoMaConfig(A2cConfig):
 
 if __name__ == "__main__":
     # Calculate Decay rate:
-    epoch_reached_min = 45000
+    epoch_reached_min = 3500
 
     a2c_config = A2cConfig()
 
@@ -71,4 +71,7 @@ if __name__ == "__main__":
         f"With epsilon start ({a2c_config.EPSILON_INIT}) epsilon min "
         f"({a2c_config.EPSILON_MIN}) will be reached after {epoch_reached_min} "
         f"epochs with the decay rate of {decay}"
+    )
+    print(
+        f"EPSILON_INIT={a2c_config.EPSILON_INIT} EPSILON_DECAY={decay} EPSILON_MIN={a2c_config.EPSILON_MIN}"
     )

@@ -25,21 +25,27 @@ class A2C(IAgents):
     class RolloutBuffer:
         rewards: list[float]
         observations: list[Tensor]
+        values: list[Tensor]
         actions: list[ActionType]
 
         def __init__(self):
             self.rewards = []
             self.observations = []
+            self.values = []
             self.actions = []
 
-        def add(self, reward: float, observation: Tensor, action: ActionType):
+        def add(
+            self, reward: float, observation: Tensor, action: ActionType, value: Tensor
+        ):
             self.rewards.append(reward)
             self.observations.append(observation)
+            self.values.append(value)
             self.actions.append(action)
 
         def clear(self):
             self.rewards.clear()
             self.observations.clear()
+            self.values.clear()
             self.actions.clear()
 
     config: A2cConfig
@@ -179,7 +185,12 @@ class A2C(IAgents):
             scaled_reward = reward
         obs_curr: Tensor = torch.from_numpy(last_observation).float().unsqueeze(0)
 
-        self.step_info[agent_id].add(scaled_reward, obs_curr, last_action)
+        self.step_info[agent_id].add(
+            reward=scaled_reward,
+            observation=obs_curr,
+            action=last_action,
+            value=self.critic_networks[agent_id](obs_curr),
+        )
 
     def step_finished(
         self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
@@ -206,11 +217,7 @@ class A2C(IAgents):
     def _update_critic(self, agent_id, gamma: float, returns) -> None:
         critic = self.critic_networks[agent_id]
 
-        obs = torch.tensor(
-            np.vstack(self.step_info[agent_id].observations), dtype=torch.float32
-        ).detach()
-
-        critic_values = critic(obs).squeeze()
+        critic_values = torch.stack(self.step_info[agent_id].values).squeeze()
 
         critic_loss = mse_loss(returns.detach(), critic_values)
 
@@ -225,13 +232,11 @@ class A2C(IAgents):
         actor = self.actor_networks[agent_id]
         critic = self.critic_networks[agent_id]
 
-        obs = torch.tensor(
-            np.vstack(self.step_info[agent_id].observations), dtype=torch.float32
-        )
+        obs = torch.stack(self.step_info[agent_id].observations)
 
         actions = torch.tensor(self.step_info[agent_id].actions, dtype=torch.int64)
 
-        critic_values = critic(obs.detach()).squeeze().detach()
+        critic_values = torch.stack(self.step_info[agent_id].values).squeeze().detach()
 
         actor_probs = actor(obs.detach())
 

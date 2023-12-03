@@ -11,13 +11,12 @@ class TrainingConfig(ExpConfig):
     EXP_TAG: str = names.get_first_name()
 
     EPISODES: int = 10
-    EPOCHS: int = 50000
+    EPOCHS: int = 5000
 
     EVAL_EPISODES: int = 250
     EVAL_EPOCH_INTERVAL: int = 500
 
     AGENT_TYPE: AgentType = AgentType.MATE
-
     ENV_NAME: EnvType = EnvType.P_MY_COIN_GAME
     ENV_TAG: str = "default"
 

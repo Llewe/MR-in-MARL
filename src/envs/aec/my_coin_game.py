@@ -574,7 +574,6 @@ class CoinGame(AECEnv):
             logging.warning("No summary writer. Not logging.")
             return
 
-        write_log: bool = True
         if "write_log" not in options:
             self.current_history.clear()
             logging.warning("No write_log in options. Not logging.")

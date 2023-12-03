@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Union
 
 import numpy
+import numpy as np
 import pygame
 from pettingzoo import AECEnv, ParallelEnv
 from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
@@ -35,7 +36,7 @@ def _train_epoch(
 
     obs_logger.clear_buffer()
 
-    epoch_reward: dict[AgentID, float] = defaultdict(lambda: 0)
+    epoch_rewards: dict[AgentID, list[float]] = {a: [] for a in env.agents}
 
     for episode in range(1, _training_config.EPISODES + 1):
         logging.info(
@@ -52,7 +53,7 @@ def _train_epoch(
             )
 
         for agent_id in episode_reward:
-            epoch_reward[agent_id] += episode_reward[agent_id]
+            epoch_rewards[agent_id].append(episode_reward[agent_id])
 
     # by resetting some envs (e.g. coin game) will log some env specific data
     env.reset(
@@ -63,9 +64,9 @@ def _train_epoch(
         }
     )
 
-    for agent_id in epoch_reward:
+    for agent_id, epoch_reward in epoch_rewards.items():
         writer.add_scalar(
-            f"train-real-rewards/{agent_id}", epoch_reward[agent_id], current_epoch
+            f"train-real-rewards/{agent_id}", np.mean(epoch_reward), current_epoch
         )
 
     obs_logger.log_epoch(current_epoch, "train")
