@@ -82,7 +82,7 @@ def _train_parallel_episode(
     writer: SummaryWriter,
     obs_logger: IObsLogger,
 ) -> dict[AgentID, float]:
-    episode_reward: dict[AgentID, float] = defaultdict(lambda: 0)
+    episode_reward: dict[AgentID, float] = {a: 0 for a in env.possible_agents}
     timestep: int = 0
 
     observations, infos = env.reset(
@@ -106,6 +106,8 @@ def _train_parallel_episode(
             obs_logger.add_observation(agent_id, observation)
 
         new_observations, rewards, terminations, truncations, infos = env.step(actions)
+        for agent_id, reward in rewards.items():
+            episode_reward[agent_id] += reward
 
         agents.step_agent_parallel(
             observations,
@@ -142,7 +144,9 @@ def _train_aec_episode_simple(
     )
 
     while env.agents:
-        actions = {agent: env.action_space(agent).sample() for agent in env.agents}
+        actions = {
+            agent: env.action_space(agent).sample() for agent in env.possible_agents
+        }
 
         observations, rewards, terminations, truncations, infos = env.step(actions)
 

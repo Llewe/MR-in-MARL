@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 import gymnasium
 import numpy as np
 import pygame
-from gymnasium.spaces import Discrete, Space
+from gymnasium.spaces import Box, Discrete, Space
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector as AgentSelector, wrappers
 from pettingzoo.utils.conversions import parallel_wrapper_fn
@@ -70,6 +70,7 @@ class GlobalState:
             [6] coin.owner (1 if agent is owner, otherwise 0)
 
         """
+
         agent_state_values = [
             coord
             for agent in self.agent_states.values()
@@ -313,9 +314,16 @@ class CoinGame(AECEnv):
         self.action_spaces = {agent: Discrete(self.nr_actions) for agent in self.agents}
 
         self.observation_spaces = {
-            agent: Discrete(len(self.state.to_obs_list(self.agents[0])))
+            agent: Box(
+                low=0,
+                high=n_players if n_players > grid_size else grid_size,
+                shape=(1, len(self.state.to_obs_list(agent))),
+                dtype=np.integer,
+            )
             for agent in self.agents
         }
+
+        self.rewards: dict[AgentID, float] = {agent: 0 for agent in self.agents}
 
     def observation_space(self, agent: AgentID) -> Space:
         return self.observation_spaces[agent]
@@ -392,11 +400,12 @@ class CoinGame(AECEnv):
 
         self.agent_selection: AgentID = self.agent_selector.next()
 
-        self.rewards: dict[AgentID, float] = {agent: 0 for agent in self.agents}
+        self._clear_rewards()
         self._cumulative_rewards: dict[AgentID, float] = {
             agent: 0 for agent in self.agents
         }
-
+        self.rewards = {name: 0.0 for name in self.agents}
+        self._cumulative_rewards = {name: 0.0 for name in self.agents}
         self.terminations: dict[AgentID, bool] = {agent: False for agent in self.agents}
         self.truncations: dict[AgentID, bool] = {agent: False for agent in self.agents}
         self.infos: dict[AgentID, dict[str, Any]] = {agent: {} for agent in self.agents}
@@ -427,7 +436,7 @@ class CoinGame(AECEnv):
             self._render_pygame()
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        return np.array(self.state.get_obs(agent))
+        return np.asmatrix(self.state.get_obs(agent))
 
     def close(self) -> None:
         pass
@@ -497,7 +506,6 @@ class CoinGame(AECEnv):
         # Check if the new position is occupied by a coin :)
         if (pos_x, pos_y) == (self.state.coin_state.x, self.state.coin_state.y):
             self.current_history[-1].collected_coins[agent] = True
-
             self.state.coin_is_collected = True
             self.rewards[agent] += 1
             if self.state.coin_state.owner is not agent:
@@ -512,8 +520,6 @@ class CoinGame(AECEnv):
 
         if self.agent_selector.is_first():
             # Resetting the rewards for each agent if its the first of this "time" step
-            self.rewards = {agent: 0 for agent in self.agents}
-
             self.current_history.append(
                 HistoryState(
                     board_step=self.state.steps_on_board,
@@ -539,20 +545,16 @@ class CoinGame(AECEnv):
                 for agent in self.agents
             }
 
-            # Reset cumulative rewards before collecting them again
-            for a in self._cumulative_rewards:
-                self._cumulative_rewards[a] = 0
-
             if self.state.coin_is_collected:
                 self._generate_coin()
-
-                self._accumulate_rewards()
 
             for a, r in self._cumulative_rewards.items():
                 self.current_history[-1].rewards[a] = r
 
             # update observations
             self.state.cal_obs()
+        self._cumulative_rewards[agent] = self.rewards[agent]
+        self.rewards[agent] = 0
 
         # Switch to next agent
         self.agent_selection = self.agent_selector.next()
@@ -651,6 +653,17 @@ class CoinGame(AECEnv):
 
         self.current_history.clear()
 
+    def last(
+        self, observe: bool = True
+    ) -> tuple[ObsType | None, float, bool, bool, dict[str, Any]]:
+        if self._cumulative_rewards[self.agent_selection] != 0:
+            print("WARNING: A")
+        if self.rewards[self.agent_selection] != 0:
+            print(
+                "WARNING: You are accessing rewards before the environment has ended. This is not recommended."
+            )
+        return super().last(observe=observe)
+
 
 if __name__ == "__main__":
     """
@@ -663,20 +676,27 @@ if __name__ == "__main__":
     # randomize_coin: bool = False,
     allow_overlap_players: bool = False,
     """
-    env = env(n_players=2, grid_size=3, render_mode="human", allow_overlap_players=True)
 
-    env.reset()
+    from pettingzoo.test import api_test, parallel_api_test
 
-    for i in range(1000):
-        pygame.event.get()  # so that the window doesn't freeze
-        env.reset()
-        print("Reset")
-        for agent_name in env.agent_iter():
-            observation, reward, termination, truncation, info = env.last()
-            if termination or truncation:
-                env.step(None)
-                continue
-            else:
-                act = random.choice(list(range(len(Action))))
-                env.step(act)
-            env.render()
+    env = env()
+
+    api_test(env, num_cycles=1000, verbose_progress=True)
+
+    parallel_api_test(parallel_env(), num_cycles=1000)
+
+# env.reset()
+#
+# for i in range(1000):
+#     pygame.event.get()  # so that the window doesn't freeze
+#     env.reset()
+#     print("Reset")
+#     for agent_name in env.agent_iter():
+#         observation, reward, termination, truncation, info = env.last()
+#         if termination or truncation:
+#             env.step(None)
+#             continue
+#         else:
+#             act = random.choice(list(range(len(Action))))
+#             env.step(act)
+#         env.render()
