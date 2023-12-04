@@ -47,13 +47,13 @@ class GlobalState:
     coin_is_collected: bool
     steps_on_board: int
 
-    _obs: dict[AgentID, list[int]]
+    _obs: dict[AgentID, np.ndarray]
 
     def cal_obs(self) -> None:
         for agent_id in self.agent_states:
             self._obs[agent_id] = self.to_obs_list(agent_id)
 
-    def to_obs_list(self, agent_id: AgentID) -> list[int]:
+    def to_obs_list(self, agent_id: AgentID) -> np.ndarray:
         """
 
         Parameters
@@ -72,17 +72,20 @@ class GlobalState:
         """
 
         agent_state_values = [
-            coord
+            np.array([coord])
             for agent in self.agent_states.values()
             for coord in (agent.x, agent.y)
         ]
-        return agent_state_values + [
-            self.coin_state.x,
-            self.coin_state.y,
-            int(self.coin_state.owner == agent_id),
-        ]
+        return np.asarray(
+            agent_state_values
+            + [
+                np.array([self.coin_state.x]),
+                np.array([self.coin_state.y]),
+                np.array([int(self.coin_state.owner == agent_id)]),
+            ]
+        )
 
-    def get_obs(self, agent_id: AgentID) -> list[int]:
+    def get_obs(self, agent_id: AgentID) -> np.ndarray:
         return self._obs[agent_id]
 
 
@@ -317,8 +320,8 @@ class CoinGame(AECEnv):
             agent: Box(
                 low=0,
                 high=n_players if n_players > grid_size else grid_size,
-                shape=(1, len(self.state.to_obs_list(agent))),
-                dtype=np.integer,
+                shape=(len(self.state.to_obs_list(agent)), 1),
+                dtype=np.int64,
             )
             for agent in self.agents
         }
@@ -436,7 +439,7 @@ class CoinGame(AECEnv):
             self._render_pygame()
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        return np.asmatrix(self.state.get_obs(agent))
+        return self.state.get_obs(agent)
 
     def close(self) -> None:
         pass
@@ -512,6 +515,8 @@ class CoinGame(AECEnv):
                 self.rewards[self.state.coin_state.owner] -= 2
 
     def step(self, action: ActionType) -> None:
+        self._clear_rewards()
+
         agent: AgentID = self.agent_selection
 
         if self.terminations[agent] or self.truncations[agent]:
@@ -553,8 +558,8 @@ class CoinGame(AECEnv):
 
             # update observations
             self.state.cal_obs()
-        self._cumulative_rewards[agent] = self.rewards[agent]
-        self.rewards[agent] = 0
+        self._cumulative_rewards[agent] = 0
+        self._accumulate_rewards()
 
         # Switch to next agent
         self.agent_selection = self.agent_selector.next()
@@ -679,8 +684,7 @@ if __name__ == "__main__":
 
     from pettingzoo.test import api_test, parallel_api_test
 
-    env = env()
-
+    env = env(n_players=4, grid_size=5, render_mode="")
     api_test(env, num_cycles=1000, verbose_progress=True)
 
     parallel_api_test(parallel_env(), num_cycles=1000)
