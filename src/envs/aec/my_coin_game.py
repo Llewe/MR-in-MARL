@@ -510,9 +510,9 @@ class CoinGame(AECEnv):
         if (pos_x, pos_y) == (self.state.coin_state.x, self.state.coin_state.y):
             self.current_history[-1].collected_coins[agent] = True
             self.state.coin_is_collected = True
-            self.rewards[agent] += 1
+            self.rewards[agent] += 1.0
             if self.state.coin_state.owner is not agent:
-                self.rewards[self.state.coin_state.owner] -= 2
+                self.rewards[self.state.coin_state.owner] -= 2.0
 
     def step(self, action: ActionType) -> None:
         self._clear_rewards()

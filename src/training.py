@@ -17,6 +17,7 @@ from src.envs import build_env
 from src.interfaces.agents_i import IAgents
 from src.utils.loggers.obs_logger import IObsLogger
 from src.utils.loggers.simple_env_logger import SimpleEnvLogger
+from src.utils.loggers.util_logger import log_efficiency
 
 _training_config = TrainingConfig()
 
@@ -68,6 +69,9 @@ def _train_epoch(
         writer.add_scalar(
             f"train-real-rewards/{agent_id}", np.mean(epoch_reward), current_epoch
         )
+    log_efficiency(
+        current_epoch, "train", writer, epoch_rewards, _training_config.EPISODES
+    )
 
     obs_logger.log_epoch(current_epoch, "train")
 
@@ -267,6 +271,8 @@ def _eval_parallel_agents(
         writer.add_histogram(
             f"eval-actions/{agent_id}", action, global_step=current_epoch
         )
+
+    log_efficiency(current_epoch, "eval", writer, rewards, num_eval_episodes)
 
     # by resetting some envs (e.g. coin game) will log some env specific data
     env.reset(
