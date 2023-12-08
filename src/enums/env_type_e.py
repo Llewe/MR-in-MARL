@@ -11,6 +11,8 @@ class EnvType(str, Enum):
     MY_COIN_GAME = "my_coin_game"
     P_MY_COIN_GAME = "p_my_coin_game"
 
+    P_HARVEST = "p_harvest"
+
     PRISONERS_DILEMMA = "prisoners_dilemma"
     SAMARITANS_DILEMMA = "samaritans_dilemma"
     STAG_HUNT = "stag_hunt"

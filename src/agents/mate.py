@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Optional
+from typing import Any, Optional
 
 import numpy
 import torch
@@ -20,6 +20,10 @@ class Mate(A2C):
     trust_response_matrix: numpy.ndarray
 
     last_rewards_observed: dict[AgentID, list[float]]
+
+    request_messages_sent: float
+    response_messages_sent: float
+    steps: float
 
     nr_agents: int
 
@@ -50,10 +54,10 @@ class Mate(A2C):
                 x for x in action_space.keys() if x != agent_id
             ]
 
-        self.trust_request_matrix = numpy.zeros(
+        self.trust_request_matrix: numpy.ndarray = numpy.zeros(
             (self.nr_agents, self.nr_agents), dtype=numpy.float32
         )
-        self.trust_response_matrix = numpy.zeros(
+        self.trust_response_matrix: numpy.ndarray = numpy.zeros(
             (self.nr_agents, self.nr_agents), dtype=numpy.float32
         )
 
@@ -65,8 +69,25 @@ class Mate(A2C):
             agent_id: [] for agent_id in self.actor_networks.keys()
         }
 
-    def epoch_finished(self, epoch: int) -> None:
-        super(Mate, self).epoch_finished(epoch)
+        self.request_messages_sent = 0.0
+        self.response_messages_sent = 0.0
+        self.steps = 0.0
+
+    def epoch_finished(self, epoch: int, tag: str) -> None:
+        super(Mate, self).epoch_finished(epoch, tag)
+
+        if self.writer is not None and self.steps > 0:
+            self.writer.add_scalar(
+                f"{tag}/mate/requests_sent",
+                self.request_messages_sent / self.steps,
+                epoch,
+            )
+
+            self.writer.add_scalar(
+                f"{tag}/mate/responses_sent",
+                self.response_messages_sent / self.steps,
+                epoch,
+            )
 
     def step_agent(
         self,
@@ -85,6 +106,7 @@ class Mate(A2C):
     ) -> None:
         super(Mate, self).step_finished(step, next_observations)
         self.mate(step, next_observations)
+        self.steps += 1
 
     def get_state_values(
         self,
@@ -219,11 +241,6 @@ class Mate(A2C):
                 for agent_id in self.step_info.keys()
             }
 
-        last_observations: dict[AgentID, ObsType] = {
-            agent_id: self.step_info[agent_id].observations[last_obs_index]
-            for agent_id in self.step_info.keys()
-        }
-
         state_values: dict[AgentID, tuple[float, float]]
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
             state_values = self.get_state_values(last_obs_index, next_observations)
@@ -257,7 +274,7 @@ class Mate(A2C):
                 for neighbor in neighborhood:
                     j = self.agent_id_mapping[neighbor]
                     self.trust_request_matrix[j][i] += self.token_value
-                    # transition["request_messages_sent"] += 1 logging
+                    self.request_messages_sent += 1  # logging
 
         # 2. Send trust responses
         for agent_id, i in self.agent_id_mapping.items():
@@ -292,8 +309,8 @@ class Mate(A2C):
                     j = self.agent_id_mapping[neighbor]
                     if self.trust_request_matrix[i][j] > 0:
                         self.trust_response_matrix[j][i] = accept_trust
-                        # if accept_trust > 0:
-                        #     transition["response_messages_sent"] += 1
+                        if accept_trust > 0:
+                            self.response_messages_sent += 1  # logging
         # 3. Receive trust responses
         for agent_id, i in self.agent_id_mapping.items():
             neighborhood = self.neighborhood[agent_id]
@@ -305,7 +322,7 @@ class Mate(A2C):
             ]
 
             if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
-                filtered_trust_responses = [
+                filtered_trust_responses: list[Any] = [
                     trust_responses[self.agent_id_mapping[x]]
                     for x in neighborhood
                     if abs(trust_responses[self.agent_id_mapping[x]]) > 0

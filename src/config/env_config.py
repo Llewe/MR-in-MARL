@@ -25,10 +25,21 @@ class SimpleAdversaryConfig(EnvConfig):
 
 
 class CoinGameConfig(EnvConfig):
-    PLAYERS: int = 4
-    GRID_SIZE: int = 5
+    PLAYERS: int = 2
+    GRID_SIZE: int = 3
     ALLOW_OVERLAP_PLAYERS: bool = True
     WALLS: bool = True
+
+
+class HarvestConfig(EnvConfig):
+    PLAYERS: int = 6
+    INIT_APPLES: int = 12
+    REGROW_CHANCE: float = 0.001
+
+    GRID_WIDTH: int = 18
+    GRID_HEIGHT: int = 10
+
+    MAX_CYCLES: int = 250
 
 
 class PrisonersConfig(EnvConfig):

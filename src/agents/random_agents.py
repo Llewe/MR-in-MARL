@@ -27,7 +27,7 @@ class RandomAgents(IAgents):
         # Nothing interesting to do here
         pass
 
-    def epoch_finished(self, epoch: int):
+    def epoch_finished(self, epoch: int, tag: str):
         # Nothing interesting to do here
         pass
 

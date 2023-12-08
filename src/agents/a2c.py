@@ -120,7 +120,7 @@ class A2C(IAgents):
             self.actor_losses[agent_id].clear()
             self.critic_losses[agent_id].clear()
 
-    def epoch_finished(self, epoch: int) -> None:
+    def epoch_finished(self, epoch: int, tag: str) -> None:
         # training
         for agent_id in self.actor_networks:
             self.learn(agent_id, self.config.DISCOUNT_FACTOR)

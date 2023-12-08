@@ -20,7 +20,7 @@ class A2cConfig(CtrlConfig):
 
     EPSILON_INIT: float = 0.8
     EPSILON_MIN: float = 0.1
-    EPSILON_DECAY: float = 1.5e-05
+    EPSILON_DECAY: float = 0.0002
 
 
 class MateConfig(A2cConfig):

@@ -1,3 +1,4 @@
+import functools
 import logging
 import math
 import random
@@ -5,7 +6,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-import gymnasium
 import numpy as np
 import pygame
 from gymnasium.spaces import Box, Discrete, Space
@@ -62,7 +62,7 @@ class GlobalState:
             the agent for which the observation should be generated
         Returns
         -------
-        list[int]
+        np.ndarray[int]
             All information about the environment that are visible to the agent
             [0] agent_0.x, [1] agent_0.y,
             [2] agent_1.x, [3] agent_1.y,
@@ -293,7 +293,7 @@ class CoinGame(AECEnv):
         self.allow_overlap_players = allow_overlap_players
         self.summary_writer = summary_writer
 
-        self.current_history = []
+        self.current_history: list[HistoryState] = []
 
         if render_mode == "human":
             self.pygame_renderer = CoinGamePygameRenderer(
@@ -328,9 +328,11 @@ class CoinGame(AECEnv):
 
         self.rewards: dict[AgentID, float] = {agent: 0 for agent in self.agents}
 
+    @functools.lru_cache(maxsize=None)
     def observation_space(self, agent: AgentID) -> Space:
         return self.observation_spaces[agent]
 
+    @functools.lru_cache(maxsize=None)
     def action_space(self, agent: AgentID) -> Space:
         return self.action_spaces[agent]
 
@@ -429,7 +431,7 @@ class CoinGame(AECEnv):
         up a graphical window, or open up some other display that a human can see and understand.
         """
         if self.render_mode is None:
-            gymnasium.logger.warn(
+            logging.warning(
                 "You are calling render method without specifying any render mode."
             )
             return
@@ -605,6 +607,9 @@ class CoinGame(AECEnv):
         cumulative_rewards = {agent: 0.0 for agent in self.agents}
         cnt_collected_coins = {agent: 0.0 for agent in self.agents}
 
+        total_collected_coins: float = 0.0
+        total_coins_collected_by_owner: float = 0.0
+
         collected_coins_owner = {
             agent: {agent: 0.0 for agent in self.agents} for agent in self.agents
         }
@@ -625,10 +630,17 @@ class CoinGame(AECEnv):
                 cumulative_rewards[agent_id] += history.rewards[agent_id]
                 cnt_collected_coins[agent_id] += history.collected_coins[agent_id]
                 if history.collected_coins[agent_id]:
-                    collected_coins_owner[agent_id][history.coin_owner] += 1
+                    collected_coins_owner[agent_id][history.coin_owner] += 1.0
+
+                    total_collected_coins += 1.0
+                    if agent_id == history.coin_owner:
+                        total_coins_collected_by_owner += 1.0
 
         if divider != 1:
             cumulative_rewards = {a: r / divider for a, r in cumulative_rewards.items()}
+            total_collected_coins /= divider
+            total_coins_collected_by_owner /= divider
+
             cnt_collected_coins = {
                 a: c / divider for a, c in cnt_collected_coins.items()
             }
@@ -655,6 +667,20 @@ class CoinGame(AECEnv):
                     cnt,
                     epoch,
                 )
+
+        self.summary_writer.add_scalar(
+            f"{log_name}/coins/total/",
+            total_collected_coins,
+            epoch,
+        )
+
+        own_coin: float
+        if total_collected_coins > 0:
+            own_coin = total_coins_collected_by_owner / total_collected_coins
+        else:
+            own_coin = 0.0
+
+        self.summary_writer.add_scalar(f"{log_name}/coins/own_coin/", own_coin, epoch)
 
         self.current_history.clear()
 

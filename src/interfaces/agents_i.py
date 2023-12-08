@@ -26,7 +26,7 @@ class IAgents(ABC):
         pass
 
     @abstractmethod
-    def epoch_finished(self, epoch: int) -> None:
+    def epoch_finished(self, epoch: int, tag: str) -> None:
         pass
 
     @abstractmethod

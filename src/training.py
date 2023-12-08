@@ -75,7 +75,7 @@ def _train_epoch(
 
     obs_logger.log_epoch(current_epoch, "train")
 
-    agents.epoch_finished(current_epoch)
+    agents.epoch_finished(current_epoch, "train")
 
 
 def _train_parallel_episode(

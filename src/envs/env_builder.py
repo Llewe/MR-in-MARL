@@ -11,6 +11,7 @@ from src.config.env_config import (
     ChickenConfig,
     CoinGameConfig,
     EnvConfig,
+    HarvestConfig,
     PrisonersConfig,
     SamaritansConfig,
     SimpleAdversaryConfig,
@@ -33,7 +34,7 @@ from src.envs.setup.aec_envs import (
     _setup_samaritans,
     _setup_stag_hunt,
 )
-from src.envs.setup.parallel_envs import _p_setup_my_coin_game
+from src.envs.setup.parallel_envs import _p_setup_harvest, _p_setup_my_coin_game
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
 
 T = TypeVar("T", bound=EnvConfig)
@@ -82,6 +83,9 @@ def build_env(
         case EnvType.CHICKEN:
             return _setup_chicken(writer, config)
 
+        case EnvType.P_HARVEST:
+            return _p_setup_harvest(writer, config)
+
     raise NotImplementedError
 
 
@@ -107,6 +111,8 @@ def get_env_class(env_name: EnvType) -> Type[T]:
             return StagHuntConfig
         case EnvType.CHICKEN:
             return ChickenConfig
+        case EnvType.P_HARVEST:
+            return HarvestConfig
         case _:
             return EnvConfig
 
