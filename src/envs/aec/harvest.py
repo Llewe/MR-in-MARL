@@ -669,7 +669,6 @@ class Harvest(AECEnv):
         # collect reward if it is the last agent to act
         if self._agent_selector.is_last():
             self.global_state.steps_on_board += 1
-            self._grow_apples()
 
             self.truncations = {
                 agent: self.global_state.steps_on_board >= self.max_cycles
