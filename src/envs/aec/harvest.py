@@ -2,7 +2,8 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from itertools import product
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pygame
@@ -79,6 +80,8 @@ class GlobalState:
     map_width: int
     map_height: int
 
+    vision_offsets: List[Tuple[int, int, int]]
+
     # Walls = -1, Empty = 0, Agent = 1, Apple = 2
     _obs: dict[AgentID, np.ndarray]
 
@@ -107,6 +110,20 @@ class GlobalState:
                 (outside_vision_range * outside_vision_range, 1), dtype=np.int64
             )
 
+        self.vision_offsets = [
+            (index, x, y)
+            for index, (x, y) in enumerate(
+                (
+                    (x, y)
+                    for x, y in product(
+                        range(-self.vision_range, self.vision_range + 1),
+                        range(-self.vision_range, self.vision_range + 1),
+                    )
+                    if not (x == 0 and y == 0)
+                ),
+            )
+        ]
+
         self.apples = []
 
     def pos_to_obs_index(self, x: int, y: int) -> int:
@@ -122,58 +139,25 @@ class GlobalState:
         )
 
     def cal_obs(self) -> None:
-        for agent_id in self.agent_states:
-            self.update_obs(agent_id)
+        curr_map: np.ndarray = self.build_map()
 
-    def update_obs(self, agent_id: AgentID) -> None:
-        """
-        This can proablably be way more efficient if everything is stored in one 2d array
-        or multiple 2d arrays (layers)
-        Parameters
-        ----------
-        agent_id: AgentID
-            the agent for which the observation should be generated
-        Returns
-        -------
-        np.ndarray[int]
-            (2 * vision_range + 1) x (2 * vision_range + 1) big array of integers.
-            4 if the tile is outside the map
-            0 if the tile is empty
-            1 if the tile contains an agent
-            2 if the tile contains an apple
-            3 self
-
-        """
-        agent: AgentState = self.agent_states[agent_id]
-
-        array_index: int = 0
-
-        for x in range(agent.x - self.vision_range, agent.x + self.vision_range + 1):
-            for y in range(
-                agent.x - self.vision_range, agent.x + self.vision_range + 1
-            ):
+        for agent_id, agent in self.agent_states.items():
+            for index, x, y in self.vision_offsets:
                 if x == agent.x and y == agent.y:
-                    self._obs[agent_id][array_index] = ObsTiles.SELF.value
-                if not self.in_map(x, y):
-                    self._obs[agent_id][array_index] = ObsTiles.OUTSIDE.value
+                    self._obs[agent_id][index] = ObsTiles.SELF.value
+                elif not self.in_map(x, y):
+                    self._obs[agent_id][index] = ObsTiles.OUTSIDE.value
                 else:
-                    self._obs[agent_id][array_index] = next(
-                        (
-                            ObsTiles.AGENT.value
-                            for a in self.agent_states.values()
-                            if a != agent and a.x == x and a.y == y
-                        ),
-                        next(
-                            (
-                                ObsTiles.APPLE.value
-                                for a in self.apples
-                                if a.x == x and a.y == y
-                            ),
-                            ObsTiles.EMPTY.value,
-                        ),
-                    )
+                    self._obs[agent_id][index] = curr_map[y, x]
 
-                array_index += 1
+    def build_map(self) -> np.ndarray:
+        curr_map = np.zeros(shape=(self.map_height, self.map_width), dtype=np.int64)
+
+        for apple in self.apples:
+            curr_map[apple.y, apple.x] = ObsTiles.APPLE.value
+        for a in self.agent_states.values():
+            curr_map[a.y, a.x] = ObsTiles.AGENT.value
+        return curr_map
 
     def get_obs(self, agent_id: AgentID) -> np.ndarray:
         return self._obs[agent_id]
@@ -247,19 +231,18 @@ class HarvestPygameRenderer:
         )
 
     def _draw_grid(self) -> None:
-        for x in range(self.grid_width):
-            for y in range(self.grid_height):
-                pygame.draw.rect(
-                    self.screen,
-                    self.color_grid,
-                    (
-                        x * self.cell_size,
-                        y * self.cell_size,
-                        self.cell_size,
-                        self.cell_size,
-                    ),
-                    1,
-                )
+        for x, y in np.ndindex((self.grid_width, self.grid_height)):
+            pygame.draw.rect(
+                self.screen,
+                self.color_grid,
+                (
+                    x * self.cell_size,
+                    y * self.cell_size,
+                    self.cell_size,
+                    self.cell_size,
+                ),
+                1,
+            )
 
     def _draw_apples(self, state: GlobalState) -> None:
         for apple in state.apples:
@@ -425,11 +408,12 @@ class Harvest(AECEnv):
         self.global_state.steps_on_board = 0
 
         # spawn player
-        all_positions = [
-            (x, y)
-            for x in range(self.global_state.map_width)
-            for y in range(self.global_state.map_height)
-        ]
+        all_positions = list(
+            product(
+                range(self.global_state.map_width),
+                range(self.global_state.map_height),
+            )
+        )
 
         for agent in self.possible_agents:
             agent_state: AgentState = self.global_state.agent_states[agent]
@@ -595,12 +579,12 @@ class Harvest(AECEnv):
         regrow_matrix = np.zeros(
             (self.global_state.map_height, self.global_state.map_width), dtype=np.int64
         )
-        for offset_x, offset_y in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            for apple in self.global_state.apples:
-                pos_x = apple.x + offset_x
-                pos_y = apple.y + offset_y
+
+        for apple in self.global_state.apples:
+            for offset_x, offset_y in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                pos_x, pos_y = apple.x + offset_x, apple.y + offset_y
                 if self.global_state.in_map(pos_x, pos_y):
-                    regrow_matrix[pos_y, pos_x] += 1
+                    regrow_matrix[pos_y, pos_x] += self.regrow_chance
 
         for agent in self.global_state.agent_states.values():
             regrow_matrix[agent.y, agent.x] = 0
@@ -608,10 +592,14 @@ class Harvest(AECEnv):
         for apple in self.global_state.apples:
             regrow_matrix[apple.y, apple.x] = 0
 
-        for x in range(self.global_state.map_width):
-            for y in range(self.global_state.map_height):
-                if regrow_matrix[y, x] * self.regrow_chance > np.random.random():
-                    self.global_state.apples.append(Apple(x, y))
+        self.global_state.apples += [
+            Apple(x, y)
+            for x, y in product(
+                range(self.global_state.map_width),
+                range(self.global_state.map_height),
+            )
+            if regrow_matrix[y, x] > np.random.random()
+        ]
 
     def step(self, action) -> None:
         """
