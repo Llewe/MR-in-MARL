@@ -62,7 +62,7 @@ class DemoMaConfig(A2cConfig):
 
 if __name__ == "__main__":
     # Calculate Decay rate:
-    epoch_reached_min = 3500
+    epoch_reached_min = 35000
 
     a2c_config = A2cConfig()
 
