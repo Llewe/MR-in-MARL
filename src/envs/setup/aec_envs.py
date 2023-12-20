@@ -78,7 +78,7 @@ def _setup_coin_game(writer: SummaryWriter, coin_game_config: CoinGameConfig) ->
 def _setup_my_coin_game(
     writer: SummaryWriter, coin_game_config: CoinGameConfig
 ) -> AECEnv:
-    from src.envs.aec.my_coin_game import CoinGame
+    from src.envs.aec.my_coin_game_cy import CoinGame
 
     return CoinGame(
         with_none_action=True,

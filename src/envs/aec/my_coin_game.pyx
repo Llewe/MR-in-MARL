@@ -487,17 +487,20 @@ class CoinGame(AECEnv):
         pos_x: int = self.state.agent_states[agent].x
         pos_y: int = self.state.agent_states[agent].y
         # Calculate next position
-        match action:
-            case Action.LEFT:
-                pos_x = self._check_bounds(pos_x - 1)
-            case Action.RIGHT:
-                pos_x = self._check_bounds(pos_x + 1)
-            case Action.UP:
-                pos_y = self._check_bounds(pos_y + 1)
-            case Action.DOWN:
-                pos_y = self._check_bounds(pos_y - 1)
-            case Action.NONE:
-                pass
+        if action == Action.LEFT:
+            pos_x = self._check_bounds(pos_x - 1)
+        elif action == Action.RIGHT:
+            pos_x = self._check_bounds(pos_x + 1)
+        elif action == Action.UP:
+            pos_y = self._check_bounds(pos_y + 1)
+        elif action == Action.DOWN:
+            pos_y = self._check_bounds(pos_y - 1)
+        elif action == Action.NONE:
+            pass
+        else:
+            # Handle any other cases, if needed
+            pass
+
         # Check if the new position is occupied by another agent
         if not self.allow_overlap_players:
             for agent_state in self.state.agent_states.values():

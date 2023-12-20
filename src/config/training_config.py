@@ -16,8 +16,8 @@ class TrainingConfig(ExpConfig):
     EVAL_EPISODES: int = 250
     EVAL_EPOCH_INTERVAL: int = 500
 
-    AGENT_TYPE: AgentType = AgentType.A2C
-    ENV_NAME: EnvType = EnvType.P_HARVEST
+    AGENT_TYPE: AgentType = AgentType.MATE
+    ENV_NAME: EnvType = EnvType.P_MY_COIN_GAME
     ENV_TAG: str = "default"
 
     EXP_UNIQUE_NAME: str = (

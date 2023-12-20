@@ -88,12 +88,12 @@ class GlobalState:
     steps_on_board: int = 0
 
     def __init__(
-        self,
-        agents: List[AgentID],
-        map_width: int = 18,
-        map_height: int = 10,
-        vision_range: int = 3,
-        tag_beam_width: int = 2,
+            self,
+            agents: List[AgentID],
+            map_width: int = 18,
+            map_height: int = 10,
+            vision_range: int = 3,
+            tag_beam_width: int = 2,
     ):
         self.agent_states = {}
         self._obs = {}
@@ -116,9 +116,9 @@ class GlobalState:
                 (
                     (x, y)
                     for x, y in product(
-                        range(-self.vision_range, self.vision_range + 1),
-                        range(-self.vision_range, self.vision_range + 1),
-                    )
+                    range(-self.vision_range, self.vision_range + 1),
+                    range(-self.vision_range, self.vision_range + 1),
+                )
                     if not (x == 0 and y == 0)
                 ),
             )
@@ -134,8 +134,8 @@ class GlobalState:
 
     def in_vision(self, agent: AgentState, obj: Union[Apple, AgentState]):
         return (
-            abs(obj.x - agent.x) <= self.vision_range
-            and abs(obj.y - agent.y) <= self.vision_range
+                abs(obj.x - agent.x) <= self.vision_range
+                and abs(obj.y - agent.y) <= self.vision_range
         )
 
     def cal_obs(self) -> None:
@@ -172,7 +172,6 @@ def env(**kwargs):
     e = wrappers.AssertOutOfBoundsWrapper(e)
     e = wrappers.OrderEnforcingWrapper(e)
     return e
-
 
 parallel_env = parallel_wrapper_fn(env)
 
@@ -301,18 +300,18 @@ class Harvest(AECEnv):
     summary_writer: Optional[SummaryWriter]
 
     def __init__(
-        self,
-        render_mode="",
-        max_cycles: int = 250,
-        n_players: int = 6,
-        n_apples: int = 12,
-        grid_width: int = 18,
-        grid_height: int = 10,
-        vision_range: int = 3,
-        tag_beam_width: int = 2,
-        tag_time: int = 25,
-        regrow_chance: float = 0.001,
-        summary_writer: Optional[SummaryWriter] = None,
+            self,
+            render_mode="",
+            max_cycles: int = 250,
+            n_players: int = 6,
+            n_apples: int = 12,
+            grid_width: int = 18,
+            grid_height: int = 10,
+            vision_range: int = 3,
+            tag_beam_width: int = 2,
+            tag_time: int = 25,
+            regrow_chance: float = 0.001,
+            summary_writer: Optional[SummaryWriter] = None,
     ):
         super().__init__()
 
@@ -484,7 +483,7 @@ class Harvest(AECEnv):
         return new_y
 
     def _tag_agents(
-        self, start_x: int, start_y: int, end_x: int, end_y: int, tagger_id: AgentID
+            self, start_x: int, start_y: int, end_x: int, end_y: int, tagger_id: AgentID
     ) -> None:
         for agent_id, state in self.global_state.agent_states.items():
             if agent_id != tagger_id:
@@ -507,54 +506,53 @@ class Harvest(AECEnv):
         pos_x: int = self.global_state.agent_states[agent].x
         pos_y: int = self.global_state.agent_states[agent].y
         # Calculate next position
-        match action:
-            case Action.LEFT:
-                pos_x = pos_x - 1
-            case Action.RIGHT:
-                pos_x = pos_x + 1
-            case Action.UP:
-                pos_y = pos_y + 1
-            case Action.DOWN:
-                pos_y = pos_y - 1
-            case Action.NONE:
-                pass
+        if action == Action.LEFT:
+            pos_x = pos_x - 1
+        elif action == Action.RIGHT:
+            pos_x = pos_x + 1
+        elif action == Action.UP:
+            pos_y = pos_y + 1
+        elif action == Action.DOWN:
+            pos_y = pos_y - 1
+        elif action == Action.NONE:
+            pass
 
-            case Action.TAG_N:
-                self._tag_agents(
-                    pos_x - self.global_state.tag_beam_width,
-                    pos_y,
-                    pos_x + self.global_state.tag_beam_width,
-                    pos_y + self.global_state.tag_beam_width,
-                    agent,
-                )
-                return
-            case Action.TAG_E:
-                self._tag_agents(
-                    pos_x,
-                    pos_y - self.global_state.tag_beam_width,
-                    pos_x + self.global_state.tag_beam_width,
-                    pos_y + self.global_state.tag_beam_width,
-                    agent,
-                )
-                return
-            case Action.TAG_S:
-                self._tag_agents(
-                    pos_x - self.global_state.tag_beam_width,
-                    pos_y - self.global_state.tag_beam_width,
-                    pos_x + self.global_state.tag_beam_width,
-                    pos_y,
-                    agent,
-                )
-                return
-            case Action.TAG_W:
-                self._tag_agents(
-                    pos_x - self.global_state.tag_beam_width,
-                    pos_y - self.global_state.tag_beam_width,
-                    pos_x,
-                    pos_y + self.global_state.tag_beam_width,
-                    agent,
-                )
-                return
+        elif action == Action.TAG_N:
+            self._tag_agents(
+                pos_x - self.global_state.tag_beam_width,
+                pos_y,
+                pos_x + self.global_state.tag_beam_width,
+                pos_y + self.global_state.tag_beam_width,
+                agent,
+            )
+            return
+        elif action == Action.TAG_E:
+            self._tag_agents(
+                pos_x,
+                pos_y - self.global_state.tag_beam_width,
+                pos_x + self.global_state.tag_beam_width,
+                pos_y + self.global_state.tag_beam_width,
+                agent,
+            )
+            return
+        elif action == Action.TAG_S:
+            self._tag_agents(
+                pos_x - self.global_state.tag_beam_width,
+                pos_y - self.global_state.tag_beam_width,
+                pos_x + self.global_state.tag_beam_width,
+                pos_y,
+                agent,
+            )
+            return
+        elif action == Action.TAG_W:
+            self._tag_agents(
+                pos_x - self.global_state.tag_beam_width,
+                pos_y - self.global_state.tag_beam_width,
+                pos_x,
+                pos_y + self.global_state.tag_beam_width,
+                agent,
+            )
+            return
 
         if not self.global_state.in_map(pos_x, pos_y):
             return

@@ -1,7 +1,7 @@
+import numpy
 import torch
 from torch.nn import ELU, Linear, Module, Sequential
 from torch.nn.functional import softmax
-
 
 def preprocessing_module(nr_input_features, nr_hidden_units, last_layer_units):
     return Sequential(
@@ -16,11 +16,11 @@ def preprocessing_module(nr_input_features, nr_hidden_units, last_layer_units):
 class ActorNetwork(Module):
     # Takes in observations and outputs actions
     def __init__(
-        self,
-        observation_space,
-        num_actions: int,
-        hidden_units: int,
-        learning_rate: float,
+            self,
+            observation_space,
+            num_actions: numpy.int64,
+            hidden_units: int,
+            learning_rate: float,
     ):
         super(ActorNetwork, self).__init__()
         self.num_actions = num_actions
