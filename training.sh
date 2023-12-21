@@ -4,7 +4,7 @@ train() {
     local log_file="./resources/logs/$(date -d "today" "+%Y.%m.%d-%H.%M.%S"_$log_counter).log"
     ((log_counter++))
 
-    local command="poetry run python src/training.py"
+    local command="poetry run python src/training.pyx"
 
     # Loop through the provided parameters and export them
     for var in "$@"; do
