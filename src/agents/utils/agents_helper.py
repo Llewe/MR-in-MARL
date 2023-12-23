@@ -9,11 +9,14 @@ from src.agents.env_specific.demo_ma import DemoMa
 from src.agents.mate import Mate
 from src.agents.random_agents import RandomAgents
 from src.cfg_manager import get_cfg
+
+from src.agents.gifting import Gifting
 from src.config.ctrl_config import (
     A2cConfig,
     CtrlConfig,
     DemoMaCoinConfig,
     DemoMaConfig,
+    GiftingConfig,
     MateConfig,
 )
 from src.enums.agent_type_e import AgentType
@@ -51,6 +54,9 @@ def get_agent_class(agent_type: AgentType) -> Tuple[Type[IAgents], Type[CtrlConf
 
         case AgentType.MATE:
             return Mate, MateConfig
+
+        case AgentType.GIFTING:
+            return Gifting, GiftingConfig
 
         case AgentType.DEMO_MANIPULATION_AGENT:
             return DemoMa, DemoMaConfig

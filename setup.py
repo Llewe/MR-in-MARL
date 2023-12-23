@@ -12,11 +12,16 @@ setup(
             "src/agents/utils/reward_normalization.pyx",
             "src/agents/utils/state_value_network.pyx",
             "src/agents/a2c.pyx",
+            "src/agents/gifting.pyx",
             "src/agents/mate.pyx",
             "src/agents/random_agents.pyx",
             "src/agents/random_agents.pyx",
             "src/envs/aec/harvest.pyx",
             "src/envs/aec/my_coin_game.pyx",
+            "src/utils/loggers/obs_logger.pyx",
+            "src/utils/loggers/simple_env_logger.pyx",
+            "src/utils/loggers/util_logger.pyx",
+            "src/utils/gym_utils.pyx",
         ]
     )
 )

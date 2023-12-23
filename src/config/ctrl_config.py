@@ -2,6 +2,8 @@ from enum import Enum
 
 from pydantic_settings import BaseSettings
 
+from src.enums import EnvType
+
 
 class CtrlConfig(BaseSettings):
     pass
@@ -45,11 +47,30 @@ class MateConfig(A2cConfig):
 
 class GiftingConfig(A2cConfig):
     class Mode(str, Enum):
-        ZERO_SUM_MODE = "zero_sum"
-        BUDGET_MODE = "budget"
+        ZERO_SUM = "zero_sum"
+        FIXED_BUDGET = "fixed_budget"
+        REPLENISHABLE_BUDGET = "replenishable_budget"
 
-    GIFT_REWARD: float = 1
-    GIFT_MODE: Mode = Mode.ZERO_SUM_MODE
+    class ActionMode(str, Enum):
+        RANDOM = "random"
+        NO_ACTION = "no_action"
+
+    @staticmethod
+    def index_from_env(env_type: EnvType):
+        match env_type:
+            case EnvType.P_MY_COIN_GAME:
+                return 4
+            case EnvType.P_HARVEST:
+                return 4
+
+    GIFT_REWARD: float = 1.0
+    GIFT_MODE: Mode = Mode.ZERO_SUM
+
+    ACTION_MODE: ActionMode = ActionMode.RANDOM
+    ENV_USED: EnvType = EnvType.P_MY_COIN_GAME
+    ENV_NONE_ACTION_INDEX: int = index_from_env(
+        ENV_USED
+    )  # The action is the last one in the action space
 
 
 class DemoMaCoinConfig(A2cConfig):
