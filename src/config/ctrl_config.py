@@ -64,7 +64,10 @@ class GiftingConfig(A2cConfig):
                 return 4
 
     GIFT_REWARD: float = 1.0
-    GIFT_MODE: Mode = Mode.ZERO_SUM
+    GIFT_MODE: Mode = Mode.REPLENISHABLE_BUDGET
+
+    # Only used for FIXED_BUDGET and REPLENISHABLE_BUDGET
+    GIFT_BUDGET: float = 10.0
 
     ACTION_MODE: ActionMode = ActionMode.RANDOM
     ENV_USED: EnvType = EnvType.P_MY_COIN_GAME

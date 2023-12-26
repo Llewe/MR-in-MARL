@@ -3,8 +3,8 @@ from typing import Optional
 
 from gymnasium import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
-
 from src.agents.a2c import A2C
+
 from src.config.ctrl_config import GiftingConfig
 from src.utils.gym_utils import (
     add_action_to_space,
@@ -30,6 +30,10 @@ class Gifting(A2C):
     stats_gift_send: dict[AgentID, float]
     stats_gift_received: dict[AgentID, float]
 
+    current_budget: dict[AgentID, float]
+    gift_init_budget: float
+
+
     steps: int
 
     def __init__(self, config: GiftingConfig):
@@ -40,6 +44,8 @@ class Gifting(A2C):
 
         self.action_mode = config.ACTION_MODE
         self.env_none_action_index = config.ENV_NONE_ACTION_INDEX
+
+        self.gift_init_budget = config.GIFT_BUDGET
 
     def init_agents(
         self,
@@ -58,6 +64,8 @@ class Gifting(A2C):
 
         self.gifts_in_transit = {}
         self.gift_received = {}
+
+        self.current_budget = {}
 
         nr_extra_actions = (
             action_space.keys().__len__() - 1
@@ -78,6 +86,10 @@ class Gifting(A2C):
             self.gift_received[agent_id] = 0.0
             self.stats_gift_send[agent_id] = 0.0
             self.stats_gift_received[agent_id] = 0.0
+            if self.gift_mode == GiftingConfig.Mode.FIXED_BUDGET:
+                self.current_budget[agent_id] = self.gift_init_budget
+            elif self.gift_mode == GiftingConfig.Mode.REPLENISHABLE_BUDGET:
+                self.current_budget[agent_id] = 0.0
 
         self.steps = 0
 
@@ -96,6 +108,13 @@ class Gifting(A2C):
                 mean(self.stats_gift_received.values()) / self.steps,
                 epoch,
             )
+            if self.gift_mode == GiftingConfig.Mode.FIXED_BUDGET or self.gift_mode == GiftingConfig.Mode.REPLENISHABLE_BUDGET:
+                self.writer.add_scalar(
+                    f"{tag}/gifting/remaining_budget",
+                    mean(self.current_budget.values()) / self.steps,
+                    epoch,
+                )
+
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         action = super(Gifting, self).act(agent_id, observation, explore)
@@ -108,9 +127,9 @@ class Gifting(A2C):
         if self.gift_mode == GiftingConfig.Mode.ZERO_SUM:
             self.send_gift_zero_sum(agent_id, target_agent_id)
         elif self.gift_mode == GiftingConfig.Mode.FIXED_BUDGET:
-            raise NotImplementedError
+            self.send_gift_fixed_budget(agent_id, target_agent_id)
         elif self.gift_mode == GiftingConfig.Mode.REPLENISHABLE_BUDGET:
-            raise NotImplementedError
+            self.send_gift_replenishable_budget(agent_id, target_agent_id)
         else:
             raise ValueError("Unsupported gift mode")
 
@@ -133,8 +152,26 @@ class Gifting(A2C):
         reward: float,
         done: bool,
     ) -> None:
+
+
         # recieve the gift
-        reward += self.gift_received[agent_id]
+        if self.gift_mode == GiftingConfig.Mode.ZERO_SUM:
+            reward += self.gift_received[agent_id]
+        elif self.gift_mode == GiftingConfig.Mode.FIXED_BUDGET:
+            # if an agent has no budget left, it can't receive gifts anymore
+            if self.current_budget[agent_id] - self.gift_reward < 0 :
+                self.gift_received[agent_id] = 0.0
+            else:
+                reward += self.gift_received[agent_id]
+        elif self.gift_mode == GiftingConfig.Mode.REPLENISHABLE_BUDGET:
+            budget_increase = reward*0.5
+
+            self.current_budget[agent_id] += budget_increase
+            if self.current_budget[agent_id] - self.gift_reward > 0 :
+                reward += self.gift_received[agent_id]
+
+
+
 
         # handle learning by underlying algorithm
         super(Gifting, self).step_agent(
@@ -150,6 +187,23 @@ class Gifting(A2C):
         self.gifts_in_transit[target_agent_id] += self.gift_reward
 
         self.stats_gift_send[agent_id] += self.gift_reward
+
+    def send_gift_fixed_budget(self, agent_id: AgentID, target_agent_id: AgentID) -> None:
+        if self.current_budget[agent_id]-self.gift_reward >= 0:
+            self.gifts_in_transit[agent_id] -= self.gift_reward
+            self.gifts_in_transit[target_agent_id] += self.gift_reward
+
+            self.stats_gift_send[agent_id] += self.gift_reward
+            self.current_budget[agent_id] -= self.gift_reward
+
+
+    def send_gift_replenishable_budget(self, agent_id: AgentID, target_agent_id: AgentID) -> None:
+        if self.current_budget[agent_id]-self.gift_reward >= 0:
+            self.gifts_in_transit[agent_id] -= self.gift_reward
+            self.gifts_in_transit[target_agent_id] += self.gift_reward
+
+            self.stats_gift_send[agent_id] += self.gift_reward
+            self.current_budget[agent_id] -= self.gift_reward
 
     def step_finished(
         self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
