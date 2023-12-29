@@ -119,7 +119,7 @@ def get_env_class(env_name: EnvType) -> Type[T]:
 
 def load_env_config(env_name: EnvType) -> T:
     data_dir: str = get_cfg().get_env_dir()
-    config_file: str = join(data_dir, "env_config.yml")
+    config_file: str = join(data_dir, "env_config.json")
 
     c: Type[T] = get_env_class(env_name)
 

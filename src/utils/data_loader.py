@@ -1,4 +1,6 @@
 import json
+from enum import Enum
+
 import yaml
 from pydantic import BaseModel
 
@@ -31,21 +33,27 @@ def save_pydantic_object(file_path: str, data: BaseModel):
 if __name__ == "__main__":
     # Define a Pydantic model
     class Person(BaseModel):
+        class A(str, Enum):
+            a = "a"
+            b = "b"
+            c = "c"
+
         name: str
         age: int
+        a: A
 
     # Load data from the file (if it exists)
-    loaded_data = load_pydantic_object("person.yml", Person)
+    loaded_data = load_pydantic_object("person.json", Person)
 
     if loaded_data:
         print("Loaded Data:")
         print(loaded_data)
     else:
         # If the file doesn't exist, create a new instance
-        new_person = Person(name="John Doe", age=30)
+        new_person = Person(name="John Doe", age=30, a=Person.A.b)
         print("New Data:")
         print(new_person)
 
         # Save the new data to the file
-        save_pydantic_object("person.yml", new_person)
+        save_pydantic_object("person.json", new_person)
         print("Data saved to 'person.yml'")

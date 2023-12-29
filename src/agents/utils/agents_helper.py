@@ -35,7 +35,7 @@ def get_agents() -> IAgents:
 
 def load_ctrl_config(config_class: Type[CtrlConfig]) -> CtrlConfig:
     data_dir: str = get_cfg().get_ctrl_dir()
-    config_file: str = join(data_dir, "controller.yml")
+    config_file: str = join(data_dir, "controller.json")
 
     if os.path.isfile(config_file):
         return load_pydantic_object(config_file, config_class)

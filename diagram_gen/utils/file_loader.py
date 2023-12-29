@@ -3,6 +3,11 @@ import os
 from typing import Dict, List
 
 from diagram_gen.schemas.exp_file import ExpFile
+from src.agents.utils.agents_helper import get_agent_class
+from src.config.ctrl_config import CtrlConfig
+from src.enums import AgentType
+from src.utils.data_loader import load_pydantic_object
+from pydantic import BaseModel
 
 
 def find_matching_files(
@@ -19,9 +24,20 @@ def find_matching_files(
         for filename in fnmatch.filter(files, pattern):
             path = os.path.join(root, filename)
             parts = path.split("/")
+
+            controller_file = os.path.join(root, "controller.json")
+            configClass = get_agent_class(AgentType(parts[-3]))[1]
+            model: CtrlConfig = load_pydantic_object(controller_file, configClass)
+
             matching_files.append(
-                ExpFile(path=path, agent_type=parts[-3], diagram_data=None)
+                ExpFile(
+                    path=path,
+                    agent_type=parts[-3],
+                    diagram_data=None,
+                    cfg=model,
+                )
             )
+
     return matching_files
 
 

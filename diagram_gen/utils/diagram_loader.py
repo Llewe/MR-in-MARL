@@ -16,7 +16,6 @@ def load_diagram_data(path: str, tag: Optional[Union[List[str], str]]) -> Dict:
         if isinstance(tag, str):
             tag = [tag]
         for t in tag:
-            print(t)
             if t not in event_acc.Tags()["scalars"]:
                 logging.warning(f"Tag {t} not found in {path}")
             else:
