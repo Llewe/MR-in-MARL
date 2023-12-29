@@ -5,6 +5,7 @@ from typing import Tuple, Type
 
 from src.agents.a2c import A2C
 from src.agents.env_specific.coingame.demo_ma_coin import DemoMaCoin
+from src.agents.env_specific.coingame.ma_coin_to_middle import MaCoinToMiddle
 from src.agents.env_specific.demo_ma import DemoMa
 from src.agents.mate import Mate
 from src.agents.random_agents import RandomAgents
@@ -18,6 +19,7 @@ from src.config.ctrl_config import (
     DemoMaConfig,
     GiftingConfig,
     MateConfig,
+    MaConfig,
 )
 from src.enums.agent_type_e import AgentType
 from src.interfaces.agents_i import IAgents
@@ -63,5 +65,8 @@ def get_agent_class(agent_type: AgentType) -> Tuple[Type[IAgents], Type[CtrlConf
 
         case AgentType.DEMO_MANIPULATION_COIN:
             return DemoMaCoin, DemoMaCoinConfig
+
+        case AgentType.MA_COIN_TO_MIDDLE:
+            return MaCoinToMiddle, MaConfig
 
     raise NotImplementedError

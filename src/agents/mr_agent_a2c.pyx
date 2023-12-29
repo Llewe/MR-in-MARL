@@ -1,6 +1,7 @@
+import collections
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Optional
 
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
@@ -30,7 +31,7 @@ class MRAgentA2C(A2C):
         AgentID, Callable[[AgentID, ObsType, ActionType, float], float]
     ] = {}
 
-    next_reward_offset_dict: dict[AgentID, float] = defaultdict(float)
+    next_reward_offset_dict: dict[AgentID, float] = {}
 
     reward_histories: dict[AgentID, list[RewardHistory]] = {}
 
@@ -44,9 +45,13 @@ class MRAgentA2C(A2C):
         Parameters
         ----------
         agent_id: AgentID
-            The agent id for which the callback should be set
+            The agent id for which the callback should be set. This agent is the manipulating agent
         callback: Callable[[AgentID, ObsType, ActionType, float], float]
             The callback function which should be called for the given agent id
+            - AgentID -> Target agent id
+            - ObsType -> Last observation of the target agent
+            - ActionType -> Last action of the target agent
+            - float -> Last reward of the target agent
 
             The callback function should return the manipulated reward offset as a float value
 
@@ -64,7 +69,10 @@ class MRAgentA2C(A2C):
         reward: float,
         done: bool,
     ) -> None:
-        manipulated_by_agent: dict[AgentID, float] = defaultdict(float)
+        manipulated_by_agent: dict[AgentID, float] = {}
+        for a in self.actor_networks:
+            manipulated_by_agent[a] = 0
+
 
         # loop throw all callbacks and update the rewards individually
         for a_callback_id in self.mr_callbacks:
@@ -88,25 +96,34 @@ class MRAgentA2C(A2C):
                 reward_env=reward,
                 reward_after_man=manipulated_reward,
                 manipulated_by_agent=manipulated_by_agent,
+                manipulation_debts=0,
             )
         )
 
         super().step_agent(
             agent_id=agent_id,
             last_observation=last_observation,
-            curr_observation=curr_observation,
             last_action=last_action,
             reward=manipulated_reward,
             done=done,
         )
+    def step_finished(
+            self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ) -> None:
+        super().step_finished(step, next_observations)
+
 
     def epoch_started(self, epoch: int) -> None:
         super().epoch_started(epoch)
 
         self.reward_histories.clear()
 
+
+        for a in self.actor_networks:
+            self.next_reward_offset_dict[a] = 0
+
         for agent_id in self.next_reward_offset_dict:
             self.reward_histories[agent_id] = []
 
-    def epoch_finished(self, epoch: int) -> None:
-        super().epoch_finished(epoch)
+    def epoch_finished(self, epoch: int, tag: str) -> None:
+        super().epoch_finished(epoch,tag)

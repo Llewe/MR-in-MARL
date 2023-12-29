@@ -76,6 +76,10 @@ class GiftingConfig(A2cConfig):
     )  # The action is the last one in the action space
 
 
+class MaConfig(A2cConfig):
+    MANIPULATION_AMOUNT: float = 1.2
+
+
 class DemoMaCoinConfig(A2cConfig):
     MANIPULATION_AMOUNT: float = 0.2
 
