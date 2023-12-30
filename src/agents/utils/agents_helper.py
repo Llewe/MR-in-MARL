@@ -12,12 +12,15 @@ from src.agents.random_agents import RandomAgents
 from src.cfg_manager import get_cfg
 
 from src.agents.gifting import Gifting
+
+from src.agents.lola_pg import LolaPG
 from src.config.ctrl_config import (
     A2cConfig,
     CtrlConfig,
     DemoMaCoinConfig,
     DemoMaConfig,
     GiftingConfig,
+    LolaPGConfig,
     MateConfig,
     MaConfig,
 )
@@ -59,6 +62,9 @@ def get_agent_class(agent_type: AgentType) -> Tuple[Type[IAgents], Type[CtrlConf
 
         case AgentType.GIFTING:
             return Gifting, GiftingConfig
+
+        case AgentType.LOLA_PG:
+            return LolaPG, LolaPGConfig
 
         case AgentType.DEMO_MANIPULATION_AGENT:
             return DemoMa, DemoMaConfig

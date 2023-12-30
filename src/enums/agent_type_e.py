@@ -6,6 +6,8 @@ class AgentType(str, Enum):
     A2C = "a2c"
     MATE = "mate"
     GIFTING = "gifting"
+    LOLA_PG = "lola_pg"
+
     DEMO_MANIPULATION_AGENT = "demo_manipulation_agent"
     DEMO_MANIPULATION_COIN = "demo_manipulation_coin"
 

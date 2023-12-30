@@ -45,6 +45,10 @@ class MateConfig(A2cConfig):
     TOKEN_VALUE: float = 1
 
 
+class LolaPGConfig(A2cConfig):
+    SECOND_ORDER_LR: float = 1
+
+
 class GiftingConfig(A2cConfig):
     class Mode(str, Enum):
         ZERO_SUM = "zero_sum"

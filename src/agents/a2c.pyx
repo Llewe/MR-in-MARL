@@ -27,26 +27,31 @@ class A2C(IAgents):
         observations: list[Tensor]
         values: list[Tensor]
         actions: list[ActionType]
+        action_probs: list[np.ndarray]
 
         def __init__(self):
             self.rewards = []
             self.observations = []
             self.values = []
             self.actions = []
+            self.action_probs = []
 
         def add(
-            self, reward: float, observation: Tensor, action: ActionType, value: Tensor
+            self, reward: float, observation: Tensor, action: ActionType, value: Tensor,
+                action_prob: np.ndarray
         ):
             self.rewards.append(reward)
             self.observations.append(observation)
             self.values.append(value)
             self.actions.append(action)
+            self.action_probs.append(action_prob)
 
         def clear(self):
             self.rewards.clear()
             self.observations.clear()
             self.values.clear()
             self.actions.clear()
+            self.action_probs.clear()
 
     config: A2cConfig
 
@@ -171,6 +176,11 @@ class A2C(IAgents):
 
         return action
 
+    def local_probs(self, agent_id: AgentID, obs_tensor: Tensor) -> np.ndarray:
+        action_probs = self.actor_networks[agent_id](obs_tensor.detach())
+
+        return action_probs.detach().numpy()[0]
+
     def step_agent(
         self,
         agent_id: AgentID,
@@ -184,12 +194,13 @@ class A2C(IAgents):
         else:
             scaled_reward = reward
         obs_curr: Tensor = torch.from_numpy(last_observation).float().unsqueeze(0)
-
+        local_probs = self.local_probs(agent_id, obs_curr)
         self.step_info[agent_id].add(
             reward=scaled_reward,
             observation=obs_curr,
             action=last_action,
-            value=self.critic_networks[agent_id](obs_curr),
+            value=self.critic_networks[agent_id](obs_curr.detach()),
+            action_prob=local_probs,
         )
 
     def step_finished(

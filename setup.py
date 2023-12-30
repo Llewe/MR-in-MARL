@@ -14,6 +14,7 @@ setup(
             "src/agents/env_specific/coingame/ma_coin_to_middle.pyx",
             "src/agents/a2c.pyx",
             "src/agents/gifting.pyx",
+            #     "src/agents/lola_pg.pyx",
             "src/agents/mate.pyx",
             "src/agents/mr_agent_a2c.pyx",
             "src/agents/random_agents.pyx",
