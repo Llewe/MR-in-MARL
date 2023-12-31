@@ -1,18 +1,104 @@
 import logging
 
 import pygame
-from pettingzoo import AECEnv
+from pettingzoo import AECEnv, ParallelEnv
 
 from src import build_env
 from src.agents.utils.agents_helper import get_agents
 from src.cfg_manager import CfgManager, get_cfg, set_cfg
 from src.config.replay_config import ReplayConfig
 from src.interfaces.agents_i import IAgents
+from torch.utils.tensorboard import SummaryWriter
 
 _replay_config = ReplayConfig()
 
 
-def replay(aec_env: AECEnv, agent: IAgents, timeout=_replay_config.TIMEOUT) -> None:
+def replay(
+    aec_env: AECEnv, agent: IAgents, timeout=_replay_config.TIMEOUT, logging=False
+) -> None:
+    i: int = 0
+    pygame.init()
+    aec_env.reset()
+    while True:
+        i += 1
+
+        for agent_id in aec_env.agent_iter():
+            pygame.event.get()  # so that the window doesn't freeze
+            observation, reward, termination, truncation, info = aec_env.last()
+
+            if termination or truncation:
+                action = None
+            else:
+                action = agent.act(
+                    agent_id=agent_id, observation=observation, explore=False
+                )
+
+            aec_env.step(action)
+
+            if timeout > 0:
+                pygame.time.wait(timeout)
+        options = None
+        if logging:
+            options = {
+                "write_log": True,
+                "epoch": i,
+                "tag": "eval",
+            }
+        aec_env.reset()
+
+        logging.info(f"another one - {i}")
+
+
+def replay_parallel(
+    env: ParallelEnv, agents: IAgents, timeout=_replay_config.TIMEOUT, logging=False
+) -> None:
+    i: int = 0
+    if get_cfg().get_render_mode() != "":
+        pygame.init()
+    timestep: int = 0
+
+    observations, infos = env.reset(
+        options={
+            "write_log": False,
+            "epoch": i,
+            "tag": "eval",
+        }
+    )
+    max_iterations: int = 1
+    iterations: int = 0
+    while iterations < max_iterations:
+        iterations += 1
+        while env.agents:
+            if get_cfg().get_render_mode() != "":
+                pygame.event.get()  # so that the window doesn't freeze
+
+            timestep += 1
+            actions: dict[AgentID, ActionType] = agents.act_parallel(
+                observations, explore=True
+            )
+
+            new_observations, _, _, _, _ = env.step(actions)
+            observations = new_observations
+
+            if timeout > 0:
+                pygame.time.wait(timeout)
+
+        observations, infos = env.reset(
+            options={
+                "write_log": True,
+                "epoch": i,
+                "tag": "train",
+                "heatmap": True,
+            }
+        )
+        i += 1
+
+
+def replay_with_logs(
+    aec_env: AECEnv,
+    agent: IAgents,
+    timeout=_replay_config.TIMEOUT,
+) -> None:
     i: int = 0
     pygame.init()
     while True:
@@ -59,15 +145,37 @@ if __name__ == "__main__":
 
     logging.info(f"Loading agents from {_replay_config.ENV_NAME}")
 
-    get_cfg().update_pygame_config(
-        render_mode="human",
-        render_fps=60,
-    )
+    with_logs = True
+    if not with_logs:
+        get_cfg().update_pygame_config(
+            render_mode="human",
+            render_fps=60,
+        )
 
-    env: AECEnv = build_env(get_cfg().exp_config.ENV_NAME)
+        env: AECEnv = build_env(get_cfg().exp_config.ENV_NAME)
 
-    logging.info(f"Loading agents from {get_cfg().exp_config.AGENT_TYPE}")
-    agents: IAgents = load_agents(env)
+        logging.info(f"Loading agents from {get_cfg().exp_config.AGENT_TYPE}")
+        agents: IAgents = load_agents(env)
 
-    logging.info("Starting replay")
-    replay(env, agents)
+        logging.info("Starting replay")
+        replay(env, agents)
+    else:
+        get_cfg().update_pygame_config(
+            render_mode="human",
+            render_fps=60,
+        )
+        agent_dir: str = get_cfg().get_ctrl_dir()
+
+        logging.info(f"TensorBoard -> Logging to {agent_dir}")
+
+        with SummaryWriter(log_dir=agent_dir) as writer:
+            env: ParallelEnv | AECEnv = build_env(get_cfg().exp_config.ENV_NAME, writer)
+
+            logging.info(f"Loading agents from {get_cfg().exp_config.AGENT_TYPE}")
+            agents: IAgents = load_agents(env)
+
+            logging.info("Starting replay")
+            if isinstance(env, ParallelEnv):
+                replay_parallel(env, agents, logging=True)
+            else:
+                replay(env, agents, logging=True)

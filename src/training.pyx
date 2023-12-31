@@ -280,6 +280,7 @@ def _eval_parallel_agents(
             "write_log": True,
             "epoch": current_epoch,
             "tag": "eval",
+            "heatmap": True,
         }
     )
 
