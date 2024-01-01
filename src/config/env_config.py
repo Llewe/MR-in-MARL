@@ -34,12 +34,13 @@ class CoinGameConfig(EnvConfig):
 class HarvestConfig(EnvConfig):
     PLAYERS: int = 6
     INIT_APPLES: int = 12
-    REGROW_CHANCE: float = 0.001
+    REGROW_CHANCE: float = 0.01
 
-    GRID_WIDTH: int = 18
-    GRID_HEIGHT: int = 10
+    GRID_WIDTH: int = 25
+    GRID_HEIGHT: int = 9
 
     MAX_CYCLES: int = 250
+    FIXED_APPLE_SPAWN: bool = True
 
 
 class PrisonersConfig(EnvConfig):

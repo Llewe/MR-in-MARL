@@ -90,8 +90,8 @@ class GlobalState:
     def __init__(
             self,
             agents: List[AgentID],
-            map_width: int = 18,
-            map_height: int = 10,
+            map_width: int = 25,
+            map_height: int = 9,
             vision_range: int = 3,
             tag_beam_width: int = 2,
     ):
@@ -291,6 +291,8 @@ class Harvest(AECEnv):
     init_apples: int
     regrow_chance: float
 
+    fixed_spawn: bool
+
     tag_time: int
 
     # Action, State Log
@@ -298,6 +300,66 @@ class Harvest(AECEnv):
 
     # Log Variables
     summary_writer: Optional[SummaryWriter]
+
+    """
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
+     1 . . . . A . . . . A . . . . A . . . . A . . . .
+     2 . . . A A A . . A A A . . A A A . . A A A . . .
+     3 . . . . A . . . . A . . . . A . . . . A . . . .
+     4 . . . . . . . . . . . . . . . . . . . . . . . .
+     5 . A . . . . A . . . . A . . . . A . . . . A . .
+     6 A A A . . A A A . . A A A . . A A A . . A A A .
+     7 . A . . . . A . . . . A . . . . A . . . . A . .
+     8 . . . . . . . . . . . . . . . . . . . . . . . .
+    """
+    fixed_spawn_positions = [
+        (5, 1),
+        (10, 1),
+        (15, 1),
+        (20, 1),
+        (4, 2),
+        (5, 2),
+        (6, 2),
+        (9, 2),
+        (10, 2),
+        (11, 2),
+        (14, 2),
+        (15, 2),
+        (16, 2),
+        (19, 2),
+        (20, 2),
+        (21, 2),
+        (5, 3),
+        (10, 3),
+        (15, 3),
+        (20, 3),
+        (2, 5),
+        (7, 5),
+        (12, 5),
+        (17, 5),
+        (22, 5),
+        (1, 6),
+        (2, 6),
+        (3, 6),
+        (6, 6),
+        (7, 6),
+        (8, 6),
+        (11, 6),
+        (12, 6),
+        (13, 6),
+        (16, 6),
+        (17, 6),
+        (18, 6),
+        (21, 6),
+        (22, 6),
+        (23, 6),
+        (2, 7),
+        (7, 7),
+        (12, 7),
+        (17, 7),
+        (22, 7)
+
+    ]
 
     def __init__(
             self,
@@ -312,6 +374,7 @@ class Harvest(AECEnv):
             tag_time: int = 25,
             regrow_chance: float = 0.001,
             summary_writer: Optional[SummaryWriter] = None,
+            fixed_spawn: bool = True,
     ):
         super().__init__()
 
@@ -328,6 +391,7 @@ class Harvest(AECEnv):
             agent: Discrete(self.nr_actions) for agent in self.possible_agents
         }
         self.summary_writer = summary_writer
+        self.fixed_spawn = fixed_spawn
 
         self.current_history: list[HistoryState] = []
 
@@ -414,6 +478,19 @@ class Harvest(AECEnv):
             )
         )
 
+
+        # spawn apples
+        if self.fixed_spawn:
+            for pos in self.fixed_spawn_positions:
+                self.global_state.apples.append(Apple(pos[0], pos[1]))
+
+        else:
+            for i in range(self.init_apples):
+                pos = all_positions.pop(np.random.randint(0, len(all_positions)))
+
+                self.global_state.apples.append(Apple(pos[0], pos[1]))
+
+
         for agent in self.possible_agents:
             agent_state: AgentState = self.global_state.agent_states[agent]
 
@@ -423,12 +500,6 @@ class Harvest(AECEnv):
 
             agent_state.x = pos[0]
             agent_state.y = pos[1]
-
-        # spawn apples
-        for i in range(self.init_apples):
-            pos = all_positions.pop(np.random.randint(0, len(all_positions)))
-
-            self.global_state.apples.append(Apple(pos[0], pos[1]))
 
     def reset(self, seed=None, options=None):
         """
@@ -575,7 +646,7 @@ class Harvest(AECEnv):
 
     def _grow_apples(self) -> None:
         regrow_matrix = np.zeros(
-            (self.global_state.map_height, self.global_state.map_width), dtype=np.int64
+            (self.global_state.map_height, self.global_state.map_width), dtype=np.float32
         )
 
         for apple in self.global_state.apples:
@@ -587,9 +658,16 @@ class Harvest(AECEnv):
         for agent in self.global_state.agent_states.values():
             regrow_matrix[agent.y, agent.x] = 0
 
+        if self.fixed_spawn:
+            for x, y in product(
+                    range(self.global_state.map_width),
+                    range(self.global_state.map_height),
+            ):
+                if (x, y) not in self.fixed_spawn_positions:
+                    regrow_matrix[y,x] = 0
+
         for apple in self.global_state.apples:
             regrow_matrix[apple.y, apple.x] = 0
-
         self.global_state.apples += [
             Apple(x, y)
             for x, y in product(
@@ -786,7 +864,7 @@ if __name__ == "__main__":
         render_mode="human",
         n_players=6,
         n_apples=10,
-        regrow_chance=0.001,
+        regrow_chance=0.01,
         grid_width=18,
         grid_height=10,
         max_cycles=1000,

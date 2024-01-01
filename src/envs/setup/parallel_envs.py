@@ -36,5 +36,6 @@ def _p_setup_harvest(
         regrow_chance=harvest_config.REGROW_CHANCE,
         grid_width=harvest_config.GRID_WIDTH,
         grid_height=harvest_config.GRID_HEIGHT,
+        fixed_spawn=harvest_config.FIXED_APPLE_SPAWN,
         summary_writer=writer,
     )
