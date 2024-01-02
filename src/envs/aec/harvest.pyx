@@ -813,13 +813,13 @@ class Harvest(AECEnv):
                     "The length of the current history is not a multiple of the max_cycles."
                 )
         if divider != 1:
-            cumulative_rewards = {a: r / divider for a, r in cumulative_rewards.items()}
+            scaled_cumulative_rewards = {a: r / divider for a, r in cumulative_rewards.items()}
             collected_apples = {a: c / divider for a, c in collected_apples.items()}
 
         for agent_id in self.possible_agents:
             self.summary_writer.add_scalar(
                 f"{log_name}/cumulative_reward/{agent_id}/per_episode",
-                cumulative_rewards[agent_id],
+                scaled_cumulative_rewards[agent_id],
                 epoch,
             )
 
@@ -850,6 +850,30 @@ class Harvest(AECEnv):
             apples_on_board,
             epoch,
         )
+
+
+        # calculate equality
+        # e = 1- ((for each i in agents: for each j in agents: abs(rewardI-reawrdJ))/2*n*sum(rewards_aller_agents)))))
+
+
+        dividend = 0.0
+        for i in range(len(self.possible_agents)):
+            for j in range(len(self.possible_agents)):
+                dividend += abs(
+                    cumulative_rewards[self.possible_agents[i]]
+                    - cumulative_rewards[self.possible_agents[j]]
+                )
+        divisor = 2.0 * self.n_players * sum(cumulative_rewards.values())
+
+        e: float = 1.0 - dividend / divisor
+
+
+        self.summary_writer.add_scalar(
+            f"{log_name}/equality",
+            e,
+            epoch,
+        )
+
 
         self.current_history.clear()
 
