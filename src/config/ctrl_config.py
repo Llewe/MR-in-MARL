@@ -14,14 +14,14 @@ class A2cConfig(CtrlConfig):
     CRITIC_LR: float = 0.001
     ACTOR_HIDDEN_UNITS: int = 64
     CRITIC_HIDDEN_UNITS: int = 64
-    DISCOUNT_FACTOR: float = 0.99
+    DISCOUNT_FACTOR: float = 0.95
 
-    CLIP_NORM: float = 1
+    CLIP_NORM: float = 1.0
 
     REWARD_NORMALIZATION: bool = False
 
-    EPSILON_INIT: float = 0.8
-    EPSILON_MIN: float = 0.1
+    EPSILON_INIT: float = 0.0
+    EPSILON_MIN: float = 0.0
     EPSILON_DECAY: float = 0.0002
 
 
@@ -42,7 +42,7 @@ class MateConfig(A2cConfig):
 
     MODE: Mode = Mode.TD_ERROR_MODE
     DEFECT_MODE: DefectMode = DefectMode.NO_DEFECT
-    TOKEN_VALUE: float = 1
+    TOKEN_VALUE: float = 1.0
 
 
 class LolaPGConfig(A2cConfig):

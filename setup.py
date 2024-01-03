@@ -20,6 +20,8 @@ setup(
             "src/agents/random_agents.pyx",
             "src/agents/random_agents.pyx",
             "src/envs/aec/harvest.pyx",
+            "src/envs/aec/dilemma/dilemma_pettingzoo.pyx",
+            "src/envs/aec/dilemma/games.pyx",
             "src/envs/aec/my_coin_game.pyx",
             "src/utils/loggers/obs_logger.pyx",
             "src/utils/loggers/simple_env_logger.pyx",

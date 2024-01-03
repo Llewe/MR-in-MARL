@@ -88,6 +88,7 @@ class Mate(A2C):
                 self.response_messages_sent / self.steps,
                 epoch,
             )
+            print(f"Requests sent: {self.request_messages_sent} Requests received: {self.response_messages_sent}")
 
     def step_agent(
         self,
@@ -149,15 +150,15 @@ class Mate(A2C):
     ):  # history, next_history is missing
         if self.mate_mode == MateConfig.Mode.STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
-            if not is_empty:
+            if is_empty:
                 self.last_rewards_observed[agent_id].append(reward)
                 return True
             last_reward = numpy.mean(self.last_rewards_observed[agent_id])
             self.last_rewards_observed[agent_id].append(reward)
             return reward >= last_reward
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
-            if len(self.step_info[agent_id].rewards) < 2:
-                return True
+            # if len(self.step_info[agent_id].rewards) < 2:
+            #     return True
 
             return reward + self.config.DISCOUNT_FACTOR * v_new - v_old >= 0
             # history = torch.tensor(
@@ -205,7 +206,7 @@ class Mate(A2C):
         16:     return 𝑟𝑡,𝑖 + ˆ 𝑟req + ˆ 𝑟res (ˆ 𝑟 MATE 𝑡,𝑖 as defined in Eq. 5)
 
         """
-        if step == 1:
+        if step == 0:
             for v in self.last_rewards_observed.values():
                 v.clear()
 
@@ -220,8 +221,8 @@ class Mate(A2C):
         #     joint_histories, joint_action, rewards, next_joint_histories, done, info
         # )
 
-        self.trust_request_matrix[:] = 0
-        self.trust_response_matrix[:] = 0
+        self.trust_request_matrix[:] = 0.0
+        self.trust_response_matrix[:] = 0.0
 
         last_obs_index: int
 
@@ -245,7 +246,7 @@ class Mate(A2C):
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
             state_values = self.get_state_values(last_obs_index, next_observations)
         else:
-            state_values = defaultdict(lambda: (0, 0))
+            state_values = {a:(0.0, 0.0) for a in self.step_info.keys()}
 
         # 1. Send trust requests
         defector_id: int = -1
@@ -294,6 +295,9 @@ class Mate(A2C):
             ]
             if len(trust_requests) > 0:
                 mate_rewards[agent_id] += numpy.max(trust_requests)
+                if numpy.max(trust_requests) > 0:
+                    print(f"original reward: {original_rewards[agent_id]}, mate reward: {mate_rewards[agent_id]},"
+                          f" v_next {state_values[agent_id][1]} v_curr{state_values[agent_id][0]}")
 
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(

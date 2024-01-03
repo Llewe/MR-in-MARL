@@ -627,7 +627,7 @@ class CoinGame(AECEnv):
         }
 
         divider: float = (
-            1  # This is used if multiple episodes are logged at once (e.g. one epoch)
+            1.0  # This is used if multiple episodes are logged at once (e.g. one epoch)
         )
 
         if len(self.current_history) > self.max_cycles:
@@ -648,7 +648,7 @@ class CoinGame(AECEnv):
                     if agent_id == history.coin_owner:
                         total_coins_collected_by_owner += 1.0
 
-        if divider != 1:
+        if divider != 1.0:
             cumulative_rewards = {a: r / divider for a, r in cumulative_rewards.items()}
             total_collected_coins /= divider
             total_coins_collected_by_owner /= divider

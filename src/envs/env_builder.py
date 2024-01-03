@@ -34,7 +34,11 @@ from src.envs.setup.aec_envs import (
     _setup_samaritans,
     _setup_stag_hunt,
 )
-from src.envs.setup.parallel_envs import _p_setup_harvest, _p_setup_my_coin_game
+from src.envs.setup.parallel_envs import (
+    _p_setup_harvest,
+    _p_setup_my_coin_game,
+    _p_setup_prisoners,
+)
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
 
 T = TypeVar("T", bound=EnvConfig)
@@ -75,6 +79,8 @@ def build_env(
 
         case EnvType.PRISONERS_DILEMMA:
             return _setup_prisoners(writer, config)
+        case EnvType.P_PRISONERS_DILEMMA:
+            return _p_setup_prisoners(writer, config)
 
         case EnvType.SAMARITANS_DILEMMA:
             return _setup_samaritans(writer, config)

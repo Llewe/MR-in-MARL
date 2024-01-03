@@ -11,14 +11,14 @@ class TrainingConfig(ExpConfig):
     EXP_TAG: str = names.get_first_name()
 
     EPISODES: int = 10
-    EPOCHS: int = 50000
+    EPOCHS: int = 5000
 
     EVAL_EPISODES: int = 250
-    EVAL_EPOCH_INTERVAL: int = 500
+    EVAL_EPOCH_INTERVAL: int = 10
 
-    AGENT_TYPE: AgentType = AgentType.RANDOM
-    ENV_NAME: EnvType = EnvType.P_HARVEST
-    ENV_TAG: str = "default"
+    AGENT_TYPE: AgentType = AgentType.MATE
+    ENV_NAME: EnvType = EnvType.P_PRISONERS_DILEMMA
+    ENV_TAG: str = "default-150"
 
     EXP_UNIQUE_NAME: str = (
         f"{datetime.fromtimestamp(time()).isoformat(timespec='seconds')} - {EXP_TAG}"

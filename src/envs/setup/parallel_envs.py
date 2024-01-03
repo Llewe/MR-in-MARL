@@ -2,7 +2,7 @@ from pettingzoo import ParallelEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from src.cfg_manager import get_cfg
-from src.config.env_config import CoinGameConfig, HarvestConfig
+from src.config.env_config import CoinGameConfig, HarvestConfig, PrisonersConfig
 
 
 def _p_setup_my_coin_game(
@@ -38,4 +38,14 @@ def _p_setup_harvest(
         grid_height=harvest_config.GRID_HEIGHT,
         fixed_spawn=harvest_config.FIXED_APPLE_SPAWN,
         summary_writer=writer,
+    )
+
+
+def _p_setup_prisoners(
+    writer: SummaryWriter, prisoners_config: PrisonersConfig
+) -> ParallelEnv:
+    from src.envs.aec.dilemma.dilemma_pettingzoo import parallel_env
+
+    return parallel_env(
+        game="pd", max_cycles=prisoners_config.MAX_CYCLES, summary_writer=writer
     )

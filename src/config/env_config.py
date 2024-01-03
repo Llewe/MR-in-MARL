@@ -44,7 +44,7 @@ class HarvestConfig(EnvConfig):
 
 
 class PrisonersConfig(EnvConfig):
-    pass
+    MAX_CYCLES: int = 150
 
 
 class SamaritansConfig(EnvConfig):

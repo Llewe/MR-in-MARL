@@ -805,14 +805,14 @@ class Harvest(AECEnv):
         }
 
         # This is used if multiple episodes are logged at once (e.g. one epoch)
-        divider: float = 1.01
+        divider: float = 1.0
         if len(self.current_history) > self.max_cycles:
             divider = len(self.current_history) // self.max_cycles
             if divider * self.max_cycles != len(self.current_history):
                 raise ValueError(
                     "The length of the current history is not a multiple of the max_cycles."
                 )
-        if divider != 1:
+        if divider != 1.0:
             scaled_cumulative_rewards = {a: r / divider for a, r in cumulative_rewards.items()}
             collected_apples = {a: c / divider for a, c in collected_apples.items()}
 

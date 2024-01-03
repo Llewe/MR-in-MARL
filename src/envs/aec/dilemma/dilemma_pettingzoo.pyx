@@ -1,6 +1,10 @@
 # reference
 # https://github.com/arjun-prakash/pz_dilemma
 # https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/classic/rps/rps.py
+# Modified to work better with tensorboard and some minor code cleanup changes.
+import logging
+from dataclasses import dataclass
+from typing import List
 
 import gymnasium
 import numpy as np
@@ -8,9 +12,12 @@ from gymnasium.spaces import Discrete
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
 from pettingzoo.utils.conversions import parallel_wrapper_fn
+from pettingzoo.utils.env import ActionType, AgentID
+from torch.utils.tensorboard import SummaryWriter
 
 from src.envs.aec.dilemma.games import (
     Chicken,
+    Game,
     Prisoners_Dilemma,
     Samaritans_Dilemma,
     Stag_Hunt,
@@ -27,6 +34,14 @@ def env(**kwargs):
 parallel_env = parallel_wrapper_fn(env)
 
 
+@dataclass(slots=True)
+class HistoryState:
+    board_step: int
+    rewards: dict[AgentID, float]
+    actions: dict[AgentID, ActionType]
+    winner: AgentID | None = None
+
+
 class raw_env(AECEnv):
     """Two-player environment for rock paper scissors.
     Expandable environment to rock paper scissors lizard spock action_6 action_7 ...
@@ -39,16 +54,31 @@ class raw_env(AECEnv):
         "is_parallelizable": True,
     }
 
-    def __init__(self, game="pd", num_actions=2, max_cycles=15, render_mode=None):
+    # Action, State Log
+    current_history: List[HistoryState]
+    summary_writer: SummaryWriter
+
+    name: str
+
+    def __init__(
+        self,
+        game: str = "pd",
+        num_actions: int = 2,
+        max_cycles: int = 15,
+        render_mode: str = "",
+        summary_writer: SummaryWriter | None = None,
+    ):
         self.max_cycles = max_cycles
-        GAMES = {
+        GAMES: dict[str, Game] = {
             "pd": Prisoners_Dilemma(),
             "sd": Samaritans_Dilemma(),
             "stag": Stag_Hunt(),
             "chicken": Chicken(),
         }
-        self.render_mode = "human"
-        self.name = "simple_pd_v0"
+        self.summary_writer = summary_writer
+        self.current_history = []
+        self.render_mode = render_mode
+        self.name = game
         self.game = GAMES[game]
 
         self._moves = self.game.moves
@@ -62,8 +92,6 @@ class raw_env(AECEnv):
         self.observation_spaces = {
             agent: Discrete(num_actions) for agent in self.agents
         }
-
-        self.render_mode = render_mode
 
         self.reinit()
 
@@ -119,20 +147,40 @@ class raw_env(AECEnv):
     def close(self):
         pass
 
-    def reset(self, seed=None, return_info=False, options=None):
+    def reset(
+        self,
+        seed: int | None = None,
+        options: dict | None = None,
+    ) -> None:
         self.reinit()
 
-    def step(self, action):
-        if (
-            self.terminations[self.agent_selection]
-            or self.truncations[self.agent_selection]
-        ):
+        if options is None:
+            self.current_history.clear()
+            logging.warning("Resetting history. No options in reset -> no logging.")
+        elif "history_reset" in options and options["history_reset"]:
+            self.current_history.clear()
+        else:
+            self.log(options)
+
+    def step(self, action: ActionType) -> None:
+        agent: AgentID = self.agent_selection
+
+        if self.terminations[agent] or self.truncations[agent]:
             self._was_dead_step(action)
             return
 
-        agent = self.agent_selection
+        if self._agent_selector.is_first():
+            self.current_history.append(
+                HistoryState(
+                    board_step=self.num_moves,
+                    rewards={},
+                    actions={},
+                    winner=None,
+                )
+            )
+        self.current_history[-1].actions[agent] = action  # Log action
 
-        self.state[self.agent_selection] = action
+        self.state[agent] = action
 
         # collect reward if it is the last agent to act
 
@@ -154,6 +202,21 @@ class raw_env(AECEnv):
                 self.observations[i] = list(
                     self.state.values()
                 )  # TODO: consider switching the board
+            agent_0: AgentID = self.agents[0]
+            agent_1: AgentID = self.agents[1]
+
+            reward_0 = self.rewards[agent_0]
+            reward_1 = self.rewards[agent_1]
+            self.current_history[-1].rewards[agent_0] = reward_0
+            self.current_history[-1].rewards[agent_1] = reward_1
+
+            if reward_0 > reward_1:
+                self.current_history[-1].winner = agent_0
+            elif reward_1 > reward_0:
+                self.current_history[-1].winner = agent_1
+            else:
+                self.current_history[-1].winner = None
+
         else:
             self.state[self.agents[1 - self.agent_name_mapping[agent]]] = self._none
             self._clear_rewards()
@@ -162,8 +225,95 @@ class raw_env(AECEnv):
         self.agent_selection = self._agent_selector.next()
         self._accumulate_rewards()
 
-        if self.render_mode == "human":
+        if self.render_mode != "":
             self.render()
+
+    def log(self, options: dict) -> None:
+        """
+        Log various episode metrics to tensorboard. This method should be called after every episode.
+        Parameters
+        ----------
+        options: dict
+
+        Returns
+        -------
+
+        """
+
+        if self.summary_writer is None:
+            self.current_history.clear()
+            logging.warning("No summary writer. Not logging.")
+            return
+
+        if "write_log" not in options:
+            self.current_history.clear()
+            logging.warning("No write_log in options. Not logging.")
+            return
+        else:
+            write_log = options["write_log"]
+
+        if not write_log:
+            return  # Log everything at another time
+
+        epoch: int = 0
+        tag: str = ""
+        heatmap: bool = False
+
+        if "epoch" in options:
+            epoch = options["epoch"]
+
+        if "tag" in options:
+            tag = options["tag"]
+
+        log_name = f"{self.name}-{tag}"
+
+        divider: float = (
+            1.0  # This is used if multiple episodes are logged at once (e.g. one epoch)
+        )
+        history_len = len(self.current_history)
+        if history_len > self.max_cycles:
+            divider = history_len // self.max_cycles
+            if divider * self.max_cycles != history_len:
+                raise ValueError(
+                    "The length of the current history is not a multiple of the max_cycles."
+                )
+
+        reward_p0: float = 0.0
+        reward_p1: float = 0.0
+
+        winner_p0: float = 0.0
+        winner_p1: float = 0.0
+
+        for history in self.current_history:
+            reward_p0 += history.rewards["player_0"]
+            reward_p1 += history.rewards["player_1"]
+
+            if history.winner == "player_0":
+                winner_p0 += 1
+            elif history.winner == "player_1":
+                winner_p1 += 1
+
+        if divider != 1.0:
+            # scale rewards so they are comparable if the number of epochs changes
+            # reward_p0 /= divider
+            # reward_p1 /= divider
+            pass
+
+        efficiency = reward_p0 + reward_p1
+
+        efficiency_per_step = efficiency / history_len
+
+        self.summary_writer.add_scalar(
+            f"{log_name}/efficiency_per_step", efficiency_per_step, epoch
+        )
+
+        # p0 win == 1, p1 win == -1, draw == 0
+        wins_p0_per_step = (winner_p0 - winner_p1) / history_len
+        self.summary_writer.add_scalar(
+            f"{log_name}/wins_p0_per_step", wins_p0_per_step, epoch
+        )
+
+        self.current_history.clear()
 
 
 if __name__ == "__main__":

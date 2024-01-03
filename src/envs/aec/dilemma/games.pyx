@@ -36,15 +36,22 @@ class Prisoners_Dilemma(Game):
         Initializes a new Prisoner's Dilemma game.
         """
         super().__init__()
+
         self.COOPERATE = 0
         self.DEFECT = 1
         self.NONE = 2
         self.moves = ["COOPERATE", "DEFECT", "None"]
 
-        self.coop = 3.5  # cooperate-cooperate payoff
-        self.defect = 1  # defect-defect payoff
-        self.temptation = 5  # cooperate-defect (or vice-versa) tempation payoff
-        self.sucker = 0  # cooperate-defect (or vice-versa) sucker payoff
+        # Original payoffs
+        # self.coop = 3.5  # cooperate-cooperate payoff
+        # self.defect = 1  # defect-defect payoff
+        # self.temptation = 5  # cooperate-defect (or vice-versa) tempation payoff
+        # self.sucker = 0  # cooperate-defect (or vice-versa) sucker payoff
+
+        self.coop = -1  # cooperate-cooperate payoff
+        self.defect = -2  # defect-defect payoff
+        self.temptation = 0  # cooperate-defect (or vice-versa) tempation payoff
+        self.sucker = -3  # cooperate-defect (or vice-versa) sucker payoff
 
         self.payoff = {
             (self.COOPERATE, self.COOPERATE): (self.coop, self.coop),

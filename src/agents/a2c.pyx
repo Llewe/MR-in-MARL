@@ -215,13 +215,15 @@ class A2C(IAgents):
         for t in reversed(range(len(rewards))):
             running_add = running_add * gamma + rewards[t]
             discounted_returns[t] = running_add
-        # Adding a small constant to avoid division by zero
-        mean_returns = np.mean(discounted_returns)
-        std_returns = np.std(discounted_returns) + 1e-8
 
-        # Normalize using mean and standard deviation with added constant
-        discounted_returns -= mean_returns
-        discounted_returns /= std_returns
+        # TODO not sure why i added this maybe it helped with MPE envs but it is bad for MATE
+        # # Adding a small constant to avoid division by zero
+        # mean_returns = np.mean(discounted_returns)
+        # std_returns = np.std(discounted_returns) + 1e-8
+        #
+        # # Normalize using mean and standard deviation with added constant
+        # discounted_returns -= mean_returns
+        # discounted_returns /= std_returns
 
         return discounted_returns
 
