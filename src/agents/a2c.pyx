@@ -21,6 +21,7 @@ from src.utils.gym_utils import get_space_size
 
 
 class A2C(IAgents):
+
     @dataclass
     class RolloutBuffer:
         rewards: list[float]
@@ -113,6 +114,12 @@ class A2C(IAgents):
             agent_id: RewardNormalization() for agent_id in self.actor_networks
         }
 
+    def episode_started(self, episode: int) -> None:
+        pass
+
+    def episode_finished(self, episode: int, tag: str) -> None:
+        pass
+
     def epoch_started(self, epoch: int) -> None:
         # update epsilon
         self.epsilon = max(
@@ -158,14 +165,15 @@ class A2C(IAgents):
                 self.critic_losses[agent_id].clear()
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
-        if explore and np.random.rand() < self.epsilon:
+        if explore and self.epsilon > 0 and np.random.rand() < self.epsilon:
             action = np.random.choice(self.actor_networks[agent_id].num_actions)
             # log_prob = -np.log(1.0 / self.actor_networks[agent_id].action_space.n)
         else:
             policy_network = self.actor_networks[agent_id]
 
             # convert observation to float tensor, add 1 dimension, allocate tensor on device
-            obs_tensor = torch.from_numpy(observation).float().unsqueeze(0)
+
+            obs_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
 
             action_probs = policy_network(obs_tensor)  # [0].detach().numpy()
             m = Categorical(probs=action_probs)
@@ -193,7 +201,7 @@ class A2C(IAgents):
             scaled_reward: float = self.reward_norm[agent_id].normalize(reward)
         else:
             scaled_reward = reward
-        obs_curr: Tensor = torch.from_numpy(last_observation).float().unsqueeze(0)
+        obs_curr: Tensor = torch.tensor(last_observation, dtype=torch.float32).unsqueeze(0)
         local_probs = self.local_probs(agent_id, obs_curr)
         self.step_info[agent_id].add(
             reward=scaled_reward,
@@ -211,7 +219,7 @@ class A2C(IAgents):
     @staticmethod
     def compute_returns(rewards, gamma: float):
         discounted_returns = np.zeros_like(rewards, dtype=np.float32)
-        running_add = 0
+        running_add: float = 0.0
         for t in reversed(range(len(rewards))):
             running_add = running_add * gamma + rewards[t]
             discounted_returns[t] = running_add

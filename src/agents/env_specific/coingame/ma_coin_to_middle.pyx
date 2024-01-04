@@ -80,4 +80,4 @@ class MaCoinToMiddle(MRAgentA2C):
             return 0.0
 
         # target agent is not in the middle -> manipulate
-        return self.ma_amount
+        return -self.ma_amount

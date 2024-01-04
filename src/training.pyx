@@ -86,7 +86,6 @@ def _train_parallel_episode(
     writer: SummaryWriter,
     obs_logger: IObsLogger,
 ) -> dict[AgentID, float]:
-    episode_reward: dict[AgentID, float] = {a: 0 for a in env.possible_agents}
     timestep: int = 0
 
     observations, infos = env.reset(
@@ -96,7 +95,9 @@ def _train_parallel_episode(
             "tag": "train",
         }
     )
+    episode_reward: dict[AgentID, float] = {a: 0 for a in env.possible_agents}
 
+    agents.episode_started(current_episode)
     while env.agents:
         if get_cfg().get_render_mode() != "":
             pygame.event.get()  # so that the window doesn't freeze
@@ -110,6 +111,7 @@ def _train_parallel_episode(
             obs_logger.add_observation(agent_id, observation)
 
         new_observations, rewards, terminations, truncations, infos = env.step(actions)
+
         for agent_id, reward in rewards.items():
             episode_reward[agent_id] += reward
 
@@ -123,11 +125,8 @@ def _train_parallel_episode(
 
         observations = new_observations
 
-        for agent_id, reward in rewards.items():
-            episode_reward[agent_id] += reward
-
     env.close()
-
+    agents.episode_finished(current_episode, "train")
     return episode_reward
 
 
@@ -410,7 +409,10 @@ def start_training() -> None:
         if get_cfg().get_render_mode() != "":
             pygame.init()
 
-        for epoch in range(1, _training_config.EPOCHS + 1):
+        # if fast first results are needed
+        # for epoch in range(1, _training_config.EPOCHS + 1):
+        # normal evaluation/epoch counter
+        for epoch in range(0, _training_config.EPOCHS + 1):
             _train_epoch(agents, env, epoch, writer, obs_logger, parallel=parallel)
 
             if epoch % _training_config.EVAL_EPOCH_INTERVAL == 0:

@@ -22,7 +22,7 @@ class A2cConfig(CtrlConfig):
 
     EPSILON_INIT: float = 0.0
     EPSILON_MIN: float = 0.0
-    EPSILON_DECAY: float = 0.0002
+    EPSILON_DECAY: float = 3.0e-05
 
 
 class MateConfig(A2cConfig):
@@ -81,7 +81,7 @@ class GiftingConfig(A2cConfig):
 
 
 class MaConfig(A2cConfig):
-    MANIPULATION_AMOUNT: float = 1.2
+    MANIPULATION_AMOUNT: float = 1.0
 
 
 class DemoMaCoinConfig(A2cConfig):
@@ -94,7 +94,7 @@ class DemoMaConfig(A2cConfig):
 
 if __name__ == "__main__":
     # Calculate Decay rate:
-    epoch_reached_min = 35000
+    epoch_reached_min = 2000
 
     a2c_config = A2cConfig()
 

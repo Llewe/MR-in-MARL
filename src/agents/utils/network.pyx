@@ -2,9 +2,15 @@ import numpy
 import torch
 from torch.nn import ELU, Linear, Module, Sequential
 from torch.nn.functional import softmax
+import torch.nn.init as init
+
+def initialize_weights(layer):
+    if isinstance(layer, Linear):
+        init.kaiming_normal_(layer.weight, nonlinearity='relu')
+        init.constant_(layer.bias, 0)
 
 def preprocessing_module(nr_input_features, nr_hidden_units, last_layer_units):
-    return Sequential(
+    model=  Sequential(
         Linear(nr_input_features, nr_hidden_units),
         ELU(),
         Linear(nr_hidden_units, nr_hidden_units),
@@ -12,13 +18,20 @@ def preprocessing_module(nr_input_features, nr_hidden_units, last_layer_units):
         Linear(nr_hidden_units, last_layer_units),
     )
 
+    #model.apply(initialize_weights) mate/2024-01-04T18:11:57 - Jewell is with 2024-01-04T18:14:57 - Arthur without
+    return model
+
 
 class ActorNetwork(Module):
     # Takes in observations and outputs actions
+    num_actions: numpy.int32
+    fc_net: Sequential
+    optimizer: torch.optim.Adam
+
     def __init__(
             self,
             observation_space,
-            num_actions: numpy.int64,
+            num_actions: numpy.int32,
             hidden_units: int,
             learning_rate: float,
     ):
@@ -35,6 +48,9 @@ class ActorNetwork(Module):
 
 
 class CriticNetwork(Module):
+    fc_net: Sequential
+    optimizer: torch.optim.Adam
+
     # Takes in state
     def __init__(self, observation_space, hidden_units: int, learning_rate: float):
         super(CriticNetwork, self).__init__()

@@ -22,6 +22,14 @@ class IAgents(ABC):
         pass
 
     @abstractmethod
+    def episode_started(self, episode: int) -> None:
+        pass
+
+    @abstractmethod
+    def episode_finished(self, episode: int, tag: str) -> None:
+        pass
+
+    @abstractmethod
     def epoch_started(self, epoch: int) -> None:
         pass
 

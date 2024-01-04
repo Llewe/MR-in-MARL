@@ -12,6 +12,7 @@ setup(
             "src/agents/utils/reward_normalization.pyx",
             "src/agents/utils/state_value_network.pyx",
             "src/agents/env_specific/coingame/ma_coin_to_middle.pyx",
+            "src/agents/env_specific/ipd/punish_defect.pyx",
             "src/agents/a2c.pyx",
             "src/agents/gifting.pyx",
             #     "src/agents/lola_pg.pyx",

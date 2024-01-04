@@ -23,7 +23,7 @@ class Mate(A2C):
 
     request_messages_sent: float
     response_messages_sent: float
-    steps: float
+    steps_in_epoch: float
 
     nr_agents: int
 
@@ -65,30 +65,36 @@ class Mate(A2C):
 
     def epoch_started(self, epoch: int) -> None:
         super(Mate, self).epoch_started(epoch)
-        self.last_rewards_observed = {
-            agent_id: [] for agent_id in self.actor_networks.keys()
-        }
 
         self.request_messages_sent = 0.0
         self.response_messages_sent = 0.0
-        self.steps = 0.0
+        self.steps_in_epoch = 0.0
 
     def epoch_finished(self, epoch: int, tag: str) -> None:
         super(Mate, self).epoch_finished(epoch, tag)
 
-        if self.writer is not None and self.steps > 0:
+        if self.writer is not None and self.steps_in_epoch > 0:
             self.writer.add_scalar(
                 f"{tag}/mate/requests_sent",
-                self.request_messages_sent / self.steps,
+                self.request_messages_sent / self.steps_in_epoch,
                 epoch,
             )
 
             self.writer.add_scalar(
                 f"{tag}/mate/responses_sent",
-                self.response_messages_sent / self.steps,
+                self.response_messages_sent / self.steps_in_epoch,
                 epoch,
             )
-            print(f"Requests sent: {self.request_messages_sent} Requests received: {self.response_messages_sent}")
+    def episode_started(self, episode: int) -> None:
+        super(Mate, self).episode_started(episode)
+        self.last_rewards_observed = {
+            agent_id: [] for agent_id in self.actor_networks.keys()
+        }
+
+
+
+    def episode_finished(self, episode: int, tag: str) -> None:
+        super(Mate, self).episode_finished(episode, tag)
 
     def step_agent(
         self,
@@ -106,8 +112,8 @@ class Mate(A2C):
         self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
     ) -> None:
         super(Mate, self).step_finished(step, next_observations)
-        self.mate(step, next_observations)
-        self.steps += 1
+        self.mate(next_observations)
+        self.steps_in_epoch += 1
 
     def get_state_values(
         self,
@@ -174,7 +180,7 @@ class Mate(A2C):
             return False
 
     def mate(
-        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+        self, next_observations: Optional[dict[AgentID, ObsType]] = None
     ):
         """
         V = approximated value function
@@ -206,9 +212,6 @@ class Mate(A2C):
         16:     return 𝑟𝑡,𝑖 + ˆ 𝑟req + ˆ 𝑟res (ˆ 𝑟 MATE 𝑡,𝑖 as defined in Eq. 5)
 
         """
-        if step == 0:
-            for v in self.last_rewards_observed.values():
-                v.clear()
 
         original_rewards: dict[AgentID, float] = {
             a: self.step_info[a].rewards[-1] for a in self.step_info.keys()
@@ -236,9 +239,7 @@ class Mate(A2C):
         else:
             last_obs_index = -1
             next_observations = {  # type: ignore
-                agent_id: torch.from_numpy(next_observations[agent_id])
-                .float()
-                .unsqueeze(0)
+                agent_id: torch.tensor(next_observations[agent_id], dtype=torch.float32).unsqueeze(0)
                 for agent_id in self.step_info.keys()
             }
 
@@ -295,9 +296,6 @@ class Mate(A2C):
             ]
             if len(trust_requests) > 0:
                 mate_rewards[agent_id] += numpy.max(trust_requests)
-                if numpy.max(trust_requests) > 0:
-                    print(f"original reward: {original_rewards[agent_id]}, mate reward: {mate_rewards[agent_id]},"
-                          f" v_next {state_values[agent_id][1]} v_curr{state_values[agent_id][0]}")
 
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(
@@ -337,3 +335,6 @@ class Mate(A2C):
         #  write mate rewards to step_info
         for agent_id in self.agent_id_mapping.keys():
             self.step_info[agent_id].rewards[-1] = mate_rewards[agent_id]
+
+
+

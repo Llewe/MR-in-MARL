@@ -13,6 +13,7 @@ from src.cfg_manager import get_cfg
 
 from src.agents.gifting import Gifting
 
+from src.agents.env_specific.ipd.punish_defect import MaIpdPunishDefect
 from src.agents.lola_pg import LolaPG
 from src.config.ctrl_config import (
     A2cConfig,
@@ -74,5 +75,8 @@ def get_agent_class(agent_type: AgentType) -> Tuple[Type[IAgents], Type[CtrlConf
 
         case AgentType.MA_COIN_TO_MIDDLE:
             return MaCoinToMiddle, MaConfig
+
+        case AgentType.MA_IPD_PUNISH_DEFECT:
+            return MaIpdPunishDefect, MaConfig
 
     raise NotImplementedError

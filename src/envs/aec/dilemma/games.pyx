@@ -54,10 +54,10 @@ class Prisoners_Dilemma(Game):
         self.sucker = -3  # cooperate-defect (or vice-versa) sucker payoff
 
         self.payoff = {
-            (self.COOPERATE, self.COOPERATE): (self.coop, self.coop),
-            (self.COOPERATE, self.DEFECT): (self.sucker, self.temptation),
-            (self.DEFECT, self.COOPERATE): (self.temptation, self.sucker),
-            (self.DEFECT, self.DEFECT): (self.defect, self.defect),
+            (self.COOPERATE, self.COOPERATE): (self.coop, self.coop), # -1, -1
+            (self.COOPERATE, self.DEFECT): (self.sucker, self.temptation), # -3, 0
+            (self.DEFECT, self.COOPERATE): (self.temptation, self.sucker), # 0, -3
+            (self.DEFECT, self.DEFECT): (self.defect, self.defect), # -0.5, -3.5
         }
 
     def get_payoff(self):

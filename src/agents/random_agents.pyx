@@ -9,6 +9,7 @@ from src.interfaces.agents_i import IAgents
 
 
 class RandomAgents(IAgents):
+
     def __init__(self, config: CtrlConfig):
         pass
 
@@ -28,6 +29,13 @@ class RandomAgents(IAgents):
         pass
 
     def epoch_finished(self, epoch: int, tag: str):
+        # Nothing interesting to do here
+        pass
+    def episode_started(self, episode: int) -> None:
+        # Nothing interesting to do here
+        pass
+
+    def episode_finished(self, episode: int, tag: str) -> None:
         # Nothing interesting to do here
         pass
 

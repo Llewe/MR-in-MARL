@@ -11,7 +11,7 @@ def _p_setup_my_coin_game(
     from src.envs.aec.my_coin_game import parallel_env
 
     return parallel_env(
-        with_none_action=True,
+        with_none_action=coin_game_config.WITH_NONE_ACTION,
         walls=coin_game_config.WALLS,
         max_cycles=coin_game_config.MAX_CYCLES,
         render_mode=get_cfg().get_render_mode(),
