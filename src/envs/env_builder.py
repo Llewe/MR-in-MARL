@@ -49,72 +49,65 @@ def build_env(
     logging.info(f"Building env: {env_name}")
     config: T = load_env_config(env_name)
 
-    match env_name:
-        case EnvType.SIMPLE:
-            return _setup_simple(config)
-        case EnvType.SIMPLE_TAG:
-            return _setup_simple_tag(config)
-        case EnvType.SIMPLE_SPREAD:
-            return _setup_simple_spread(config)
-        case EnvType.SIMPLE_ADVERSARY:
-            return _setup_simple_adversary(config)
-        case EnvType.P_SIMPLE:
-            raise NotImplementedError
-        case EnvType.P_SIMPLE_TAG:
-            raise NotImplementedError
-        case EnvType.P_SIMPLE_SPREAD:
-            raise NotImplementedError
-        case EnvType.P_SIMPLE_ADVERSARY:
-            raise NotImplementedError
-
-        case EnvType.COIN_GAME:
-            return _setup_coin_game(writer, config)
-
-        case EnvType.P_COIN_GAME:
-            return _p_setup_coin_game(writer, config)
-
-        case EnvType.PRISONERS_DILEMMA:
-            return _setup_prisoners(writer, config)
-        case EnvType.P_PRISONERS_DILEMMA:
-            return _p_setup_prisoners(writer, config)
-
-        case EnvType.SAMARITANS_DILEMMA:
-            return _setup_samaritans(writer, config)
-        case EnvType.STAG_HUNT:
-            return _setup_stag_hunt(writer, config)
-        case EnvType.CHICKEN:
-            return _setup_chicken(writer, config)
-
-        case EnvType.P_HARVEST:
-            return _p_setup_harvest(writer, config)
-
-    raise NotImplementedError
+    if env_name == EnvType.SIMPLE:
+        return _setup_simple(config)
+    elif env_name == EnvType.SIMPLE_TAG:
+        return _setup_simple_tag(config)
+    elif env_name == EnvType.SIMPLE_SPREAD:
+        return _setup_simple_spread(config)
+    elif env_name == EnvType.SIMPLE_ADVERSARY:
+        return _setup_simple_adversary(config)
+    elif env_name == EnvType.P_SIMPLE:
+        raise NotImplementedError
+    elif env_name == EnvType.P_SIMPLE_TAG:
+        raise NotImplementedError
+    elif env_name == EnvType.P_SIMPLE_SPREAD:
+        raise NotImplementedError
+    elif env_name == EnvType.P_SIMPLE_ADVERSARY:
+        raise NotImplementedError
+    elif env_name == EnvType.COIN_GAME:
+        return _setup_coin_game(writer, config)
+    elif env_name == EnvType.P_COIN_GAME:
+        return _p_setup_coin_game(writer, config)
+    elif env_name == EnvType.PRISONERS_DILEMMA:
+        return _setup_prisoners(writer, config)
+    elif env_name == EnvType.P_PRISONERS_DILEMMA:
+        return _p_setup_prisoners(writer, config)
+    elif env_name == EnvType.SAMARITANS_DILEMMA:
+        return _setup_samaritans(writer, config)
+    elif env_name == EnvType.STAG_HUNT:
+        return _setup_stag_hunt(writer, config)
+    elif env_name == EnvType.CHICKEN:
+        return _setup_chicken(writer, config)
+    elif env_name == EnvType.P_HARVEST:
+        return _p_setup_harvest(writer, config)
+    else:
+        raise NotImplementedError
 
 
 def get_env_class(env_name: EnvType) -> Type[T]:
-    match env_name:
-        case EnvType.SIMPLE_TAG:
-            return SimpleTagConfig
-        case EnvType.SIMPLE_SPREAD:
-            return SimpleSpreadConfig
-        case EnvType.SIMPLE_ADVERSARY:
-            return SimpleAdversaryConfig
-        case EnvType.COIN_GAME:
-            return CoinGameConfig
-        case EnvType.P_COIN_GAME:
-            return CoinGameConfig
-        case EnvType.PRISONERS_DILEMMA:
-            return PrisonersConfig
-        case EnvType.SAMARITANS_DILEMMA:
-            return SamaritansConfig
-        case EnvType.STAG_HUNT:
-            return StagHuntConfig
-        case EnvType.CHICKEN:
-            return ChickenConfig
-        case EnvType.P_HARVEST:
-            return HarvestConfig
-        case _:
-            return EnvConfig
+    if env_name == EnvType.SIMPLE_TAG:
+        return SimpleTagConfig
+    elif env_name == EnvType.SIMPLE_SPREAD:
+        return SimpleSpreadConfig
+    elif env_name == EnvType.SIMPLE_ADVERSARY:
+        return SimpleAdversaryConfig
+    elif env_name == EnvType.COIN_GAME:
+        return CoinGameConfig
+    elif env_name == EnvType.P_COIN_GAME:
+        return CoinGameConfig
+    elif env_name == EnvType.PRISONERS_DILEMMA:
+        return PrisonersConfig
+    elif env_name == EnvType.SAMARITANS_DILEMMA:
+        return SamaritansConfig
+    elif env_name == EnvType.STAG_HUNT:
+        return StagHuntConfig
+    elif env_name == EnvType.CHICKEN:
+        return ChickenConfig
+    elif env_name == EnvType.P_HARVEST:
+        return HarvestConfig
+    else:
+        return EnvConfig
 
 
 def load_env_config(env_name: EnvType) -> T:

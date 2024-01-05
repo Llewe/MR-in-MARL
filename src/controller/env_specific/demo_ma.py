@@ -39,15 +39,14 @@ class DemoMa(RmWrapper):
             # no we need to figure out if the agent after that action is closer to the fake target or not
             # process discrete action
             vel_update = np.array([0.0, 0.0])
-            match last_act:
-                case 1:
-                    vel_update = np.array([-5.0, 0.0])
-                case 2:
-                    vel_update = np.array([5.0, 0.0])
-                case 3:
-                    vel_update = np.array([0.0, -5.0])
-                case 4:
-                    vel_update = np.array([0.0, 5.0])
+            if last_act == 1:
+                vel_update = np.array([-5.0, 0.0])
+            elif last_act == 2:
+                vel_update = np.array([5.0, 0.0])
+            elif last_act == 3:
+                vel_update = np.array([0.0, -5.0])
+            elif last_act == 4:
+                vel_update = np.array([0.0, 5.0])
 
             # now lets check if
 

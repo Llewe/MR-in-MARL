@@ -53,28 +53,21 @@ def load_ctrl_config(config_class: Type[CtrlConfig]) -> CtrlConfig:
 def get_agent_class(
     agent_type: AgentType,
 ) -> Tuple[Type[IController], Type[CtrlConfig]]:
-    match agent_type:
-        case AgentType.RANDOM:
-            return RandomController, CtrlConfig
-        case AgentType.ACTOR_CRITIC:
-            return ActorCritic, ACConfig
-
-        case AgentType.MATE:
-            return Mate, MateConfig
-
-        case AgentType.GIFTING:
-            return Gifting, GiftingConfig
-
-        case AgentType.LOLA_PG:
-            return LolaPG, LolaPGConfig
-
-        case AgentType.DEMO_MANIPULATION_AGENT:
-            return DemoMa, DemoMaConfig
-
-        case AgentType.MA_COIN_TO_MIDDLE:
-            return MaCoinToMiddle, MaConfig
-
-        case AgentType.MA_IPD_PUNISH_DEFECT:
-            return MaIpdPunishDefect, MaConfig
+    if agent_type == AgentType.RANDOM:
+        return RandomController, CtrlConfig
+    elif agent_type == AgentType.ACTOR_CRITIC:
+        return ActorCritic, ACConfig
+    elif agent_type == AgentType.MATE:
+        return Mate, MateConfig
+    elif agent_type == AgentType.GIFTING:
+        return Gifting, GiftingConfig
+    elif agent_type == AgentType.LOLA_PG:
+        return LolaPG, LolaPGConfig
+    elif agent_type == AgentType.DEMO_MANIPULATION_AGENT:
+        return DemoMa, DemoMaConfig
+    elif agent_type == AgentType.MA_COIN_TO_MIDDLE:
+        return MaCoinToMiddle, MaConfig
+    elif agent_type == AgentType.MA_IPD_PUNISH_DEFECT:
+        return MaIpdPunishDefect, MaConfig
 
     raise NotImplementedError

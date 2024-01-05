@@ -444,8 +444,12 @@ def start_training() -> None:
         logging.info("Finished training")
 
 
-if __name__ == "__main__":
+def start() -> None:
     set_cfg(CfgManager(_training_config))
     logging.basicConfig(level=logging.getLevelName(get_cfg().get_log_level()))
     logging.info("Starting MR-in-MARL")
     start_training()
+
+
+if __name__ == "__main__":
+    start()

@@ -61,11 +61,10 @@ class GiftingConfig(ACConfig):
 
     @staticmethod
     def index_from_env(env_type: EnvType):
-        match env_type:
-            case EnvType.P_COIN_GAME:
-                return 4
-            case EnvType.P_HARVEST:
-                return 4
+        if env_type == EnvType.P_COIN_GAME:
+            return 4
+        elif env_type == EnvType.P_HARVEST:
+            return 4
 
     GIFT_REWARD: float = 1.0
     GIFT_MODE: Mode = Mode.REPLENISHABLE_BUDGET
