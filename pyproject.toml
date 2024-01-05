@@ -32,7 +32,6 @@ pytest = "^7.4.3"
 cython = "^3.0.7"
 pillow = "^10.1.0"
 setuptools = "^69.0.3"
-pyinstaller = "^6.3.0"
 
 
 
@@ -48,12 +47,9 @@ priority = "explicit"
 
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "Cython"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.build]
-generate-setup-file = false
-script = 'build.py'
 
 [tool.poetry.scripts]
 my-script = "src.training:main"
