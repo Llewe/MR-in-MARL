@@ -14,14 +14,15 @@ from pettingzoo.utils.conversions import parallel_wrapper_fn
 from pettingzoo.utils.env import AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
+
 def env(**kwargs):
     e = Harvest(**kwargs)
     e = wrappers.AssertOutOfBoundsWrapper(e)
     e = wrappers.OrderEnforcingWrapper(e)
     return e
 
-parallel_env = parallel_wrapper_fn(env)
 
+parallel_env = parallel_wrapper_fn(env)
 
 
 class Action(Enum):
@@ -79,7 +80,7 @@ class Apple:
 class GlobalState:
     agent_states: Dict[AgentID, AgentState]
 
-    apples: List[Apple]
+    apples: np.ndarray
 
     # outside_vision_range = 2 * vision_range + 1 (normal vision is from the agent's position to x tiles in each direction)
     vision_range: int
@@ -94,15 +95,77 @@ class GlobalState:
     # Walls = -1, Empty = 0, Agent = 1, Apple = 2
     _obs: dict[AgentID, np.ndarray]
 
+    fixed_spawn: bool
+
     steps_on_board: int = 0
 
+    """
+         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
+         1 . . . . A . . . . A . . . . A . . . . A . . . .
+         2 . . . A A A . . A A A . . A A A . . A A A . . .
+         3 . . . . A . . . . A . . . . A . . . . A . . . .
+         4 . . . . . . . . . . . . . . . . . . . . . . . .
+         5 . A . . . . A . . . . A . . . . A . . . . A . .
+         6 A A A . . A A A . . A A A . . A A A . . A A A .
+         7 . A . . . . A . . . . A . . . . A . . . . A . .
+         8 . . . . . . . . . . . . . . . . . . . . . . . .
+        """
+    fixed_spawn_positions = [
+        (5, 1),
+        (10, 1),
+        (15, 1),
+        (20, 1),
+        (4, 2),
+        (5, 2),
+        (6, 2),
+        (9, 2),
+        (10, 2),
+        (11, 2),
+        (14, 2),
+        (15, 2),
+        (16, 2),
+        (19, 2),
+        (20, 2),
+        (21, 2),
+        (5, 3),
+        (10, 3),
+        (15, 3),
+        (20, 3),
+        (2, 5),
+        (7, 5),
+        (12, 5),
+        (17, 5),
+        (22, 5),
+        (1, 6),
+        (2, 6),
+        (3, 6),
+        (6, 6),
+        (7, 6),
+        (8, 6),
+        (11, 6),
+        (12, 6),
+        (13, 6),
+        (16, 6),
+        (17, 6),
+        (18, 6),
+        (21, 6),
+        (22, 6),
+        (23, 6),
+        (2, 7),
+        (7, 7),
+        (12, 7),
+        (17, 7),
+        (22, 7),
+    ]
+
     def __init__(
-            self,
-            agents: List[AgentID],
-            map_width: int = 25,
-            map_height: int = 9,
-            vision_range: int = 3,
-            tag_beam_width: int = 2,
+        self,
+        agents: List[AgentID],
+        map_width: int = 25,
+        map_height: int = 9,
+        vision_range: int = 3,
+        tag_beam_width: int = 2,
+        fixed_spawn: bool = True,
     ):
         self.agent_states = {}
         self._obs = {}
@@ -110,6 +173,7 @@ class GlobalState:
         self.map_height = map_height
         self.vision_range = vision_range
         self.tag_beam_width = tag_beam_width
+        self.fixed_spawn = fixed_spawn
 
         outside_vision_range = 2 * self.vision_range + 1
 
@@ -125,15 +189,14 @@ class GlobalState:
                 (
                     (x, y)
                     for x, y in product(
-                    range(-self.vision_range, self.vision_range + 1),
-                    range(-self.vision_range, self.vision_range + 1),
-                )
+                        range(-self.vision_range, self.vision_range + 1),
+                        range(-self.vision_range, self.vision_range + 1),
+                    )
                     if not (x == 0 and y == 0)
                 ),
             )
         ]
-
-        self.apples = []
+        self.reset_apple_map(None)
 
     def pos_to_obs_index(self, x: int, y: int) -> int:
         return x * self.vision_range + y
@@ -143,8 +206,8 @@ class GlobalState:
 
     def in_vision(self, agent: AgentState, obj: Union[Apple, AgentState]):
         return (
-                abs(obj.x - agent.x) <= self.vision_range
-                and abs(obj.y - agent.y) <= self.vision_range
+            abs(obj.x - agent.x) <= self.vision_range
+            and abs(obj.y - agent.y) <= self.vision_range
         )
 
     def cal_obs(self) -> None:
@@ -157,16 +220,20 @@ class GlobalState:
                 elif not self.in_map(x, y):
                     self._obs[agent_id][index] = ObsTiles.OUTSIDE.value
                 else:
-                    self._obs[agent_id][index] = curr_map[y, x]
+                    self._obs[agent_id][index] = curr_map[x, y]
 
     def build_map(self) -> np.ndarray:
-        curr_map = np.zeros(shape=(self.map_height, self.map_width), dtype=np.int64)
+        curr_map = np.copy(self.apples)
 
-        for apple in self.apples:
-            curr_map[apple.y, apple.x] = ObsTiles.APPLE.value
         for a in self.agent_states.values():
-            curr_map[a.y, a.x] = ObsTiles.AGENT.value
+            curr_map[a.x, a.y] = ObsTiles.AGENT.value
         return curr_map
+
+    def reset_apple_map(self, apple_pos: Optional[List[Tuple[int, int]]]) -> None:
+        self.apples = np.zeros(shape=(self.map_width, self.map_height), dtype=np.int32)
+        if apple_pos is not None:
+            for x, y in apple_pos:
+                self.apples[x, y] = 1
 
     def get_obs(self, agent_id: AgentID) -> np.ndarray:
         return self._obs[agent_id]
@@ -174,8 +241,6 @@ class GlobalState:
     @functools.lru_cache(maxsize=None)
     def get_beam_size(self) -> int:
         return 2 * self.tag_beam_width + 1
-
-
 
 
 class HarvestPygameRenderer:
@@ -246,17 +311,18 @@ class HarvestPygameRenderer:
             )
 
     def _draw_apples(self, state: GlobalState) -> None:
-        for apple in state.apples:
-            pygame.draw.rect(
-                self.screen,
-                self.apple_color,
-                (
-                    apple.x * self.cell_size + self.margin_apple,
-                    apple.y * self.cell_size + self.margin_apple,
-                    self.cell_size - 2 * self.margin_apple,
-                    self.cell_size - 2 * self.margin_apple,
-                ),
-            )
+        for x, y in product(range(state.map_width), range(state.map_height)):
+            if state.apples[x, y] == 1:
+                pygame.draw.rect(
+                    self.screen,
+                    self.apple_color,
+                    (
+                        x * self.cell_size + self.margin_apple,
+                        y * self.cell_size + self.margin_apple,
+                        self.cell_size - 2 * self.margin_apple,
+                        self.cell_size - 2 * self.margin_apple,
+                    ),
+                )
 
     def _draw_agents(self, state: GlobalState) -> None:
         for agent_id, agent_state in state.agent_states.items():
@@ -293,8 +359,6 @@ class Harvest(AECEnv):
     init_apples: int
     regrow_chance: float
 
-    fixed_spawn: bool
-
     tag_time: int
 
     # Action, State Log
@@ -303,80 +367,20 @@ class Harvest(AECEnv):
     # Log Variables
     summary_writer: Optional[SummaryWriter]
 
-    """
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
-     1 . . . . A . . . . A . . . . A . . . . A . . . .
-     2 . . . A A A . . A A A . . A A A . . A A A . . .
-     3 . . . . A . . . . A . . . . A . . . . A . . . .
-     4 . . . . . . . . . . . . . . . . . . . . . . . .
-     5 . A . . . . A . . . . A . . . . A . . . . A . .
-     6 A A A . . A A A . . A A A . . A A A . . A A A .
-     7 . A . . . . A . . . . A . . . . A . . . . A . .
-     8 . . . . . . . . . . . . . . . . . . . . . . . .
-    """
-    fixed_spawn_positions = [
-        (5, 1),
-        (10, 1),
-        (15, 1),
-        (20, 1),
-        (4, 2),
-        (5, 2),
-        (6, 2),
-        (9, 2),
-        (10, 2),
-        (11, 2),
-        (14, 2),
-        (15, 2),
-        (16, 2),
-        (19, 2),
-        (20, 2),
-        (21, 2),
-        (5, 3),
-        (10, 3),
-        (15, 3),
-        (20, 3),
-        (2, 5),
-        (7, 5),
-        (12, 5),
-        (17, 5),
-        (22, 5),
-        (1, 6),
-        (2, 6),
-        (3, 6),
-        (6, 6),
-        (7, 6),
-        (8, 6),
-        (11, 6),
-        (12, 6),
-        (13, 6),
-        (16, 6),
-        (17, 6),
-        (18, 6),
-        (21, 6),
-        (22, 6),
-        (23, 6),
-        (2, 7),
-        (7, 7),
-        (12, 7),
-        (17, 7),
-        (22, 7)
-
-    ]
-
     def __init__(
-            self,
-            render_mode="",
-            max_cycles: int = 250,
-            n_players: int = 6,
-            n_apples: int = 12,
-            grid_width: int = 18,
-            grid_height: int = 10,
-            vision_range: int = 3,
-            tag_beam_width: int = 2,
-            tag_time: int = 25,
-            regrow_chance: float = 0.001,
-            summary_writer: Optional[SummaryWriter] = None,
-            fixed_spawn: bool = True,
+        self,
+        render_mode="",
+        max_cycles: int = 250,
+        n_players: int = 6,
+        n_apples: int = 12,
+        grid_width: int = 18,
+        grid_height: int = 10,
+        vision_range: int = 3,
+        tag_beam_width: int = 2,
+        tag_time: int = 25,
+        regrow_chance: float = 0.001,
+        summary_writer: Optional[SummaryWriter] = None,
+        fixed_spawn: bool = True,
     ):
         super().__init__()
 
@@ -393,7 +397,6 @@ class Harvest(AECEnv):
             agent: Discrete(self.nr_actions) for agent in self.possible_agents
         }
         self.summary_writer = summary_writer
-        self.fixed_spawn = fixed_spawn
 
         self.current_history: list[HistoryState] = []
 
@@ -413,6 +416,7 @@ class Harvest(AECEnv):
             map_height=grid_height,
             vision_range=vision_range,
             tag_beam_width=tag_beam_width,
+            fixed_spawn=fixed_spawn,
         )
 
         if render_mode == "human":
@@ -469,7 +473,6 @@ class Harvest(AECEnv):
 
     def _reset_board(self) -> None:
         # reset helpers/lists
-        self.global_state.apples.clear()
         self.global_state.steps_on_board = 0
 
         # spawn player
@@ -480,18 +483,16 @@ class Harvest(AECEnv):
             )
         )
 
-
         # spawn apples
-        if self.fixed_spawn:
-            for pos in self.fixed_spawn_positions:
-                self.global_state.apples.append(Apple(pos[0], pos[1]))
+        if self.global_state.fixed_spawn:
+            self.global_state.reset_apple_map(self.global_state.fixed_spawn_positions)
 
         else:
+            apple_pos: List[Tuple[int, int]] = []
             for i in range(self.init_apples):
                 pos = all_positions.pop(np.random.randint(0, len(all_positions)))
-
-                self.global_state.apples.append(Apple(pos[0], pos[1]))
-
+                apple_pos.append(pos)
+            self.global_state.reset_apple_map(apple_pos)
 
         for agent in self.possible_agents:
             agent_state: AgentState = self.global_state.agent_states[agent]
@@ -556,7 +557,7 @@ class Harvest(AECEnv):
         return new_y
 
     def _tag_agents(
-            self, start_x: int, start_y: int, end_x: int, end_y: int, tagger_id: AgentID
+        self, start_x: int, start_y: int, end_x: int, end_y: int, tagger_id: AgentID
     ) -> None:
         for agent_id, state in self.global_state.agent_states.items():
             if agent_id != tagger_id:
@@ -639,16 +640,52 @@ class Harvest(AECEnv):
         self.global_state.agent_states[agent].x = pos_x
         self.global_state.agent_states[agent].y = pos_y
 
-        for apple in self.global_state.apples:
-            if (apple.x, apple.y) == (pos_x, pos_y):
-                self.global_state.apples.remove(apple)
-                self.current_history[-1].collected_apples[agent] += 1
-                self.rewards[agent] += 1
-                return
+        if self.global_state.apples[pos_x, pos_y] == 1:
+            self.global_state.apples[pos_x, pos_y] = 0
+            self.current_history[-1].collected_apples[agent] += 1
+            self.rewards[agent] += 1
 
-    def _grow_apples(self) -> None:
+    def _grow_apples_new(self) -> None:
+        """
+        Implements the apple regrowth mechanic. From MATE:
+        Returns
+        -------
+
+        """
+        agent_pos = [(a.x, a.y) for a in self.global_state.agent_states.values()]
+
+        for x, y in product(
+            range(self.global_state.map_width), range(self.global_state.map_height)
+        ):
+            if self.global_state.apples[x][y] == 0 and (x, y) not in agent_pos:
+                apple_count = 0
+                for offset_x, offset_y in product(range(-2, 3), range(-2, 3)):
+                    pos_x, pos_y = x + offset_x, y + offset_y
+                    if self.global_state.in_map(pos_x, pos_y):
+                        distance = abs(offset_x) + abs(
+                            offset_y
+                        )  # remove "diagonal" apples
+                        if (
+                            distance <= 2
+                            and self.global_state.apples[pos_x][pos_y] == 1
+                        ):
+                            apple_count += 1
+                if apple_count > 0:
+                    prob: float = 0
+                    if apple_count in [1, 2]:
+                        prob = 0.01
+                    if apple_count in [3, 4]:
+                        prob = 0.05
+                    if apple_count > 4:
+                        prob = 0.1
+                    self.global_state.apples[x][y] = np.random.choice(
+                        [0, 1], p=[1 - prob, prob]
+                    )
+
+    def _grow_apples_old(self) -> None:
         regrow_matrix = np.zeros(
-            (self.global_state.map_height, self.global_state.map_width), dtype=np.float32
+            (self.global_state.map_height, self.global_state.map_width),
+            dtype=np.float32,
         )
 
         for apple in self.global_state.apples:
@@ -662,11 +699,11 @@ class Harvest(AECEnv):
 
         if self.fixed_spawn:
             for x, y in product(
-                    range(self.global_state.map_width),
-                    range(self.global_state.map_height),
+                range(self.global_state.map_width),
+                range(self.global_state.map_height),
             ):
                 if (x, y) not in self.fixed_spawn_positions:
-                    regrow_matrix[y,x] = 0
+                    regrow_matrix[y, x] = 0
 
         for apple in self.global_state.apples:
             regrow_matrix[apple.y, apple.x] = 0
@@ -678,6 +715,12 @@ class Harvest(AECEnv):
             )
             if regrow_matrix[y, x] > np.random.random()
         ]
+
+    def _grow_apples(self) -> None:
+        if self.global_state.fixed_spawn:
+            self._grow_apples_new()
+        else:
+            self._grow_apples_old()
 
     def step(self, action) -> None:
         """
@@ -772,7 +815,7 @@ class Harvest(AECEnv):
         else:
             write_log = options["write_log"]
 
-        if not self.current_history:
+        if not write_log:
             return
 
         epoch: int = 0
@@ -815,8 +858,13 @@ class Harvest(AECEnv):
                     "The length of the current history is not a multiple of the max_cycles."
                 )
         if divider != 1.0:
-            scaled_cumulative_rewards = {a: r / divider for a, r in cumulative_rewards.items()}
+            scaled_cumulative_rewards = {
+                a: r / divider for a, r in cumulative_rewards.items()
+            }
             collected_apples = {a: c / divider for a, c in collected_apples.items()}
+        else:
+            print("Divider is 1.0 - no scaling of the rewards.")
+            scaled_cumulative_rewards = cumulative_rewards
 
         for agent_id in self.possible_agents:
             self.summary_writer.add_scalar(
@@ -853,10 +901,8 @@ class Harvest(AECEnv):
             epoch,
         )
 
-
         # calculate equality
         # e = 1- ((for each i in agents: for each j in agents: abs(rewardI-reawrdJ))/2*n*sum(rewards_aller_agents)))))
-
 
         dividend = 0.0
         for i in range(len(self.possible_agents)):
@@ -869,13 +915,11 @@ class Harvest(AECEnv):
 
         e: float = 1.0 - dividend / divisor
 
-
         self.summary_writer.add_scalar(
             f"{log_name}/equality",
             e,
             epoch,
         )
-
 
         self.current_history.clear()
 
