@@ -85,13 +85,12 @@ class Mate(ActorCritic):
                 self.response_messages_sent / self.steps_in_epoch,
                 epoch,
             )
+
     def episode_started(self, episode: int) -> None:
         super(Mate, self).episode_started(episode)
         self.last_rewards_observed = {
             agent_id: [] for agent_id in self.actor_networks.keys()
         }
-
-
 
     def episode_finished(self, episode: int, tag: str) -> None:
         super(Mate, self).episode_finished(episode, tag)
@@ -156,7 +155,9 @@ class Mate(ActorCritic):
     ):  # history, next_history is missing
         if self.mate_mode == MateConfig.Mode.STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
-            if is_empty:
+            if (
+                not is_empty
+            ):  # TODO this is a change to the original code -> its probably a bug in the original code
                 self.last_rewards_observed[agent_id].append(reward)
                 return True
             last_reward = numpy.mean(self.last_rewards_observed[agent_id])
@@ -179,9 +180,7 @@ class Mate(ActorCritic):
         if self.mate_mode == MateConfig.Mode.VALUE_DECOMPOSE_MODE:
             return False
 
-    def mate(
-        self, next_observations: Optional[dict[AgentID, ObsType]] = None
-    ):
+    def mate(self, next_observations: Optional[dict[AgentID, ObsType]] = None):
         """
         V = approximated value function
         N = sum of all neighbors agents
@@ -239,7 +238,9 @@ class Mate(ActorCritic):
         else:
             last_obs_index = -1
             next_observations = {  # type: ignore
-                agent_id: torch.tensor(next_observations[agent_id], dtype=torch.float32).unsqueeze(0)
+                agent_id: torch.tensor(
+                    next_observations[agent_id], dtype=torch.float32
+                ).unsqueeze(0)
                 for agent_id in self.step_info.keys()
             }
 
@@ -247,7 +248,7 @@ class Mate(ActorCritic):
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
             state_values = self.get_state_values(last_obs_index, next_observations)
         else:
-            state_values = {a:(0.0, 0.0) for a in self.step_info.keys()}
+            state_values = {a: (0.0, 0.0) for a in self.step_info.keys()}
 
         # 1. Send trust requests
         defector_id: int = -1
@@ -335,6 +336,3 @@ class Mate(ActorCritic):
         #  write mate rewards to step_info
         for agent_id in self.agent_id_mapping.keys():
             self.step_info[agent_id].rewards[-1] = mate_rewards[agent_id]
-
-
-
