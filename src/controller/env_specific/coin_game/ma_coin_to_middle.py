@@ -1,13 +1,13 @@
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
-from src.agents.mr_agent_a2c import MRAgentA2C
+from src.controller.rm_wrapper import RmWrapper
 from src.utils.gym_utils import Space
 
 from src.config.ctrl_config import MaConfig
-from src.envs.aec.my_coin_game import Action
+from src.envs.coin_game.coin_game import Action
 
 
-class MaCoinToMiddle(MRAgentA2C):
+class MaCoinToMiddle(RmWrapper):
     """
     This agent is used to manipulate all other agents to go to the middle of the map if its not there own coin.
     """

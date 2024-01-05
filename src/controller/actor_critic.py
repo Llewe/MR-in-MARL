@@ -13,14 +13,14 @@ from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
 from torch.utils.tensorboard import SummaryWriter
 
-from src.agents.utils.network import ActorNetwork, CriticNetwork
-from src.agents.utils.reward_normalization import RewardNormalization
-from src.config.ctrl_config import A2cConfig
-from src.interfaces.agents_i import IAgents
+from src.controller.utils.network import ActorNetwork, CriticNetwork
+from src.controller.utils.reward_normalization import RewardNormalization
+from src.config.ctrl_config import ACConfig
+from src.interfaces.controller_i import IController
 from src.utils.gym_utils import get_space_size
 
 
-class A2C(IAgents):
+class ActorCritic(IController):
 
     @dataclass
     class RolloutBuffer:
@@ -54,7 +54,7 @@ class A2C(IAgents):
             self.actions.clear()
             self.action_probs.clear()
 
-    config: A2cConfig
+    config: ACConfig
 
     actor_networks: dict[AgentID, ActorNetwork]
     critic_networks: dict[AgentID, CriticNetwork]
@@ -73,7 +73,7 @@ class A2C(IAgents):
     epsilon_final: float
     epsilon_decay_rate: float
 
-    def __init__(self, config: A2cConfig):
+    def __init__(self, config: ACConfig):
         self.config = config
 
         self.epsilon_initial = config.EPSILON_INIT
@@ -105,7 +105,7 @@ class A2C(IAgents):
             )
             for agent_id in observation_space
         }
-        self.step_info = {agent_id: A2C.RolloutBuffer() for agent_id in action_space}
+        self.step_info = {agent_id: ActorCritic.RolloutBuffer() for agent_id in action_space}
 
         self.actor_losses = {agent_id: [] for agent_id in self.actor_networks}
         self.critic_losses = {agent_id: [] for agent_id in self.actor_networks}

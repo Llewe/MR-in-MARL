@@ -5,10 +5,10 @@ from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
 from src.config.ctrl_config import CtrlConfig
-from src.interfaces.agents_i import IAgents
+from src.interfaces.controller_i import IController
 
 
-class RandomAgents(IAgents):
+class RandomController(IController):
 
     def __init__(self, config: CtrlConfig):
         pass

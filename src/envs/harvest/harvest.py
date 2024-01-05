@@ -14,6 +14,15 @@ from pettingzoo.utils.conversions import parallel_wrapper_fn
 from pettingzoo.utils.env import AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
+def env(**kwargs):
+    e = Harvest(**kwargs)
+    e = wrappers.AssertOutOfBoundsWrapper(e)
+    e = wrappers.OrderEnforcingWrapper(e)
+    return e
+
+parallel_env = parallel_wrapper_fn(env)
+
+
 
 class Action(Enum):
     LEFT = 0
@@ -167,13 +176,6 @@ class GlobalState:
         return 2 * self.tag_beam_width + 1
 
 
-def env(**kwargs):
-    e = Harvest(**kwargs)
-    e = wrappers.AssertOutOfBoundsWrapper(e)
-    e = wrappers.OrderEnforcingWrapper(e)
-    return e
-
-parallel_env = parallel_wrapper_fn(env)
 
 
 class HarvestPygameRenderer:

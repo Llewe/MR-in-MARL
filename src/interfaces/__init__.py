@@ -1,1 +1,1 @@
-from .agents_i import IAgents
+from .controller_i import IController

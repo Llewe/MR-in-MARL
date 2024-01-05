@@ -20,25 +20,24 @@ from src.config.env_config import (
     StagHuntConfig,
 )
 from src.enums.env_type_e import EnvType
-from src.envs.setup import (
+
+from src.envs.env_setup_parallel import (
+    _p_setup_harvest,
+    _p_setup_coin_game,
+    _p_setup_prisoners,
+)
+from src.envs.env_setup_aec import (
+    _setup_chicken,
     _setup_coin_game,
+    _setup_prisoners,
+    _setup_samaritans,
     _setup_simple,
     _setup_simple_adversary,
     _setup_simple_spread,
     _setup_simple_tag,
-)
-from src.envs.setup.aec_envs import (
-    _setup_chicken,
-    _setup_my_coin_game,
-    _setup_prisoners,
-    _setup_samaritans,
     _setup_stag_hunt,
 )
-from src.envs.setup.parallel_envs import (
-    _p_setup_harvest,
-    _p_setup_my_coin_game,
-    _p_setup_prisoners,
-)
+
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
 
 T = TypeVar("T", bound=EnvConfig)
@@ -60,22 +59,19 @@ def build_env(
         case EnvType.SIMPLE_ADVERSARY:
             return _setup_simple_adversary(config)
         case EnvType.P_SIMPLE:
-            return _setup_parallel_simple()
+            raise NotImplementedError
         case EnvType.P_SIMPLE_TAG:
-            return _setup_parallel_simple_tag()
+            raise NotImplementedError
         case EnvType.P_SIMPLE_SPREAD:
-            return _setup_parallel_simple_spread()
+            raise NotImplementedError
         case EnvType.P_SIMPLE_ADVERSARY:
             raise NotImplementedError
 
         case EnvType.COIN_GAME:
             return _setup_coin_game(writer, config)
 
-        case EnvType.MY_COIN_GAME:
-            return _setup_my_coin_game(writer, config)
-
-        case EnvType.P_MY_COIN_GAME:
-            return _p_setup_my_coin_game(writer, config)
+        case EnvType.P_COIN_GAME:
+            return _p_setup_coin_game(writer, config)
 
         case EnvType.PRISONERS_DILEMMA:
             return _setup_prisoners(writer, config)
@@ -105,9 +101,7 @@ def get_env_class(env_name: EnvType) -> Type[T]:
             return SimpleAdversaryConfig
         case EnvType.COIN_GAME:
             return CoinGameConfig
-        case EnvType.MY_COIN_GAME:
-            return CoinGameConfig
-        case EnvType.P_MY_COIN_GAME:
+        case EnvType.P_COIN_GAME:
             return CoinGameConfig
         case EnvType.PRISONERS_DILEMMA:
             return PrisonersConfig

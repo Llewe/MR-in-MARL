@@ -3,7 +3,7 @@ from typing import Optional
 
 from gymnasium import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
-from src.agents.a2c import A2C
+from src.controller.actor_critic import ActorCritic
 
 from src.config.ctrl_config import GiftingConfig
 from src.utils.gym_utils import (
@@ -13,7 +13,7 @@ from src.utils.gym_utils import (
 )
 
 
-class Gifting(A2C):
+class Gifting(ActorCritic):
     gift_mode: GiftingConfig.Mode
     gift_reward: float
 

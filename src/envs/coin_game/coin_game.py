@@ -16,6 +16,16 @@ from pettingzoo.utils.conversions import parallel_wrapper_fn
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
+def env(**kwargs):
+    env = CoinGame(**kwargs)
+    env = wrappers.AssertOutOfBoundsWrapper(env)
+    env = wrappers.OrderEnforcingWrapper(env)
+    return env
+
+
+parallel_env = parallel_wrapper_fn(env)
+
+
 SEED = 42
 
 
@@ -211,14 +221,6 @@ class CoinGamePygameRenderer:
         pygame.display.flip()
 
 
-def env(**kwargs):
-    env = CoinGame(**kwargs)
-    env = wrappers.AssertOutOfBoundsWrapper(env)
-    env = wrappers.OrderEnforcingWrapper(env)
-    return env
-
-
-parallel_env = parallel_wrapper_fn(env)
 
 
 class CoinGame(AECEnv):
@@ -730,39 +732,3 @@ class CoinGame(AECEnv):
                 "WARNING: You are accessing rewards before the environment has ended. This is not recommended."
             )
         return super().last(observe=observe)
-
-
-if __name__ == "__main__":
-    """
-    with_none_action: bool = True,
-    walls: bool = False,
-    max_cycles: int = 150,
-    render_mode: str = "",
-    n_players: int = 2,
-    grid_size: int = 3,
-    # randomize_coin: bool = False,
-    allow_overlap_players: bool = False,
-    """
-
-    from pettingzoo.test import api_test, parallel_api_test
-
-    env = env(n_players=4, grid_size=5, render_mode="")
-    api_test(env, num_cycles=1000, verbose_progress=True)
-
-    parallel_api_test(parallel_env(), num_cycles=1000)
-
-# env.reset()
-#
-# for i in range(1000):
-#     pygame.event.get()  # so that the window doesn't freeze
-#     env.reset()
-#     print("Reset")
-#     for agent_name in env.agent_iter():
-#         observation, reward, termination, truncation, info = env.last()
-#         if termination or truncation:
-#             env.step(None)
-#             continue
-#         else:
-#             act = random.choice(list(range(len(Action))))
-#             env.step(act)
-#         env.render()

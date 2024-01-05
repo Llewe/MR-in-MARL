@@ -62,25 +62,9 @@ def _setup_simple_adversary(adversary_config: SimpleAdversaryConfig) -> AECEnv:
 
 
 def _setup_coin_game(writer: SummaryWriter, coin_game_config: CoinGameConfig) -> AECEnv:
-    from src.envs.aec.coin_game import raw_env
+    from src.envs.coin_game import env
 
-    return raw_env(
-        render_mode=get_cfg().get_render_mode(),
-        nb_players=coin_game_config.PLAYERS,
-        grid_size=coin_game_config.GRID_SIZE,
-        max_cycles=coin_game_config.MAX_CYCLES,
-        randomize_coin=True,
-        summary_writer=writer,
-        allow_overlap_players=coin_game_config.ALLOW_OVERLAP_PLAYERS,
-    )
-
-
-def _setup_my_coin_game(
-    writer: SummaryWriter, coin_game_config: CoinGameConfig
-) -> AECEnv:
-    from src.envs.aec.my_coin_game_cy import CoinGame
-
-    return CoinGame(
+    return env(
         with_none_action=True,
         walls=coin_game_config.WALLS,
         max_cycles=coin_game_config.MAX_CYCLES,
@@ -96,26 +80,26 @@ def _setup_my_coin_game(
 def _setup_prisoners(
     writer: SummaryWriter, prisoners_config: PrisonersConfig
 ) -> AECEnv:
-    from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
+    from src.envs.dilemma import env
 
-    return raw_env(game="pd", max_cycles=prisoners_config.MAX_CYCLES)
+    return env(game="pd", max_cycles=prisoners_config.MAX_CYCLES)
 
 
 def _setup_samaritans(
     writer: SummaryWriter, samaritans_config: SamaritansConfig
 ) -> AECEnv:
-    from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
+    from src.envs.dilemma import env
 
-    return raw_env(game="sd", max_cycles=samaritans_config.MAX_CYCLES)
+    return env(game="sd", max_cycles=samaritans_config.MAX_CYCLES)
 
 
 def _setup_stag_hunt(writer: SummaryWriter, stag_hunt_config: StagHuntConfig) -> AECEnv:
-    from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
+    from src.envs.dilemma import env
 
-    return raw_env(game="stag", max_cycles=stag_hunt_config.MAX_CYCLES)
+    return env(game="stag", max_cycles=stag_hunt_config.MAX_CYCLES)
 
 
 def _setup_chicken(writer: SummaryWriter, chicken_config: ChickenConfig) -> AECEnv:
-    from src.envs.aec.dilemma.dilemma_pettingzoo import raw_env
+    from src.envs.dilemma import env
 
-    return raw_env(game="chicken", max_cycles=chicken_config.MAX_CYCLES)
+    return env(game="chicken", max_cycles=chicken_config.MAX_CYCLES)

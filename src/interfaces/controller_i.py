@@ -8,10 +8,14 @@ from torch.utils.tensorboard import SummaryWriter
 from src.config.ctrl_config import CtrlConfig
 
 
-class IAgents(ABC):
+class IController(ABC):
     @abstractmethod
     def __init__(self, config: CtrlConfig):
-        pass
+        """
+        Parameters
+        ----------
+        config
+        """
 
     @abstractmethod
     def init_agents(
@@ -19,23 +23,70 @@ class IAgents(ABC):
         action_space: dict[AgentID, Space],
         observation_space: dict[AgentID, Space],
     ) -> None:
-        pass
+        """
+        Parameters
+        ----------
+        action_space
+        observation_space
+
+        Returns
+        -------
+
+        """
 
     @abstractmethod
     def episode_started(self, episode: int) -> None:
-        pass
+        """
+
+        Parameters
+        ----------
+        episode
+
+        Returns
+        -------
+
+        """
 
     @abstractmethod
     def episode_finished(self, episode: int, tag: str) -> None:
-        pass
+        """
+
+        Parameters
+        ----------
+        episode
+        tag
+
+        Returns
+        -------
+
+        """
 
     @abstractmethod
     def epoch_started(self, epoch: int) -> None:
-        pass
+        """
+
+        Parameters
+        ----------
+        epoch
+
+        Returns
+        -------
+
+        """
 
     @abstractmethod
     def epoch_finished(self, epoch: int, tag: str) -> None:
-        pass
+        """
+
+        Parameters
+        ----------
+        epoch
+        tag
+
+        Returns
+        -------
+
+        """
 
     @abstractmethod
     def act(
@@ -44,7 +95,18 @@ class IAgents(ABC):
         observation: ObsType,
         explore: bool = True,
     ) -> ActionType:
-        pass
+        """
+
+        Parameters
+        ----------
+        agent_id
+        observation
+        explore
+
+        Returns
+        -------
+
+        """
 
     def act_parallel(
         self,

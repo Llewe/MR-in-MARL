@@ -4,7 +4,7 @@ import numpy
 import torch
 from gymnasium.spaces import Space
 from pettingzoo.utils.env import AgentID
-from src.agents.a2c import A2C
+from src.controller.actor_critic import ActorCritic
 from torch import Tensor
 from torch.distributions import Categorical
 from torch.autograd import grad
@@ -12,7 +12,7 @@ from torch.autograd import grad
 from src.config.ctrl_config import LolaPGConfig
 
 
-class LolaPG(A2C):
+class LolaPG(ActorCritic):
     """
     LolaPG (Lola Policy Gradient)
     """

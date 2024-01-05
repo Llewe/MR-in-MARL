@@ -7,11 +7,11 @@ from gymnasium import Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch import Tensor
 
-from src.agents.a2c import A2C
+from src.controller.actor_critic import ActorCritic
 from src.config.ctrl_config import MateConfig
 
 
-class Mate(A2C):
+class Mate(ActorCritic):
     mate_mode: MateConfig.Mode
     defect_mode: MateConfig.DefectMode
     token_value: float

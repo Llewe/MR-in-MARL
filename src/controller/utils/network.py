@@ -5,6 +5,17 @@ from torch.nn.functional import softmax
 import torch.nn.init as init
 
 def initialize_weights(layer):
+    """
+    Initialize weights of a layer with Kaiming normal initialization and biases with zeros.
+    I currently dont use it as it had poor performance on the mate in CoinGame-2 etc.
+    Parameters
+    ----------
+    layer
+
+    Returns
+    -------
+
+    """
     if isinstance(layer, Linear):
         init.kaiming_normal_(layer.weight, nonlinearity='relu')
         init.constant_(layer.bias, 0)
@@ -17,8 +28,9 @@ def preprocessing_module(nr_input_features, nr_hidden_units, last_layer_units):
         ELU(),
         Linear(nr_hidden_units, last_layer_units),
     )
+    # if needed here initialize weights can be applied
+    # model.apply(initialize_weights)
 
-    #model.apply(initialize_weights) mate/2024-01-04T18:11:57 - Jewell is with 2024-01-04T18:14:57 - Arthur without
     return model
 
 

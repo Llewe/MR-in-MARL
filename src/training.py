@@ -10,11 +10,11 @@ from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
 from pettingzoo.utils.env import ActionType, AgentID
 from torch.utils.tensorboard import SummaryWriter
 
-from src.agents.utils.agents_helper import get_agents
+from src.controller.utils.agents_helper import get_agents
 from src.cfg_manager import CfgManager, get_cfg, set_cfg
 from src.config.training_config import TrainingConfig
 from src.envs import build_env
-from src.interfaces.agents_i import IAgents
+from src.interfaces.controller_i import IController
 from src.utils.loggers.obs_logger import IObsLogger
 from src.utils.loggers.simple_env_logger import SimpleEnvLogger
 from src.utils.loggers.util_logger import log_efficiency
@@ -23,14 +23,14 @@ _training_config = TrainingConfig()
 
 
 def _train_epoch(
-    agents: IAgents,
+    controller: IController,
     env: Union[AECEnv, ParallelEnv],
     current_epoch: int,
     writer: SummaryWriter,
     obs_logger: IObsLogger,
     parallel: bool = False,
 ) -> None:
-    agents.epoch_started(current_epoch)
+    controller.epoch_started(current_epoch)
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
     env.reset(options={"history_reset": True})
@@ -46,11 +46,11 @@ def _train_epoch(
         )
         if parallel:
             episode_reward: dict[AgentID, float] = _train_parallel_episode(
-                agents, env, current_epoch, episode, writer, obs_logger
+                controller, env, current_epoch, episode, writer, obs_logger
             )
         else:
             episode_reward = _train_aec_episode_simple(
-                agents, env, current_epoch, episode, writer, obs_logger
+                controller, env, current_epoch, episode, writer, obs_logger
             )
 
         for agent_id in episode_reward:
@@ -75,11 +75,11 @@ def _train_epoch(
 
     obs_logger.log_epoch(current_epoch, "train")
 
-    agents.epoch_finished(current_epoch, "train")
+    controller.epoch_finished(current_epoch, "train")
 
 
 def _train_parallel_episode(
-    agents: IAgents,
+    controller: IController,
     env: ParallelEnv,
     current_epoch: int,
     current_episode: int,
@@ -97,13 +97,13 @@ def _train_parallel_episode(
     )
     episode_reward: dict[AgentID, float] = {a: 0 for a in env.possible_agents}
 
-    agents.episode_started(current_episode)
+    controller.episode_started(current_episode)
     while env.agents:
         if get_cfg().get_render_mode() != "":
             pygame.event.get()  # so that the window doesn't freeze
 
         timestep += 1
-        actions: dict[AgentID, ActionType] = agents.act_parallel(
+        actions: dict[AgentID, ActionType] = controller.act_parallel(
             observations, explore=True
         )
 
@@ -115,23 +115,23 @@ def _train_parallel_episode(
         for agent_id, reward in rewards.items():
             episode_reward[agent_id] += reward
 
-        agents.step_agent_parallel(
+        controller.step_agent_parallel(
             observations,
             actions,
             rewards,
             terminations,
         )
-        agents.step_finished(timestep, new_observations)
+        controller.step_finished(timestep, new_observations)
 
         observations = new_observations
 
     env.close()
-    agents.episode_finished(current_episode, "train")
+    controller.episode_finished(current_episode, "train")
     return episode_reward
 
 
 def _train_aec_episode_simple(
-    agents: IAgents,
+    controller: IController,
     env: ParallelEnv,
     current_epoch: int,
     current_episode: int,
@@ -166,8 +166,8 @@ def _train_aec_episode_simple(
 
         obs_logger.add_observation(agent_id, observation)
 
-        action = agents.act(agent_id=agent_id, observation=observation)
-        agents.step_agent(
+        action = controller.act(agent_id=agent_id, observation=observation)
+        controller.step_agent(
             agent_id,
             observation,
             action,
@@ -186,7 +186,7 @@ def _train_aec_episode_simple(
             first_agent = agent_id
         if first_agent == env.agent_selection:
             timestep += 1
-            agents.step_finished(timestep)
+            controller.step_finished(timestep)
 
         # logging
         episode_reward[agent_id] += reward
@@ -195,7 +195,7 @@ def _train_aec_episode_simple(
 
 
 def _eval_parallel_agents(
-    agents: IAgents,
+    controller: IController,
     env: ParallelEnv,
     writer: SummaryWriter,
     current_epoch: int,
@@ -230,7 +230,7 @@ def _eval_parallel_agents(
             if get_cfg().get_render_mode() != "":
                 pygame.event.get()  # so that the window doesn't freeze
 
-            a: dict[AgentID, ActionType] = agents.act_parallel(
+            a: dict[AgentID, ActionType] = controller.act_parallel(
                 observations, explore=False
             )
 
@@ -285,7 +285,7 @@ def _eval_parallel_agents(
 
 
 def _eval_aec_agents(
-    agents: IAgents,
+    controller: IController,
     env: AECEnv,
     writer: SummaryWriter,
     current_epoch: int,
@@ -328,7 +328,7 @@ def _eval_aec_agents(
             if termination or truncation:
                 action = None
             else:
-                action = agents.act(
+                action = controller.act(
                     agent_id=agent_name, observation=observation, explore=False
                 )
                 actions[agent_name].append(action)

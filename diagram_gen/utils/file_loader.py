@@ -3,7 +3,7 @@ import os
 from typing import Dict, List
 
 from diagram_gen.schemas.exp_file import ExpFile
-from src.agents.utils.agents_helper import get_agent_class
+from src.controller.utils.agents_helper import get_agent_class
 from src.config.ctrl_config import CtrlConfig
 from src.enums import AgentType
 from src.utils.data_loader import load_pydantic_object

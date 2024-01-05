@@ -3,20 +3,19 @@ import os
 from os.path import join
 from typing import Tuple, Type
 
-from src.agents.a2c import A2C
-from src.agents.env_specific.coingame.demo_ma_coin import DemoMaCoin
-from src.agents.env_specific.coingame.ma_coin_to_middle import MaCoinToMiddle
-from src.agents.env_specific.demo_ma import DemoMa
-from src.agents.mate import Mate
-from src.agents.random_agents import RandomAgents
+from src.controller.actor_critic import ActorCritic
+from src.controller.env_specific.coin_game.ma_coin_to_middle import MaCoinToMiddle
+from src.controller.env_specific.demo_ma import DemoMa
+from src.controller.mate import Mate
+from src.controller.random_agents import RandomController
 from src.cfg_manager import get_cfg
 
-from src.agents.gifting import Gifting
+from src.controller.gifting import Gifting
 
-from src.agents.env_specific.ipd.punish_defect import MaIpdPunishDefect
-from src.agents.lola_pg import LolaPG
+from src.controller.env_specific.ipd.punish_defect import MaIpdPunishDefect
+from src.controller.lola_pg import LolaPG
 from src.config.ctrl_config import (
-    A2cConfig,
+    ACConfig,
     CtrlConfig,
     DemoMaCoinConfig,
     DemoMaConfig,
@@ -26,11 +25,11 @@ from src.config.ctrl_config import (
     MaConfig,
 )
 from src.enums.agent_type_e import AgentType
-from src.interfaces.agents_i import IAgents
+from src.interfaces.controller_i import IController
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
 
 
-def get_agents() -> IAgents:
+def get_agents() -> IController:
     logging.info(f"Getting agents for {get_cfg().exp_config.AGENT_TYPE}")
     type_class, config_class = get_agent_class(get_cfg().exp_config.AGENT_TYPE)
 
@@ -51,12 +50,14 @@ def load_ctrl_config(config_class: Type[CtrlConfig]) -> CtrlConfig:
         return config
 
 
-def get_agent_class(agent_type: AgentType) -> Tuple[Type[IAgents], Type[CtrlConfig]]:
+def get_agent_class(
+    agent_type: AgentType,
+) -> Tuple[Type[IController], Type[CtrlConfig]]:
     match agent_type:
         case AgentType.RANDOM:
-            return RandomAgents, CtrlConfig
-        case AgentType.A2C:
-            return A2C, A2cConfig
+            return RandomController, CtrlConfig
+        case AgentType.ACTOR_CRITIC:
+            return ActorCritic, ACConfig
 
         case AgentType.MATE:
             return Mate, MateConfig
@@ -69,9 +70,6 @@ def get_agent_class(agent_type: AgentType) -> Tuple[Type[IAgents], Type[CtrlConf
 
         case AgentType.DEMO_MANIPULATION_AGENT:
             return DemoMa, DemoMaConfig
-
-        case AgentType.DEMO_MANIPULATION_COIN:
-            return DemoMaCoin, DemoMaCoinConfig
 
         case AgentType.MA_COIN_TO_MIDDLE:
             return MaCoinToMiddle, MaConfig

@@ -5,10 +5,10 @@ from src.cfg_manager import get_cfg
 from src.config.env_config import CoinGameConfig, HarvestConfig, PrisonersConfig
 
 
-def _p_setup_my_coin_game(
+def _p_setup_coin_game(
     writer: SummaryWriter, coin_game_config: CoinGameConfig
 ) -> ParallelEnv:
-    from src.envs.aec.my_coin_game import parallel_env
+    from src.envs.coin_game.coin_game import parallel_env
 
     return parallel_env(
         with_none_action=coin_game_config.WITH_NONE_ACTION,
@@ -26,7 +26,7 @@ def _p_setup_my_coin_game(
 def _p_setup_harvest(
     writer: SummaryWriter, harvest_config: HarvestConfig
 ) -> ParallelEnv:
-    from src.envs.aec.harvest import parallel_env
+    from src.envs.harvest import parallel_env
 
     return parallel_env(
         max_cycles=harvest_config.MAX_CYCLES,
@@ -44,7 +44,7 @@ def _p_setup_harvest(
 def _p_setup_prisoners(
     writer: SummaryWriter, prisoners_config: PrisonersConfig
 ) -> ParallelEnv:
-    from src.envs.aec.dilemma.dilemma_pettingzoo import parallel_env
+    from src.envs.dilemma import parallel_env
 
     return parallel_env(
         game="pd", max_cycles=prisoners_config.MAX_CYCLES, summary_writer=writer

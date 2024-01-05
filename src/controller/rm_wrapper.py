@@ -5,7 +5,7 @@ from typing import Callable, Optional
 
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
-from src.agents.a2c import A2C
+from src.controller.actor_critic import ActorCritic
 
 
 @dataclass
@@ -16,7 +16,7 @@ class RewardHistory:
     manipulation_debts: float
 
 
-class MRAgentA2C(A2C):
+class RmWrapper(ActorCritic):
     """
     Manipulating rewards agent
     This agent controller is used to manipulate the rewards of other agents

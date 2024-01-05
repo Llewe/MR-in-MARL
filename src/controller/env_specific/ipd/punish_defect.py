@@ -1,13 +1,11 @@
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
-
-from src.agents.mr_agent_a2c import MRAgentA2C
 from src.utils.gym_utils import Space
 
 from src.config.ctrl_config import MaConfig
-from src.envs.aec.my_coin_game import Action
+from src.controller.rm_wrapper import RmWrapper
 
 
-class MaIpdPunishDefect(MRAgentA2C):
+class MaIpdPunishDefect(RmWrapper):
     """
     This agent uses reward manipulation to punish the opponent for defecting.
     """

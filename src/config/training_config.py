@@ -17,7 +17,7 @@ class TrainingConfig(ExpConfig):
     EVAL_EPOCH_INTERVAL: int = 50
 
     AGENT_TYPE: AgentType = AgentType.GIFTING
-    ENV_NAME: EnvType = EnvType.P_MY_COIN_GAME
+    ENV_NAME: EnvType = EnvType.P_COIN_GAME
     ENV_TAG: str = "2pl-5000-without-none"
 
     EXP_UNIQUE_NAME: str = (

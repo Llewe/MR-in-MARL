@@ -9,7 +9,7 @@ class CtrlConfig(BaseSettings):
     pass
 
 
-class A2cConfig(CtrlConfig):
+class ACConfig(CtrlConfig):
     ACTOR_LR: float = 0.001
     CRITIC_LR: float = 0.001
     ACTOR_HIDDEN_UNITS: int = 64
@@ -25,7 +25,7 @@ class A2cConfig(CtrlConfig):
     EPSILON_DECAY: float = 3.0e-05
 
 
-class MateConfig(A2cConfig):
+class MateConfig(ACConfig):
     class Mode(str, Enum):
         STATIC_MODE = "static"
         TD_ERROR_MODE = "td_error"
@@ -45,11 +45,11 @@ class MateConfig(A2cConfig):
     TOKEN_VALUE: float = 1.0
 
 
-class LolaPGConfig(A2cConfig):
+class LolaPGConfig(ACConfig):
     SECOND_ORDER_LR: float = 1
 
 
-class GiftingConfig(A2cConfig):
+class GiftingConfig(ACConfig):
     class Mode(str, Enum):
         ZERO_SUM = "zero_sum"
         FIXED_BUDGET = "fixed_budget"
@@ -62,7 +62,7 @@ class GiftingConfig(A2cConfig):
     @staticmethod
     def index_from_env(env_type: EnvType):
         match env_type:
-            case EnvType.P_MY_COIN_GAME:
+            case EnvType.P_COIN_GAME:
                 return 4
             case EnvType.P_HARVEST:
                 return 4
@@ -74,21 +74,21 @@ class GiftingConfig(A2cConfig):
     GIFT_BUDGET: float = 10.0
 
     ACTION_MODE: ActionMode = ActionMode.RANDOM
-    ENV_USED: EnvType = EnvType.P_MY_COIN_GAME
+    ENV_USED: EnvType = EnvType.P_COIN_GAME
     ENV_NONE_ACTION_INDEX: int = index_from_env(
         ENV_USED
     )  # The action is the last one in the action space
 
 
-class MaConfig(A2cConfig):
+class MaConfig(ACConfig):
     MANIPULATION_AMOUNT: float = 1.0
 
 
-class DemoMaCoinConfig(A2cConfig):
+class DemoMaCoinConfig(ACConfig):
     MANIPULATION_AMOUNT: float = 0.2
 
 
-class DemoMaConfig(A2cConfig):
+class DemoMaConfig(ACConfig):
     MANIPULATION_AMOUNT: float = 0.1
 
 
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # Calculate Decay rate:
     epoch_reached_min = 2000
 
-    a2c_config = A2cConfig()
+    a2c_config = ACConfig()
 
     decay = (a2c_config.EPSILON_INIT - a2c_config.EPSILON_MIN) / epoch_reached_min
     print(

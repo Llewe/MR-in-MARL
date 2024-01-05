@@ -15,7 +15,7 @@ from pettingzoo.utils.conversions import parallel_wrapper_fn
 from pettingzoo.utils.env import ActionType, AgentID
 from torch.utils.tensorboard import SummaryWriter
 
-from src.envs.aec.dilemma.games import (
+from src.envs.dilemma.games import (
     Chicken,
     Game,
     Prisoners_Dilemma,
@@ -25,7 +25,7 @@ from src.envs.aec.dilemma.games import (
 
 
 def env(**kwargs):
-    env = raw_env(**kwargs)
+    env = DilemmaEnv(**kwargs)
     env = wrappers.AssertOutOfBoundsWrapper(env)
     env = wrappers.OrderEnforcingWrapper(env)
     return env
@@ -42,7 +42,7 @@ class HistoryState:
     winner: AgentID | None = None
 
 
-class raw_env(AECEnv):
+class DilemmaEnv(AECEnv):
     """Two-player environment for rock paper scissors.
     Expandable environment to rock paper scissors lizard spock action_6 action_7 ...
     The observation is simply the last opponent action.
