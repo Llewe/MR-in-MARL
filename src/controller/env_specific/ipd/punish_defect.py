@@ -10,13 +10,11 @@ class MaIpdPunishDefect(RmWrapper):
     This agent uses reward manipulation to punish the opponent for defecting.
     """
 
-
     ma_amount: float
 
-
     # Actions from environment
-    COOPERATE:int = 0
-    DEFECT:int = 1
+    COOPERATE: int = 0
+    DEFECT: int = 1
 
     def __init__(self, config: MaConfig):
         super().__init__(config)
@@ -24,12 +22,11 @@ class MaIpdPunishDefect(RmWrapper):
         self.set_callback(agent_id="player_0", callback=self._man_agent_0)
 
     def init_agents(
-            self,
-            action_space: dict[AgentID, Space],
-            observation_space: dict[AgentID, Space],
+        self,
+        action_space: dict[AgentID, Space],
+        observation_space: dict[AgentID, Space],
     ) -> None:
         super().init_agents(action_space, observation_space)
-
 
     def _man_agent_0(
         self, agent_id: AgentID, last_obs: ObsType, last_act: ActionType, reward: float
