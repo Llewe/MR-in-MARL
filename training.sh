@@ -22,7 +22,6 @@ train() {
     sleep .5
 }
 poetry install --sync --all-extras
-python3 setup.py build_ext --inplace
 
 
 #train AGENT_TYPE=ma_coin_to_middle EPOCHS=50000 ENV_NAME=p_my_coin_game ENV_TAG="4pl-50000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 EPSILON_INIT=0.8 EPSILON_DECAY=2e-05 MANIPULATION_AMOUNT=0.2
