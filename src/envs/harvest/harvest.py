@@ -767,6 +767,9 @@ class Harvest(AECEnv):
         if self.render_mode != "":
             self.render()
 
+        self._cumulative_rewards[agent] = 0
+        self._accumulate_rewards()
+
         # collect reward if it is the last agent to act
         if self._agent_selector.is_last():
             self.global_state.steps_on_board += 1
@@ -781,9 +784,6 @@ class Harvest(AECEnv):
             # update observations
             self._grow_apples()
             self.global_state.cal_obs()
-
-        self._cumulative_rewards[agent] = 0
-        self._accumulate_rewards()
 
         # Switch to next agent
         self.agent_selection = self._agent_selector.next()
@@ -845,19 +845,19 @@ class Harvest(AECEnv):
                 cumulative_tagged_agents[agent_id] += history.tagged_agents[agent_id]
 
         # This is used if multiple episodes are logged at once (e.g. one epoch)
-        divider: float = 1.0
+        episodes: int = 1
         if len(self.current_history) > self.max_cycles:
-            divider = len(self.current_history) // self.max_cycles
-            if divider * self.max_cycles != len(self.current_history):
+            episodes = len(self.current_history) // self.max_cycles
+            if episodes * self.max_cycles != len(self.current_history):
                 raise ValueError(
                     "The length of the current history is not a multiple of the max_cycles."
                 )
-        if divider != 1.0:
+        if episodes != 1:
             scaled_cumulative_rewards = {
-                a: r / divider for a, r in cumulative_rewards.items()
+                a: r / episodes for a, r in cumulative_rewards.items()
             }
             scaled_collected_apples = {
-                a: c / divider for a, c in collected_apples.items()
+                a: c / episodes for a, c in collected_apples.items()
             }
         else:
             print("Divider is 1.0 - no scaling of the rewards.")
@@ -910,19 +910,37 @@ class Harvest(AECEnv):
         )
 
         # calculate sustainability sustainability (S) (the average time at which apples are collected)
-        steps_until_apples_collected: dict[AgentID, float] = {
-            agent: self.max_cycles / c for agent, c in collected_apples.items()
-        }
 
-        sustainability: float = (
-            sum(steps_until_apples_collected.values()) / self.n_players
-        )
-
-        self.summary_writer.add_scalar(
-            f"{log_name}/sustainability",
-            sustainability,
-            epoch,
-        )
+        # avg_t_per_agent: dict[AgentID, float] = {
+        #     agent: 0 for agent in self.possible_agents
+        # }
+        # for episodes in range(episodes):
+        #     episode_avg_t_per_agent: dict[AgentID, float] = {
+        #         agent: 0 for agent in self.possible_agents
+        #     }
+        #     for t in range(self.max_cycles):
+        #         for agent in self.possible_agents:
+        #             if (
+        #                 self.current_history[
+        #                     t + episodes * self.max_cycles
+        #                 ].collected_apples[agent]
+        #                 > 0
+        #             ):
+        #                 episode_avg_t_per_agent[agent] += t
+        #     for agent in self.possible_agents:
+        #         avg_t_per_agent[agent] += (
+        #             self.max_cycles / episode_avg_t_per_agent[agent]
+        #         )
+        #
+        # for agent in self.possible_agents:
+        #     avg_t_per_agent[agent] = avg_t_per_agent[agent] / episodes
+        #
+        # sustainability: float = sum(avg_t_per_agent.values()) / self.n_players
+        # self.summary_writer.add_scalar(
+        #     f"{log_name}/sustainability",
+        #     sustainability,
+        #     epoch,
+        # )
 
         # calculate peace
 

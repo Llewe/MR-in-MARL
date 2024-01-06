@@ -554,6 +554,9 @@ class CoinGame(AECEnv):
         if self.render_mode != "":
             self.render()
 
+        self._cumulative_rewards[agent] = 0
+        self._accumulate_rewards()
+
         if self.agent_selector.is_last():
             self.state.steps_on_board += 1
 
@@ -570,8 +573,6 @@ class CoinGame(AECEnv):
 
             # update observations
             self.state.cal_obs()
-        self._cumulative_rewards[agent] = 0
-        self._accumulate_rewards()
 
         # Switch to next agent
         self.agent_selection = self.agent_selector.next()
