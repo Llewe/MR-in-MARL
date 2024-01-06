@@ -4,7 +4,7 @@ import math
 import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pygame
@@ -113,24 +113,18 @@ class HistoryState:
 
 
 class CoinGamePygameRenderer:
+    dark_mode: bool = False
+
     width: int
     height: int
     grid_size: int
     n_players: int
     screen: pygame.Surface
 
-    colour_background = (48, 48, 48)
-    color_grid = (255, 255, 255)
-    color_players = [
-        (233, 30, 99),
-        (156, 39, 176),
-        (103, 58, 183),
-        (63, 81, 181),
-        (33, 150, 243),
-        (0, 188, 212),
-        (0, 150, 136),
-    ]
-    color_coin = (255, 0, 0)
+    colour_background: Tuple[int, int, int]
+    color_grid: Tuple[int, int, int]
+    color_players: List[Tuple[int, int, int]]
+    color_coin: Tuple[int, int, int]
 
     def __init__(self, width: int, height: int, grid_size: int, n_players: int):
         self.width = width
@@ -138,9 +132,35 @@ class CoinGamePygameRenderer:
         self.grid_size = grid_size
         self.n_players = n_players
         pygame.init()
-        self.screen = pygame.display.set_mode(
-            pygame.Surface([self.width, self.height]).get_size()
-        )
+        self.surface = pygame.Surface([self.width, self.height])
+        self.screen = pygame.display.set_mode(self.surface.get_size())
+
+        if self.dark_mode:
+            self.colour_background = (48, 48, 48)
+            self.color_grid = (255, 255, 255)
+            self.color_players = [
+                (233, 30, 99),
+                (156, 39, 176),
+                (103, 58, 183),
+                (63, 81, 181),
+                (33, 150, 243),
+                (0, 188, 212),
+                (0, 150, 136),
+            ]
+            self.color_coin = (255, 0, 0)
+        else:
+            self.colour_background = (255, 255, 255)
+            self.color_grid = (200, 200, 200)
+            self.color_players = [
+                (233, 30, 99),
+                (156, 39, 176),
+                (103, 58, 183),
+                (63, 81, 181),
+                (33, 150, 243),
+                (0, 188, 212),
+                (0, 150, 136),
+            ]
+            self.color_coin = (255, 0, 0)
 
     def draw(self, state: GlobalState) -> None:
         # clear screen
@@ -156,9 +176,9 @@ class CoinGamePygameRenderer:
             else 0.8 * cell_size_h / 2
         )
         size_coin = (
-            0.2 * cell_size_w / 2
+            0.4 * cell_size_w / 2
             if cell_size_w < cell_size_h
-            else 0.2 * cell_size_h / 2
+            else 0.4 * cell_size_h / 2
         )
 
         for w in range(1, self.grid_size):
@@ -198,25 +218,19 @@ class CoinGamePygameRenderer:
                 rec,
                 start_angle=player_degree_start,
                 stop_angle=player_degree_end,
-                width=25,
+                width=20,
             )  # 350 is an arbitrary scale factor to get pygame to render similar sizes as pyglet
 
             if state.coin_state.owner is agent_id:
                 # draw coins
-                c_x = state.coin_state.x * cell_size_w + cell_size_w / 2
-                c_y = state.coin_state.y * cell_size_h + cell_size_h / 2
+                c_x = state.coin_state.x * cell_size_w + cell_size_w // 2
+                c_y = state.coin_state.y * cell_size_h + cell_size_h // 2
 
-                rec = pygame.Rect(
-                    c_x - size_coin, c_y - size_coin, size_coin * 2, size_coin * 2
-                )
-
-                pygame.draw.arc(
+                pygame.draw.circle(
                     self.screen,
                     self.color_players[i],
-                    rec,
-                    start_angle=0,
-                    stop_angle=360,
-                    width=10,
+                    (c_x, c_y),
+                    radius=size_coin,
                 )  # 350 is an arbitrary scale factor to get pygame to render similar sizes as pyglet
 
         pygame.display.flip()

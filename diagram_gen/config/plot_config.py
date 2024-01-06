@@ -13,8 +13,8 @@ class PlotConfig(BaseSettings):
         PITAYASMOOTHIE = "https://github.com/dhaitz/matplotlib-stylesheets/raw/master/pitayasmoothie-light.mplstyle"
         CYBERPUNK = "https://github.com/dhaitz/mplcyberpunk/blob/master/mplcyberpunk/data/cyberpunk.mplstyle"
 
-    fig_width: int = 128
-    fig_height: int = 32
+    fig_width: int = 32
+    fig_height: int = 8
 
     style: Style = Style.DEFAULT
 

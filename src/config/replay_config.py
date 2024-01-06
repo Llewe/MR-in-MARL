@@ -7,9 +7,9 @@ class ReplayConfig(ExpConfig):
     LOG_LEVEL: str = "INFO"
 
     AGENT_TYPE: AgentType = AgentType.RANDOM
-    ENV_NAME: EnvType = EnvType.P_HARVEST
-    ENV_TAG: str = "default-5000"
-    EXP_UNIQUE_NAME: str = "2024-01-05T22:50:34 - Dustin"
+    ENV_NAME: EnvType = EnvType.P_COIN_GAME
+    ENV_TAG: str = "6pl-default-5000"
+    EXP_UNIQUE_NAME: str = "2024-01-06T17:02:41 - Katherine"
     TIMEOUT: int = 0  # 100
     EPOCH: int = 3000
     STEPS: int = 5000

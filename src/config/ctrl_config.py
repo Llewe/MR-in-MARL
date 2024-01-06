@@ -3,9 +3,10 @@ from enum import Enum
 from pydantic_settings import BaseSettings
 
 from src.enums import EnvType
+from pydantic import Extra
 
 
-class CtrlConfig(BaseSettings):
+class CtrlConfig(BaseSettings, extra=Extra.allow):
     pass
 
 
@@ -14,7 +15,7 @@ class ACConfig(CtrlConfig):
     CRITIC_LR: float = 0.001
     ACTOR_HIDDEN_UNITS: int = 64
     CRITIC_HIDDEN_UNITS: int = 64
-    DISCOUNT_FACTOR: float = 0.99
+    DISCOUNT_FACTOR: float = 0.95
 
     CLIP_NORM: float = 1.0
 
@@ -23,6 +24,8 @@ class ACConfig(CtrlConfig):
     EPSILON_INIT: float = 0.0
     EPSILON_MIN: float = 0.0
     EPSILON_DECAY: float = 3.0e-05
+
+    NAME: str = ""
 
 
 class MateConfig(ACConfig):
@@ -80,7 +83,7 @@ class GiftingConfig(ACConfig):
 
 
 class MaConfig(ACConfig):
-    MANIPULATION_AMOUNT: float = 1.0
+    MANIPULATION_AMOUNT: float = 2.0
 
 
 class DemoMaCoinConfig(ACConfig):
