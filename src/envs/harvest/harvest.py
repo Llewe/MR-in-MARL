@@ -735,14 +735,10 @@ class Harvest(AECEnv):
         And any internal state used by observe() or render()
         """
         agent: AgentID = self.agent_selection
+
         if self.terminations[agent] or self.truncations[agent]:
             self._was_dead_step(action)
             return
-
-        # the agent which stepped last had its _cumulative_rewards accounted for
-        # (because it was returned by last()), so the _cumulative_rewards for this
-        # agent should start again at 0
-        self._cumulative_rewards[agent] = 0
 
         if self._agent_selector.is_first():
             # Resetting the rewards for each agent if its the first of this "time" step
@@ -756,24 +752,20 @@ class Harvest(AECEnv):
                     actions={},
                 )
             )
-
-        self.rewards[agent] -= 0.01  # Penalty for every time step
+            self.rewards = {agent: 0 for agent in self.possible_agents}
 
         if self.global_state.agent_states[agent].isTagged():
             self.global_state.agent_states[agent].tagged -= 1
-
-            # Add to history
             self.current_history[-1].tagged_agents[agent] += 1
+
         else:
+            self.rewards[agent] -= 0.01  # Penalty for every time step
             self._move_reward_agent(agent, Action(action))
 
         self.current_history[-1].actions[agent] = Action(action)
 
         if self.render_mode != "":
             self.render()
-
-        self._cumulative_rewards[agent] = 0
-        self._accumulate_rewards()
 
         # collect reward if it is the last agent to act
         if self._agent_selector.is_last():
@@ -789,6 +781,9 @@ class Harvest(AECEnv):
             # update observations
             self._grow_apples()
             self.global_state.cal_obs()
+
+        self._cumulative_rewards[agent] = 0
+        self._accumulate_rewards()
 
         # Switch to next agent
         self.agent_selection = self._agent_selector.next()
@@ -831,9 +826,13 @@ class Harvest(AECEnv):
 
         cumulative_rewards = {agent: 0.0 for agent in self.possible_agents}
         collected_apples = {agent: 0.0 for agent in self.possible_agents}
-        tagged_agents: dict[AgentID, float] = {
+        cumulative_tagged_agents: dict[AgentID, float] = {
             agent: 0.0 for agent in self.possible_agents
         }
+
+        # Scaled to one episode
+        scaled_cumulative_rewards: dict[AgentID, float]
+        scaled_collected_apples: dict[AgentID, float]
 
         apples_on_board: float = np.mean(
             np.array([h.apples_on_board for h in self.current_history])
@@ -843,11 +842,7 @@ class Harvest(AECEnv):
             for agent_id in self.possible_agents:
                 cumulative_rewards[agent_id] += history.rewards[agent_id]
                 collected_apples[agent_id] += history.collected_apples[agent_id]
-                tagged_agents[agent_id] += history.tagged_agents[agent_id]
-
-        tagged_agents = {
-            a: t / len(self.current_history) for a, t in tagged_agents.items()
-        }
+                cumulative_tagged_agents[agent_id] += history.tagged_agents[agent_id]
 
         # This is used if multiple episodes are logged at once (e.g. one epoch)
         divider: float = 1.0
@@ -861,10 +856,13 @@ class Harvest(AECEnv):
             scaled_cumulative_rewards = {
                 a: r / divider for a, r in cumulative_rewards.items()
             }
-            collected_apples = {a: c / divider for a, c in collected_apples.items()}
+            scaled_collected_apples = {
+                a: c / divider for a, c in collected_apples.items()
+            }
         else:
             print("Divider is 1.0 - no scaling of the rewards.")
             scaled_cumulative_rewards = cumulative_rewards
+            scaled_collected_apples = collected_apples
 
         for agent_id in self.possible_agents:
             self.summary_writer.add_scalar(
@@ -879,19 +877,9 @@ class Harvest(AECEnv):
                 epoch,
             )
 
-            self.summary_writer.add_scalar(
-                f"{log_name}/tagged/agents/{agent_id}/per_step",
-                tagged_agents[agent_id],
-                epoch,
-            )
         self.summary_writer.add_scalar(
             f"{log_name}/apples/collected/all/per_episode",
             sum(collected_apples.values()) / self.n_players,
-            epoch,
-        )
-        self.summary_writer.add_scalar(
-            f"{log_name}/tagged/agents/all/per_step",
-            sum(tagged_agents.values()) / self.n_players,
             epoch,
         )
 
@@ -908,16 +896,42 @@ class Harvest(AECEnv):
         for i in range(len(self.possible_agents)):
             for j in range(len(self.possible_agents)):
                 dividend += abs(
-                    cumulative_rewards[self.possible_agents[i]]
-                    - cumulative_rewards[self.possible_agents[j]]
+                    scaled_cumulative_rewards[self.possible_agents[i]]
+                    - scaled_cumulative_rewards[self.possible_agents[j]]
                 )
-        divisor = 2.0 * self.n_players * sum(cumulative_rewards.values())
+        divisor = 2.0 * self.n_players * sum(scaled_cumulative_rewards.values())
 
         e: float = 1.0 - dividend / divisor
 
         self.summary_writer.add_scalar(
             f"{log_name}/equality",
             e,
+            epoch,
+        )
+
+        # calculate sustainability sustainability (S) (the average time at which apples are collected)
+        steps_until_apples_collected: dict[AgentID, float] = {
+            agent: self.max_cycles / c for agent, c in collected_apples.items()
+        }
+
+        sustainability: float = (
+            sum(steps_until_apples_collected.values()) / self.n_players
+        )
+
+        self.summary_writer.add_scalar(
+            f"{log_name}/sustainability",
+            sustainability,
+            epoch,
+        )
+
+        # calculate peace
+
+        peace: float = self.n_players - (
+            sum(cumulative_tagged_agents.values()) / len(self.current_history)
+        )
+        self.summary_writer.add_scalar(
+            f"{log_name}/peace",
+            peace,
             epoch,
         )
 

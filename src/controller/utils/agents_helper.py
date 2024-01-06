@@ -6,6 +6,7 @@ from typing import Tuple, Type
 from src.controller.actor_critic import ActorCritic
 from src.controller.env_specific.coin_game.ma_coin_to_middle import MaCoinToMiddle
 from src.controller.env_specific.demo_ma import DemoMa
+from src.controller.env_specific.ipd.experiments import MaIpdExperiments
 from src.controller.mate import Mate
 from src.controller.random_agents import RandomController
 from src.cfg_manager import get_cfg
@@ -69,5 +70,7 @@ def get_agent_class(
         return MaCoinToMiddle, MaConfig
     elif agent_type == AgentType.MA_IPD_PUNISH_DEFECT:
         return MaIpdPunishDefect, MaConfig
+    elif agent_type == AgentType.MA_IPD_EXPERIMENTS:
+        return MaIpdExperiments, MaConfig
 
     raise NotImplementedError

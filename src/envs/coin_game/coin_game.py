@@ -16,6 +16,7 @@ from pettingzoo.utils.conversions import parallel_wrapper_fn
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
+
 def env(**kwargs):
     env = CoinGame(**kwargs)
     env = wrappers.AssertOutOfBoundsWrapper(env)
@@ -219,8 +220,6 @@ class CoinGamePygameRenderer:
                 )  # 350 is an arbitrary scale factor to get pygame to render similar sizes as pyglet
 
         pygame.display.flip()
-
-
 
 
 class CoinGame(AECEnv):
@@ -546,6 +545,7 @@ class CoinGame(AECEnv):
                     pos_coin=(self.state.coin_state.x, self.state.coin_state.y),
                 )
             )
+            self.rewards = {name: 0.0 for name in self.agents}
 
         self._move_reward_agent(agent, Action(action))
 
@@ -696,12 +696,14 @@ class CoinGame(AECEnv):
 
         self.summary_writer.add_scalar(f"{log_name}/coins/own_coin/", own_coin, epoch)
 
-
         # calculate position histogram
 
         if heatmap:
             coin_pos = np.zeros((self.grid_size, self.grid_size))
-            agent_pos = {agent: np.zeros((self.grid_size, self.grid_size)) for agent in self.agents}
+            agent_pos = {
+                agent: np.zeros((self.grid_size, self.grid_size))
+                for agent in self.agents
+            }
             for history in self.current_history:
                 coin_pos[history.pos_coin[0], history.pos_coin[1]] += 1
                 for agent_id, pos in history.pos.items():
@@ -711,14 +713,26 @@ class CoinGame(AECEnv):
             image_data = torch.from_numpy(coin_pos).unsqueeze(0).unsqueeze(0)
 
             # Log the 2D position as an image
-            self.summary_writer.add_image(f'{log_name}/heatmap/coin', image_data, global_step=epoch, dataformats='NCHW')
+            self.summary_writer.add_image(
+                f"{log_name}/heatmap/coin",
+                image_data,
+                global_step=epoch,
+                dataformats="NCHW",
+            )
 
             for agent_id in self.agents:
                 agent_pos[agent_id] /= len(self.current_history)
                 # Convert the NumPy array to a torch.Tensor and add batch and channel dimensions
-                agent_image_data = torch.from_numpy(agent_pos[agent_id]).unsqueeze(0).unsqueeze(0)
+                agent_image_data = (
+                    torch.from_numpy(agent_pos[agent_id]).unsqueeze(0).unsqueeze(0)
+                )
                 # Log the 2D position as an image
-                self.summary_writer.add_image(f'{log_name}/heatmap/{agent_id}', agent_image_data, global_step=epoch, dataformats='NCHW')
+                self.summary_writer.add_image(
+                    f"{log_name}/heatmap/{agent_id}",
+                    agent_image_data,
+                    global_step=epoch,
+                    dataformats="NCHW",
+                )
 
         self.current_history.clear()
 
