@@ -1,28 +1,45 @@
-import fnmatch
-import os
-from typing import Dict, List
-
-import numpy
-import numpy as np
-from pandas import DataFrame
+from io import BytesIO
+from typing import List, Optional
 
 import matplotlib.pyplot as plt
-from src.training import SummaryWriter
+import numpy as np
+from PIL import Image
+from matplotlib.ticker import PercentFormatter
+from pandas import DataFrame
+from pylab import Figure
 from tensorboard.backend.event_processing import event_accumulator
-from scipy.interpolate import make_interp_spline, BSpline
+
 from diagram_gen.config.plot_config import PlotConfig
 from diagram_gen.schemas.exp_file import ExpFile
 from diagram_gen.utils.diagram_loader import load_diagram_data
 from diagram_gen.utils.file_loader import find_matching_files
-from PIL import Image
-from matplotlib.ticker import PercentFormatter
-from io import BytesIO
+
+
+def write_scalars(
+    axis, fig: Optional[Figure], e: ExpFile, values, x_label: str, y_label: str
+) -> None:
+    steps, values = zip(*values)
+
+    df = DataFrame({"Steps": steps, "Values": values})
+    df["Rolling_Avg"] = df["Values"].rolling(window=3, min_periods=1).mean()
+
+    line_name = getattr(e.cfg, "NAME", e.path)
+    axis.plot(
+        df["Steps"],
+        df["Rolling_Avg"],
+        label=f"{line_name}",
+        alpha=0.7,
+    )
+    axis.set_xlabel(x_label)
+    axis.set_ylabel(y_label)
+
+    axis.set_xlim(xmin=0)
+    if fig is not None:
+        fig.legend(ncols=3, loc="upper left", bbox_to_anchor=(0, 1.15))
 
 
 def plot_ipd(
     exp_files: List[ExpFile],
-    x_label: str = "Epoch",
-    y_label: str = "Efficiency pro Step",
     output_file: str = "plot",
 ) -> None:
     config: PlotConfig = PlotConfig()
@@ -36,24 +53,8 @@ def plot_ipd(
         if e.diagram_data is not None:
             for t, values in e.diagram_data.items():
                 if t == "pd-eval/efficiency_per_step":
-                    steps, values = zip(*values)
-
-                    # new_steps = np.linspace(min(steps), max(steps), num=len(steps) * 10)
-                    # spl: BSpline = make_interp_spline(steps, values, k=7)
-
-                    # smoothed_values = spl(new_steps)
-
-                    # Use numpy.convolve for moving average smoothing
-                    df = DataFrame({"Steps": steps, "Values": values})
-                    df["Rolling_Avg"] = df["Values"].rolling(window=3).mean()
-                    # plt.plot(new_steps, smoothed_values, label=f"{e.path}", alpha=0.7)
-
-                    line_name = getattr(e.cfg, "NAME", e.path)
-                    ax_eff.plot(
-                        df["Steps"],
-                        df["Rolling_Avg"],
-                        label=f"{line_name}",
-                        alpha=0.7,
+                    write_scalars(
+                        ax_eff, fig_eff, e, values, "Epoch", "Efficiency pro Step"
                     )
                 if t == "pd-eval/wins_p0_per_step":
                     steps, values = zip(*values)
@@ -64,12 +65,7 @@ def plot_ipd(
 
         else:
             print(f"Diagram data for {e.path} is None")
-    ax_eff.set_xlabel(x_label)
-    ax_eff.set_ylabel(y_label)
 
-    ax_eff.set_xlim(xmin=0)
-
-    fig_eff.legend(ncols=3, loc="upper left", bbox_to_anchor=(0, 1.15))
     config.save(fig_eff, f"{output_file}-efficiency")
 
     # Plot table (wins)
@@ -98,6 +94,35 @@ def plot_ipd(
     # Verstecke die Achsen
     ax_wins.axis("off")
     config.save(fig_wins, f"{output_file}-wins")
+
+
+def plots_coin_game(
+    exp_files: List[ExpFile],
+    output_file: str = "plot",
+) -> None:
+    config: PlotConfig = PlotConfig()
+
+    config.configPlt(plt)
+    # graph
+    fig_eff, ax_eff = plt.subplots()
+    fig_own_coin, ax_own_coin = plt.subplots()
+    wins: dict[str, float] = {}
+
+    for e in exp_files:
+        if e.diagram_data is not None:
+            for t, values in e.diagram_data.items():
+                if t == "eval/efficiency":
+                    write_scalars(ax_eff, None, e, values, "Epoch", "Efficiency")
+                if t == "coin_game-eval/coins/own_coin/":
+                    write_scalars(ax_own_coin, None, e, values, "Epoch", "Own Coin")
+
+        else:
+            print(f"Diagram data for {e.path} is None")
+
+    fig_eff.legend(ncols=3, loc="upper left", bbox_to_anchor=(0, 1.25))
+    config.save(fig_eff, f"{output_file}-efficiency")
+    fig_own_coin.legend(ncols=3, loc="upper left", bbox_to_anchor=(0, 1.25))
+    config.save(fig_own_coin, f"{output_file}-own_coin")
 
 
 def plot_diagram(
@@ -205,9 +230,8 @@ def draw_heatmaps(
 
 if __name__ == "__main__":
     # Config variables
-    env_name = "../resources/p_prisoners_dilemma"
-    experiment_label = "default-5000 (copy)"
-    diagram_name = "pd-eval/efficiency_per_step"  # Replace with the actual diagram name
+    env_name = "../resources/p_coin_game"
+    experiment_label = "n-4pl-5000"
     diagram_type = (
         "line"  # Replace with the desired diagram type ('line', 'boxplot', etc.)
     )
@@ -220,4 +244,5 @@ if __name__ == "__main__":
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
     # draw_heatmaps(experiments, diagram_name)
     # plot_diagram(exp_files=experiments, tag=diagram_name, output_file="efficency-ipd")
-    plot_ipd(exp_files=experiments, output_file="ipd")
+    # plot_ipd(exp_files=experiments, output_file="ipd")
+    plots_coin_game(exp_files=experiments, output_file="coin_game")
