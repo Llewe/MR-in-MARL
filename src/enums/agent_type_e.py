@@ -13,4 +13,5 @@ class AgentType(str, Enum):
     MA_IPD_PUNISH_DEFECT = "ma_ipd_punish_defect"
     MA_IPD_EXPERIMENTS = "ma_ipd_experiments"
 
-    MA_COIN_TO_MIDDLE = "ma_coin_to_middle"
+    MA_COIN_TO_MIDDLE_AC = "ma_coin_to_middle_ac"
+    MA_COIN_TO_MIDDLE_MATE = "ma_coin_to_middle_mate"

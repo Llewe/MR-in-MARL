@@ -2,10 +2,10 @@ from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from src.utils.gym_utils import Space
 
 from src.config.ctrl_config import MaConfig
-from src.controller.rm_wrapper import RmWrapper
+from src.controller.base_rmp import BaseRMP
 
 
-class MaIpdExperiments(RmWrapper):
+class MaIpdExperiments(BaseRMP):
     """
     This agent uses reward manipulation to punish the opponent for defecting.
     """

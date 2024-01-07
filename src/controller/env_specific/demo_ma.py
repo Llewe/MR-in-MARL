@@ -1,11 +1,11 @@
 import numpy as np
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
-from src.controller.rm_wrapper import RmWrapper
+from src.controller.base_rmp import BaseRMP
 from src.config.ctrl_config import DemoMaConfig
 
 
-class DemoMa(RmWrapper):
+class DemoMa(BaseRMP):
     def __init__(self, config: DemoMaConfig):
         super().__init__(config)
 

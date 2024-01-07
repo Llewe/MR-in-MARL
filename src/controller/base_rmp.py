@@ -1,11 +1,14 @@
 import collections
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Callable, List, Optional, Type, TypeVar, Generic
 
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 
+from src.controller.utils.generic_helper import GenericHelper, BaseController
 from src.controller.actor_critic import ActorCritic
+from gymnasium.spaces import Space
+from src.interfaces import IController
 
 
 @dataclass
@@ -16,24 +19,44 @@ class RewardHistory:
     manipulation_debts: float
 
 
-class RmWrapper(ActorCritic):
+class BaseRMP(Generic[BaseController], GenericHelper[BaseController]):
     """
     Manipulating rewards agent
     This agent controller is used to manipulate the rewards of other agents
 
-    Just extend your class with this AC implementation and add the callbacks for each
+    Extend your class with this AC implementation and add the callbacks for each
     manipulating agent inside the init function.
-    Don't forget to call super().__init__(self, *args, **kwargs)
+    Remember to call super().__init__(self, *args, **kwargs)
 
     """
 
-    mr_callbacks: dict[
-        AgentID, Callable[[AgentID, ObsType, ActionType, float], float]
-    ] = {}
+    callbacks: dict[AgentID, Callable[[AgentID, ObsType, ActionType, float], float]]
+    next_reward_offset_dict: dict[AgentID, float]
+    reward_histories: dict[AgentID, list[RewardHistory]]
+    agents: List[AgentID]
 
-    next_reward_offset_dict: dict[AgentID, float] = {}
+    def __init__(self, base_controller: Type[BaseController], *args, **kwargs):
+        super().__init__(base_controller, *args, **kwargs)
+        self.callbacks = {}
 
-    reward_histories: dict[AgentID, list[RewardHistory]] = {}
+    def init_agents(
+        self,
+        action_space: dict[AgentID, Space],
+        observation_space: dict[AgentID, Space],
+    ) -> None:
+        super().init_agents(action_space, observation_space)
+
+        self.agents = []
+        self.next_reward_offset_dict = {}
+        self.reward_histories = {}
+
+        for a in action_space.keys():
+            self.agents.append(a)
+
+    def reset_buffers(self) -> None:
+        for a in self.agents:
+            self.next_reward_offset_dict[a] = 0
+            self.reward_histories[a] = []
 
     def set_callback(
         self,
@@ -45,7 +68,8 @@ class RmWrapper(ActorCritic):
         Parameters
         ----------
         agent_id: AgentID
-            The agent id for which the callback should be set. This agent is the manipulating agent
+            The agent id for which the callback should be set. This agent is the
+            manipulating agent
         callback: Callable[[AgentID, ObsType, ActionType, float], float]
             The callback function which should be called for the given agent id
             - AgentID -> Target agent id
@@ -53,13 +77,17 @@ class RmWrapper(ActorCritic):
             - ActionType -> Last action of the target agent
             - float -> Last reward of the target agent
 
-            The callback function should return the manipulated reward offset as a float value
+            The callback function should return the manipulated reward offset as a float
+             value
+            The Target will get the reward + offset as reward
+            and the caller of the callback will get the reward - offset as reward
 
         Returns
         -------
 
+
         """
-        self.mr_callbacks[agent_id] = callback
+        self.callbacks[agent_id] = callback
 
     def step_agent(
         self,
@@ -70,17 +98,16 @@ class RmWrapper(ActorCritic):
         done: bool,
     ) -> None:
         manipulated_by_agent: dict[AgentID, float] = {}
-        for a in self.actor_networks:
+        for a in self.agents:
             manipulated_by_agent[a] = 0
 
-
         # loop throw all callbacks and update the rewards individually
-        for a_callback_id in self.mr_callbacks:
+        for a_callback_id in self.callbacks:
             # skip if the agent is "itself"
             if a_callback_id == agent_id:
                 continue
 
-            reward_offset = self.mr_callbacks[a_callback_id](
+            reward_offset = self.callbacks[a_callback_id](
                 agent_id, last_observation, last_action, reward
             )
 
@@ -107,23 +134,7 @@ class RmWrapper(ActorCritic):
             reward=manipulated_reward,
             done=done,
         )
-    def step_finished(
-            self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
-    ) -> None:
-        super().step_finished(step, next_observations)
-
 
     def epoch_started(self, epoch: int) -> None:
+        self.reset_buffers()
         super().epoch_started(epoch)
-
-        self.reward_histories.clear()
-
-
-        for a in self.actor_networks:
-            self.next_reward_offset_dict[a] = 0
-
-        for agent_id in self.next_reward_offset_dict:
-            self.reward_histories[agent_id] = []
-
-    def epoch_finished(self, epoch: int, tag: str) -> None:
-        super().epoch_finished(epoch,tag)

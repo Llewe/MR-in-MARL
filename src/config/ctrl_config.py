@@ -6,8 +6,11 @@ from src.enums import EnvType
 from pydantic import Extra
 
 
-class CtrlConfig(BaseSettings, extra=Extra.allow):
-    pass
+class CtrlConfig(BaseSettings):
+    NAME: str = "IPD-generic-test"
+
+    class Config:
+        extra = Extra.allow
 
 
 class ACConfig(CtrlConfig):
@@ -24,8 +27,6 @@ class ACConfig(CtrlConfig):
     EPSILON_INIT: float = 0.0
     EPSILON_MIN: float = 0.0
     EPSILON_DECAY: float = 3.0e-05
-
-    NAME: str = ""
 
 
 class MateConfig(ACConfig):
@@ -83,7 +84,15 @@ class GiftingConfig(ACConfig):
 
 
 class MaConfig(ACConfig):
-    MANIPULATION_AMOUNT: float = 2.0
+    MANIPULATION_AMOUNT: float = -2.0
+
+
+class MaACConfig(ACConfig):
+    MANIPULATION_AMOUNT: float = -2.0
+
+
+class MaMATEConfig(MateConfig):
+    MANIPULATION_AMOUNT: float = -2.0
 
 
 class DemoMaCoinConfig(ACConfig):

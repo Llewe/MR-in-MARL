@@ -9,6 +9,8 @@ from src.config.ctrl_config import CtrlConfig
 
 
 class IController(ABC):
+    config: CtrlConfig
+
     @abstractmethod
     def __init__(self, config: CtrlConfig):
         """

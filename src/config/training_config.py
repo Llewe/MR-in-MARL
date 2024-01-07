@@ -16,9 +16,9 @@ class TrainingConfig(ExpConfig):
     EVAL_EPISODES: int = 100
     EVAL_EPOCH_INTERVAL: int = 50
 
-    AGENT_TYPE: AgentType = AgentType.MA_COIN_TO_MIDDLE
+    AGENT_TYPE: AgentType = AgentType.MA_COIN_TO_MIDDLE_MATE
     ENV_NAME: EnvType = EnvType.P_COIN_GAME
-    ENV_TAG: str = "6pl-default-5000"
+    ENV_TAG: str = "test"
 
     EXP_UNIQUE_NAME: str = (
         f"{datetime.fromtimestamp(time()).isoformat(timespec='seconds')} - {EXP_TAG}"

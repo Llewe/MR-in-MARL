@@ -22,6 +22,8 @@ from src.config.ctrl_config import (
     DemoMaConfig,
     GiftingConfig,
     LolaPGConfig,
+    MaACConfig,
+    MaMATEConfig,
     MateConfig,
     MaConfig,
 )
@@ -66,8 +68,10 @@ def get_agent_class(
         return LolaPG, LolaPGConfig
     elif agent_type == AgentType.DEMO_MANIPULATION_AGENT:
         return DemoMa, DemoMaConfig
-    elif agent_type == AgentType.MA_COIN_TO_MIDDLE:
-        return MaCoinToMiddle, MaConfig
+    elif agent_type == AgentType.MA_COIN_TO_MIDDLE_AC:
+        return MaCoinToMiddle, MaACConfig
+    elif agent_type == AgentType.MA_COIN_TO_MIDDLE_MATE:
+        return MaCoinToMiddle, MaMATEConfig
     elif agent_type == AgentType.MA_IPD_PUNISH_DEFECT:
         return MaIpdPunishDefect, MaConfig
     elif agent_type == AgentType.MA_IPD_EXPERIMENTS:
