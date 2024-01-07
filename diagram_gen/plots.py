@@ -1,12 +1,13 @@
 from io import BytesIO
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from PIL import Image
 from matplotlib.ticker import PercentFormatter
 from pandas import DataFrame
-from pylab import Figure
+from pylab import Figure, Axes
 from tensorboard.backend.event_processing import event_accumulator
 
 from diagram_gen.config.plot_config import PlotConfig
@@ -16,14 +17,26 @@ from diagram_gen.utils.file_loader import find_matching_files
 
 
 def write_scalars(
-    axis, fig: Optional[Figure], e: ExpFile, values, x_label: str, y_label: str
+    axis: Axes,
+    e: Union[ExpFile, str],
+    values: Union[DataFrame, Any],
+    x_label: str,
+    y_label: str,
 ) -> None:
-    steps, values = zip(*values)
+    df: DataFrame
+    if isinstance(values, DataFrame):
+        df = values
+    else:
+        steps, values = zip(*values)
+        df = DataFrame({"Steps": steps, "Values": values})
 
-    df = DataFrame({"Steps": steps, "Values": values})
     df["Rolling_Avg"] = df["Values"].rolling(window=3, min_periods=1).mean()
 
-    line_name = getattr(e.cfg, "NAME", e.path)
+    line_name: str
+    if isinstance(e, str):
+        line_name = e
+    else:
+        line_name = getattr(e.cfg, "NAME", e.path)
     axis.plot(
         df["Steps"],
         df["Rolling_Avg"],
@@ -33,29 +46,105 @@ def write_scalars(
     axis.set_xlabel(x_label)
     axis.set_ylabel(y_label)
 
-    axis.set_xlim(xmin=0)
-    if fig is not None:
-        fig.legend(ncols=3, loc="upper left", bbox_to_anchor=(0, 1.15))
+    axis.set_xlim(xmin=0, xmax=max(df["Steps"]))
+
+
+def get_and_print_scalar_data(
+    wanted_data: Dict[str, Tuple[Axes, str, str]],
+    exp_files: List[ExpFile],
+    merge_same_name: bool = True,
+) -> Dict[str, Dict[str, Union[DataFrame, List[DataFrame]]]]:
+    """
+
+    Parameters
+    ----------
+    wanted_data: Dict[str, Tuple[Axes, str, str]]
+        Dict with the wanted data. The key is the tag and the value is a tuple with the axis, x_label and y_label
+
+    exp_files: List[ExpFile]
+        List of experiments
+
+    merge_same_name: bool
+        Merge experiments with the same name (default: True)
+
+    Returns
+    -------
+
+    """
+    tags = [k for k in wanted_data.keys()]
+    data: Dict[str, Dict[str, Union[DataFrame, List[DataFrame]]]] = {}
+
+    for e in exp_files:
+        if e.diagram_data is not None:
+            for t, values in e.diagram_data.items():
+                if t in tags:
+                    if t not in data:
+                        data[t] = {}
+                    line_name = getattr(e.cfg, "NAME", e.path)
+                    if t not in data:
+                        data[t] = {}
+                    if line_name not in data[t]:
+                        data[t][line_name] = []
+
+                    steps, values = zip(*values)
+                    df = pd.DataFrame({"Steps": steps, "Values": values})
+                    data[t][line_name].append(df)
+
+        else:
+            print(f"Diagram data for {e.path} is None")
+
+    # Merging and calculating the average only when merge is True
+    if merge_same_name:
+        for tag, lines in data.items():
+            for line_name, df_list in lines.items():
+                if len(df_list) > 1:
+                    merged_df = pd.concat(df_list, ignore_index=True)
+                    avg_df = merged_df.groupby("Steps")["Values"].mean().reset_index()
+                    data[tag][line_name] = avg_df
+                else:
+                    data[tag][line_name] = df_list[0]
+
+    for tag, (ax, x_label, y_label) in wanted_data.items():
+        for line_name, value in data[tag].items():
+            if merge_same_name:
+                write_scalars(ax, line_name, value, x_label, y_label)
+            else:
+                for d in value:
+                    write_scalars(ax, line_name, d, x_label, y_label)
+
+    return data
 
 
 def plot_ipd(
     exp_files: List[ExpFile],
     output_file: str = "plot",
+    merge_same_name: bool = True,
 ) -> None:
     config: PlotConfig = PlotConfig()
 
     config.configPlt(plt)
-    # graph
+
     fig_eff, ax_eff = plt.subplots()
+
+    wanted_data: Dict[str, Tuple[Axes, str, str]] = {
+        "pd-eval/efficiency_per_step": (ax_eff, "Epoch", "Efficiency pro Step")
+    }
+
+    get_and_print_scalar_data(
+        wanted_data=wanted_data,
+        exp_files=exp_files,
+        merge_same_name=merge_same_name,
+    )
+
+    fig_eff.legend(ncols=3, loc="upper left", frameon=False, bbox_to_anchor=(0, 1.1))
+    config.save(fig_eff, f"{output_file}-efficiency")
+
+    # tables
     wins: dict[str, float] = {}
 
     for e in exp_files:
         if e.diagram_data is not None:
             for t, values in e.diagram_data.items():
-                if t == "pd-eval/efficiency_per_step":
-                    write_scalars(
-                        ax_eff, fig_eff, e, values, "Epoch", "Efficiency pro Step"
-                    )
                 if t == "pd-eval/wins_p0_per_step":
                     steps, values = zip(*values)
 
@@ -65,8 +154,6 @@ def plot_ipd(
 
         else:
             print(f"Diagram data for {e.path} is None")
-
-    config.save(fig_eff, f"{output_file}-efficiency")
 
     # Plot table (wins)
 
@@ -99,6 +186,7 @@ def plot_ipd(
 def plots_coin_game(
     exp_files: List[ExpFile],
     output_file: str = "plot",
+    merge_same_name: bool = True,
 ) -> None:
     config: PlotConfig = PlotConfig()
 
@@ -106,92 +194,30 @@ def plots_coin_game(
     # graph
     fig_eff, ax_eff = plt.subplots()
     fig_own_coin, ax_own_coin = plt.subplots()
-    wins: dict[str, float] = {}
+    fig_coins_total, ax_coins_total = plt.subplots()
 
-    for e in exp_files:
-        if e.diagram_data is not None:
-            for t, values in e.diagram_data.items():
-                if t == "eval/efficiency":
-                    write_scalars(ax_eff, None, e, values, "Epoch", "Efficiency")
-                if t == "coin_game-eval/coins/own_coin/":
-                    write_scalars(ax_own_coin, None, e, values, "Epoch", "Own Coin")
+    wanted_data: Dict[str, Tuple[Axes, str, str]] = {
+        "coin_game-eval/coins/own_coin/": (ax_own_coin, "Epoch", "Own Coin"),
+        "eval/efficiency": (ax_eff, "Epoch", "Efficiency"),
+        "coin_game-eval/coins/total/": (ax_coins_total, "Epoch", "Total Coins"),
+    }
 
-        else:
-            print(f"Diagram data for {e.path} is None")
-
-    fig_eff.legend(ncols=3, loc="upper left", bbox_to_anchor=(0, 1.25))
-    config.save(fig_eff, f"{output_file}-efficiency")
-    fig_own_coin.legend(ncols=3, loc="upper left", bbox_to_anchor=(0, 1.25))
-    config.save(fig_own_coin, f"{output_file}-own_coin")
-
-
-def plot_diagram(
-    exp_files: List[ExpFile],
-    tag: str,
-    x_label: str = "Epoch",
-    y_label: str = "Efficiency pro Step",
-    output_file: str = "plot",
-) -> None:
-    config: PlotConfig = PlotConfig()
-
-    config.configPlt(plt)
-    # graph
-    fig, ax = plt.subplots()
-
-    for e in exp_files:
-        if e.diagram_data is not None:
-            for t, values in e.diagram_data.items():
-                if t == tag:
-                    steps, values = zip(*values)
-
-                    # new_steps = np.linspace(min(steps), max(steps), num=len(steps) * 10)
-                    # spl: BSpline = make_interp_spline(steps, values, k=7)
-
-                    # smoothed_values = spl(new_steps)
-
-                    # Use numpy.convolve for moving average smoothing
-                    df = DataFrame({"Steps": steps, "Values": values})
-                    df["Rolling_Avg"] = df["Values"].rolling(window=3).mean()
-                    # plt.plot(new_steps, smoothed_values, label=f"{e.path}", alpha=0.7)
-
-                    line_name = getattr(e.cfg, "NAME", e.path)
-                    ax.plot(
-                        df["Steps"],
-                        df["Rolling_Avg"],
-                        label=f"{line_name}",
-                        alpha=0.7,
-                    )
-
-        else:
-            print(f"Diagram data for {e.path} is None")
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-
-    fig.legend(
-        loc="outside left upper",
-        ncols=2,
+    get_and_print_scalar_data(
+        wanted_data=wanted_data,
+        exp_files=exp_files,
+        merge_same_name=merge_same_name,
     )
-    # plt.title(f"{diagram_type.capitalize()} Diagram - {diagram_name}")
-    #
-    # # table
-    #
-    # table = []
-    # for e in exp_files:
-    #     if e.cfg is not None:
-    #         dict = e.cfg.model_dump()
-    #         dict["type"] = e.agent_type
-    #         dict["path"] = e.path.split("/")[-2].split(" - ")[-1]
-    #         table.append(dict)
-    #
-    # dfTable = DataFrame(table)
-    #
-    # cell_text = []
-    # for row in range(len(dfTable)):
-    #     cell_text.append(dfTable.iloc[row])
-    #
-    # plt.table(cellText=cell_text, colLabels=dfTable.columns, loc="top")
 
-    config.save(fig, output_file)
+    fig_eff.legend(ncols=3, loc="upper left", frameon=False, bbox_to_anchor=(0, 1.15))
+    config.save(fig_eff, f"{output_file}-efficiency")
+    fig_own_coin.legend(
+        ncols=3, loc="upper left", frameon=False, bbox_to_anchor=(0, 1.15)
+    )
+    config.save(fig_own_coin, f"{output_file}-own_coin")
+    fig_coins_total.legend(
+        ncols=3, loc="upper left", frameon=False, bbox_to_anchor=(0, 1.15)
+    )
+    config.save(fig_coins_total, f"{output_file}-coins_total")
 
 
 def draw_heatmaps(
@@ -230,11 +256,12 @@ def draw_heatmaps(
 
 if __name__ == "__main__":
     # Config variables
+
     env_name = "../resources/p_coin_game"
     experiment_label = "n-4pl-5000"
-    diagram_type = (
-        "line"  # Replace with the desired diagram type ('line', 'boxplot', etc.)
-    )
+
+    # env_name = "../resources/p_prisoners_dilemma"
+    # experiment_label = "default-5000 (copy)"
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -243,6 +270,6 @@ if __name__ == "__main__":
     for exp in experiments:
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
     # draw_heatmaps(experiments, diagram_name)
-    # plot_diagram(exp_files=experiments, tag=diagram_name, output_file="efficency-ipd")
     # plot_ipd(exp_files=experiments, output_file="ipd")
+
     plots_coin_game(exp_files=experiments, output_file="coin_game")
