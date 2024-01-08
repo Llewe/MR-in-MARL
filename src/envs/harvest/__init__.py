@@ -1,1 +1,1 @@
-from .harvest import env, parallel_env
+from .harvest import parallel_env

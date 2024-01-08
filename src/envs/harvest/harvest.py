@@ -1,5 +1,6 @@
 import functools
 import logging
+import random
 from dataclasses import dataclass
 from enum import Enum
 from itertools import product
@@ -8,21 +9,13 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pygame
 from gymnasium.spaces import Box, Discrete, Space
-from pettingzoo import AECEnv
-from pettingzoo.utils import agent_selector, wrappers
-from pettingzoo.utils.conversions import parallel_wrapper_fn
-from pettingzoo.utils.env import AgentID, ObsType
+from pettingzoo.utils.env import ActionType, AgentID, ObsType, ParallelEnv
 from torch.utils.tensorboard import SummaryWriter
 
 
-def env(**kwargs):
-    e = Harvest(**kwargs)
-    e = wrappers.AssertOutOfBoundsWrapper(e)
-    e = wrappers.OrderEnforcingWrapper(e)
-    return e
-
-
-parallel_env = parallel_wrapper_fn(env)
+def parallel_env(**kwargs):
+    env = Harvest(**kwargs)
+    return env
 
 
 class Action(Enum):
@@ -235,12 +228,18 @@ class GlobalState:
             for x, y in apple_pos:
                 self.apples[x, y] = 1
 
+    def apples_on_board(self) -> int:
+        return np.sum(self.apples)
+
     def get_obs(self, agent_id: AgentID) -> np.ndarray:
         return self._obs[agent_id]
 
     @functools.lru_cache(maxsize=None)
     def get_beam_size(self) -> int:
         return 2 * self.tag_beam_width + 1
+
+    def get_all_obs(self) -> dict[AgentID, np.ndarray]:
+        return self._obs
 
 
 class HarvestPygameRenderer:
@@ -346,10 +345,10 @@ class HarvestPygameRenderer:
         pygame.display.flip()
 
 
-class Harvest(AECEnv):
+class Harvest(ParallelEnv):
     metadata: Dict = {
         "render_modes": ["human"],
-        "name": "coin_game_llewe",
+        "name": "harvest_llewe",
         "is_parallelizable": True,
     }
 
@@ -513,7 +512,6 @@ class Harvest(AECEnv):
         - terminations
         - truncations
         - infos
-        - agent_selection
         And must set up the environment so that render(), step(), and observe()
         can be called without issues.
         Here it sets up the state dictionary which is used by step() and the observations dictionary which is used by step() and observe()
@@ -532,15 +530,11 @@ class Harvest(AECEnv):
         self.terminations = {agent: False for agent in self.possible_agents}
         self.truncations = {agent: False for agent in self.possible_agents}
         self.infos = {agent: {} for agent in self.possible_agents}
-        """
-        Our agent_selector utility allows easy cyclic stepping through the agents list.
-        """
-        self._agent_selector = agent_selector(self.agents)
-        self.agent_selection = self._agent_selector.next()
 
         self._reset_board()
 
         self.global_state.cal_obs()
+        return self.global_state.get_all_obs().copy(), self.infos
 
     def _check_bounds_x(self, new_x: int) -> int:
         if new_x < 0:
@@ -722,7 +716,18 @@ class Harvest(AECEnv):
         else:
             self._grow_apples_old()
 
-    def step(self, action) -> None:
+    def _clear_rewards(self) -> None:
+        self.rewards = {name: 0.0 for name in self.possible_agents}
+
+    def step(
+        self, actions: dict[AgentID, ActionType]
+    ) -> tuple[
+        dict[AgentID, ObsType],  # observations
+        dict[AgentID, float],  # rewards
+        dict[AgentID, bool],  # dones
+        dict[AgentID, bool],  # truncations
+        dict[AgentID, dict],  # infos
+    ]:
         """
         step(action) takes in an action for the current agent (specified by
         agent_selection) and needs to update
@@ -734,59 +739,62 @@ class Harvest(AECEnv):
         - agent_selection (to the next agent)
         And any internal state used by observe() or render()
         """
-        agent: AgentID = self.agent_selection
-
-        if self.terminations[agent] or self.truncations[agent]:
-            self._was_dead_step(action)
-            return
-
-        if self._agent_selector.is_first():
-            # Resetting the rewards for each agent if its the first of this "time" step
-            self.current_history.append(
-                HistoryState(
-                    board_step=self.global_state.steps_on_board,
-                    rewards={},
-                    collected_apples={agent: 0 for agent in self.possible_agents},
-                    tagged_agents={agent: 0 for agent in self.possible_agents},
-                    apples_on_board=len(self.global_state.apples),
-                    actions={},
-                )
+        self._clear_rewards()
+        self.current_history.append(
+            HistoryState(
+                board_step=self.global_state.steps_on_board,
+                rewards={},
+                collected_apples={agent: 0 for agent in self.possible_agents},
+                tagged_agents={agent: 0 for agent in self.possible_agents},
+                apples_on_board=self.global_state.apples_on_board(),
+                actions={},
             )
-            self.rewards = {agent: 0 for agent in self.possible_agents}
+        )
 
-        if self.global_state.agent_states[agent].isTagged():
-            self.global_state.agent_states[agent].tagged -= 1
-            self.current_history[-1].tagged_agents[agent] += 1
+        agents_order = self.agents[:]
+        random.shuffle(agents_order)
+        for agent in agents_order:
+            action = actions[agent]
 
-        else:
-            self.rewards[agent] -= 0.01  # Penalty for every time step
-            self._move_reward_agent(agent, Action(action))
+            if self.truncations[agent]:
+                continue
 
-        self.current_history[-1].actions[agent] = Action(action)
+            if self.global_state.agent_states[agent].isTagged():
+                self.global_state.agent_states[agent].tagged -= 1
+                self.current_history[-1].tagged_agents[agent] += 1
+            else:
+                self.rewards[agent] -= 0.01  # Penalty for every time step
+                self._move_reward_agent(agent, Action(action))
+
+            self.current_history[-1].actions[agent] = Action(action)
+
+        self._grow_apples()
+
+        self.global_state.steps_on_board += 1
+
+        env_truncation = self.global_state.steps_on_board >= self.max_cycles
+
+        self.truncations = {
+            agent: env_truncation >= self.max_cycles for agent in self.possible_agents
+        }
+        if env_truncation:
+            self.agents = []
+
+        self.global_state.cal_obs()
 
         if self.render_mode != "":
             self.render()
 
-        self._cumulative_rewards[agent] = 0
-        self._accumulate_rewards()
+        for a, r in self.rewards.items():
+            self.current_history[-1].rewards[a] = r
 
-        # collect reward if it is the last agent to act
-        if self._agent_selector.is_last():
-            self.global_state.steps_on_board += 1
-
-            self.truncations = {
-                agent: self.global_state.steps_on_board >= self.max_cycles
-                for agent in self.possible_agents
-            }
-            for a, r in self._cumulative_rewards.items():
-                self.current_history[-1].rewards[a] = r
-
-            # update observations
-            self._grow_apples()
-            self.global_state.cal_obs()
-
-        # Switch to next agent
-        self.agent_selection = self._agent_selector.next()
+        return (
+            self.global_state.get_all_obs().copy(),
+            self.rewards,
+            self.truncations,  # we don't use terminations
+            self.truncations,
+            self.infos,
+        )
 
     def log(self, options: dict) -> None:
         """

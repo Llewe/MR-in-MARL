@@ -68,7 +68,7 @@ poetry install --sync --all-extras
 #################################
 
 train AGENT_TYPE=random NAME="Zufall" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95
-train AGENT_TYPE=actor_critic "Actor-Critic" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95
+train AGENT_TYPE=actor_critic NAME="Actor-Critic" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95
 train AGENT_TYPE=mate NAME="MATE-TD" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 MANIPULATION_AMOUNT=1.0
 train AGENT_TYPE=mate NAME="MATE-Static" MODE="static" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 MANIPULATION_AMOUNT=1.0
 train AGENT_TYPE=mate NAME="MATE-Value-Decompose" MODE="value_decompose" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 MANIPULATION_AMOUNT=1.0

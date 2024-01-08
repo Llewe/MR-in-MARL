@@ -143,17 +143,31 @@ def plot_ipd(
     config.save(fig_eff, f"{output_file}-efficiency")
 
     # tables
-    wins: dict[str, float] = {}
+    wins_p0: dict[str, float] = {}
+    wins_p1: dict[str, float] = {}
+    draws: dict[str, float] = {}
 
     for e in exp_files:
         if e.diagram_data is not None:
             for t, values in e.diagram_data.items():
-                if t == "pd-eval/wins_p0_per_step":
+                if t == "pd-eval/wins_p0":
                     steps, values = zip(*values)
 
                     line_name = getattr(e.cfg, "NAME", e.path)
 
-                    wins[line_name] = values[-1]
+                    wins_p0[line_name] = values[-1]
+                if t == "pd-eval/wins_p1":
+                    steps, values = zip(*values)
+
+                    line_name = getattr(e.cfg, "NAME", e.path)
+
+                    wins_p1[line_name] = values[-1]
+                if t == "pd-eval/draws":
+                    steps, values = zip(*values)
+
+                    line_name = getattr(e.cfg, "NAME", e.path)
+
+                    draws[line_name] = values[-1]
 
         else:
             print(f"Diagram data for {e.path} is None")
@@ -166,14 +180,13 @@ def plot_ipd(
 
     # Erstelle eine Tabelle mit den Daten
     table_data = []
-    for key, values in wins.items():
-        table_data.append([key, values])
-
+    for k in wins_p0.keys():
+        table_data.append([k, wins_p0[k], wins_p1[k], draws[k]])
     table = ax_wins.table(
         cellText=table_data,
         loc="center",
         cellLoc="center",
-        colLabels=["Algorithm", "Siege Spieler 0"],
+        colLabels=["Algorithm", "Siege Sp. 0", "Siege Sp. 1", "Unentschieden"],
     )
 
     # Konfiguriere das Aussehen der Tabelle
@@ -260,11 +273,11 @@ def draw_heatmaps(
 if __name__ == "__main__":
     # Config variables
 
-    env_name = "../resources/p_coin_game"
-    experiment_label = "n-4pl-5000"
+    # env_name = "../resources/p_coin_game"
+    # experiment_label = "n-4pl-5000"
 
-    # env_name = "../resources/p_prisoners_dilemma"
-    # experiment_label = "default-5000 (copy)"
+    env_name = "../resources/p_prisoners_dilemma"
+    experiment_label = "default-5000"
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -273,6 +286,6 @@ if __name__ == "__main__":
     for exp in experiments:
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
     # draw_heatmaps(experiments, diagram_name)
-    # plot_ipd(exp_files=experiments, output_file="ipd")
+    plot_ipd(exp_files=experiments, output_file="ipd")
 
-    plots_coin_game(exp_files=experiments, output_file="coin_game")
+    # plots_coin_game(exp_files=experiments, output_file="coin_game")

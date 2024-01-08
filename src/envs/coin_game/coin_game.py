@@ -10,9 +10,7 @@ import numpy as np
 import pygame
 import torch
 from gymnasium.spaces import Box, Discrete, Space
-from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector as AgentSelector, wrappers
-from pettingzoo.utils.conversions import parallel_wrapper_fn
 from pettingzoo.utils.env import ActionType, AgentID, ObsType, ParallelEnv
 from torch.utils.tensorboard import SummaryWriter
 
@@ -167,7 +165,7 @@ class CoinGamePygameRenderer:
             ]
             self.color_coin = (255, 0, 0)
 
-    def draw(self, state: GlobalState) -> None:
+    def draw(self, global_state: GlobalState) -> None:
         # clear screen
         self.screen.fill(self.colour_background)
 
@@ -205,7 +203,7 @@ class CoinGamePygameRenderer:
                 )
         player_degree = 2 * math.pi / self.n_players
         # draw players
-        for i, (agent_id, pos) in enumerate(state.agent_states.items()):
+        for i, (agent_id, pos) in enumerate(global_state.agent_states.items()):
             assert isinstance(pos, AgentState)
 
             p_x = pos.x * cell_size_w + cell_size_w / 2
@@ -226,10 +224,10 @@ class CoinGamePygameRenderer:
                 width=20,
             )  # 350 is an arbitrary scale factor to get pygame to render similar sizes as pyglet
 
-            if state.coin_state.owner is agent_id:
+            if global_state.coin_state.owner is agent_id:
                 # draw coins
-                c_x = state.coin_state.x * cell_size_w + cell_size_w // 2
-                c_y = state.coin_state.y * cell_size_h + cell_size_h // 2
+                c_x = global_state.coin_state.x * cell_size_w + cell_size_w // 2
+                c_y = global_state.coin_state.y * cell_size_h + cell_size_h // 2
 
                 pygame.draw.circle(
                     self.screen,
@@ -265,7 +263,7 @@ class CoinGame(ParallelEnv):
     summary_writer: Optional[SummaryWriter]
 
     # Internal Variables
-    state: GlobalState
+    global_state: GlobalState
 
     # Action, State Log
     current_history: List[HistoryState]
@@ -327,8 +325,8 @@ class CoinGame(ParallelEnv):
         self.agents: list[AgentID] = [f"player_{r}" for r in range(self.n_players)]
         self.possible_agents: list[AgentID] = self.agents[:]
 
-        # init global state #TODO make this seed able and random
-        self.state = GlobalState(
+        # init global global_state #TODO make this seed able and random
+        self.global_state = GlobalState(
             agent_states={
                 agent: AgentState(x=1, y=2) for agent in self.possible_agents
             },
@@ -347,7 +345,7 @@ class CoinGame(ParallelEnv):
             agent: Box(
                 low=0,
                 high=n_players if n_players > grid_size else grid_size,
-                shape=(len(self.state.to_obs_list(agent)), 1),
+                shape=(len(self.global_state.to_obs_list(agent)), 1),
                 dtype=np.int64,
             )
             for agent in self.possible_agents
@@ -371,7 +369,7 @@ class CoinGame(ParallelEnv):
     def _get_unoccupied_locations(self) -> list[tuple[int, int]]:
         pos: list[tuple[int, int]] = self._all_locations()
 
-        for agent in self.state.agent_states.values():
+        for agent in self.global_state.agent_states.values():
             if (agent.x, agent.y) in pos:
                 pos.remove((agent.x, agent.y))
         return pos
@@ -395,16 +393,18 @@ class CoinGame(ParallelEnv):
         if possible_pos is None:
             possible_pos = self._get_unoccupied_locations()
 
-        for agent in self.state.agent_states.values():
+        for agent in self.global_state.agent_states.values():
             if (agent.x, agent.y) in possible_pos:
                 possible_pos.remove((agent.x, agent.y))
 
-        self.state.coin_state.x, self.state.coin_state.y = random.choice(possible_pos)
+        self.global_state.coin_state.x, self.global_state.coin_state.y = random.choice(
+            possible_pos
+        )
 
         if self.randomize_coin:
-            self.state.coin_state.owner = random.choice(self.possible_agents)
+            self.global_state.coin_state.owner = random.choice(self.possible_agents)
 
-        self.state.coin_is_collected = False
+        self.global_state.coin_is_collected = False
 
     def _reset_board(self) -> None:
         """
@@ -418,7 +418,7 @@ class CoinGame(ParallelEnv):
         """
         possible_pos: list[tuple[int, int]] = self._all_locations()
 
-        for agent_state in self.state.agent_states.values():
+        for agent_state in self.global_state.agent_states.values():
             agent_state.x, agent_state.y = random.choice(possible_pos)
 
             if not self.allow_overlap_players:
@@ -426,7 +426,7 @@ class CoinGame(ParallelEnv):
 
         self._generate_coin(possible_pos=possible_pos)
 
-        self.state.steps_on_board = 0
+        self.global_state.steps_on_board = 0
 
     def reinit(self, options=None) -> None:
         self.agents = self.possible_agents[:]
@@ -448,7 +448,7 @@ class CoinGame(ParallelEnv):
         }
 
         self._reset_board()
-        self.state.cal_obs()
+        self.global_state.cal_obs()
 
     def _clear_rewards(self) -> None:
         self.rewards = {name: 0.0 for name in self.possible_agents}
@@ -458,7 +458,7 @@ class CoinGame(ParallelEnv):
 
     def _render_pygame(self) -> None:
         if self.pygame_renderer is not None:
-            self.pygame_renderer.draw(self.state)
+            self.pygame_renderer.draw(self.global_state)
 
     def render(self) -> None:
         """
@@ -476,7 +476,7 @@ class CoinGame(ParallelEnv):
             self._render_pygame()
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        return self.state.get_obs(agent)
+        return self.global_state.get_obs(agent)
 
     def close(self) -> None:
         pass
@@ -494,7 +494,7 @@ class CoinGame(ParallelEnv):
             self.current_history.clear()
         else:
             self.log(options)
-        return self.state.get_all_obs(), self.infos
+        return self.global_state.get_all_obs().copy(), self.infos
 
     def _check_bounds(self, new_pos: int) -> int:
         if self.walls:
@@ -520,8 +520,8 @@ class CoinGame(ParallelEnv):
         int
             reward
         """
-        pos_x: int = self.state.agent_states[agent].x
-        pos_y: int = self.state.agent_states[agent].y
+        pos_x: int = self.global_state.agent_states[agent].x
+        pos_y: int = self.global_state.agent_states[agent].y
         # Calculate next position
         if action == Action.LEFT:
             pos_x = self._check_bounds(pos_x - 1)
@@ -539,21 +539,24 @@ class CoinGame(ParallelEnv):
 
         # Check if the new position is occupied by another agent
         if not self.allow_overlap_players:
-            for agent_state in self.state.agent_states.values():
+            for agent_state in self.global_state.agent_states.values():
                 if (agent_state.x, agent_state.y) == (pos_x, pos_y):
                     # position is occupied, stay still
                     return
 
-        self.state.agent_states[agent].x = pos_x
-        self.state.agent_states[agent].y = pos_y
+        self.global_state.agent_states[agent].x = pos_x
+        self.global_state.agent_states[agent].y = pos_y
 
         # Check if the new position is occupied by a coin :)
-        if (pos_x, pos_y) == (self.state.coin_state.x, self.state.coin_state.y):
+        if (pos_x, pos_y) == (
+            self.global_state.coin_state.x,
+            self.global_state.coin_state.y,
+        ):
             self.current_history[-1].collected_coins[agent] = True
-            self.state.coin_is_collected = True
+            self.global_state.coin_is_collected = True
             self.rewards[agent] += 1.0
-            if self.state.coin_state.owner is not agent:
-                self.rewards[self.state.coin_state.owner] -= 2.0
+            if self.global_state.coin_state.owner is not agent:
+                self.rewards[self.global_state.coin_state.owner] -= 2.0
 
     def step(
         self, actions: dict[AgentID, ActionType]
@@ -573,13 +576,16 @@ class CoinGame(ParallelEnv):
         self._clear_rewards()
         self.current_history.append(
             HistoryState(
-                board_step=self.state.steps_on_board,
+                board_step=self.global_state.steps_on_board,
                 rewards={},
                 collected_coins={a: False for a in self.possible_agents},
-                coin_owner=self.state.coin_state.owner,
+                coin_owner=self.global_state.coin_state.owner,
                 actions={},
-                pos={a: (s.x, s.y) for a, s in self.state.agent_states.items()},
-                pos_coin=(self.state.coin_state.x, self.state.coin_state.y),
+                pos={a: (s.x, s.y) for a, s in self.global_state.agent_states.items()},
+                pos_coin=(
+                    self.global_state.coin_state.x,
+                    self.global_state.coin_state.y,
+                ),
             )
         )
         # Step all agents
@@ -594,12 +600,12 @@ class CoinGame(ParallelEnv):
             self._move_reward_agent(agent, Action(action))
 
             # Agent steps are done
-        if self.state.coin_is_collected:
+        if self.global_state.coin_is_collected:
             self._generate_coin()
 
-        self.state.steps_on_board += 1
+        self.global_state.steps_on_board += 1
 
-        env_truncation = self.state.steps_on_board >= self.max_cycles
+        env_truncation = self.global_state.steps_on_board >= self.max_cycles
 
         self.truncations = {
             agent: env_truncation >= self.max_cycles for agent in self.possible_agents
@@ -608,7 +614,7 @@ class CoinGame(ParallelEnv):
             self.agents = []
 
         # update observations
-        self.state.cal_obs()
+        self.global_state.cal_obs()
 
         for a, r in self.rewards.items():
             self.current_history[-1].rewards[a] = r
@@ -617,7 +623,7 @@ class CoinGame(ParallelEnv):
             self.render()
 
         return (
-            self.state.get_all_obs().copy(),
+            self.global_state.get_all_obs().copy(),
             self.rewards,
             self.truncations,  # we don't use terminations
             self.truncations,
