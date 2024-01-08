@@ -219,10 +219,6 @@ class Mate(ActorCritic):
             a: self.step_info[a].rewards[-1] for a in self.step_info.keys()
         }
 
-        # transition = super(MATE, self).prepare_transition(
-        #     joint_histories, joint_action, rewards, next_joint_histories, done, info
-        # )
-
         self.trust_request_matrix[:] = 0.0
         self.trust_response_matrix[:] = 0.0
 
@@ -250,12 +246,6 @@ class Mate(ActorCritic):
         else:
             state_values = {a: (0.0, 0.0) for a in self.step_info.keys()}
 
-        # 1. Send trust requests
-        defector_id: int = -1
-
-        if self.defect_mode != MateConfig.DefectMode.NO_DEFECT:
-            defector_id = numpy.random.randint(0, self.nr_agents)
-
         for agent_id, i in self.agent_id_mapping.items():
             reward = original_rewards[agent_id]
             neighborhood = self.neighborhood[agent_id]
@@ -266,12 +256,8 @@ class Mate(ActorCritic):
             #     joint_histories,
             #     next_joint_histories,
             # ):
-            requests_enabled = i != defector_id or self.defect_mode not in [
-                MateConfig.DefectMode.DEFECT_ALL,
-                MateConfig.DefectMode.DEFECT_SEND,
-            ]
 
-            if requests_enabled and self.can_rely_on(
+            if self.can_rely_on(
                 agent_id, reward, state_values[agent_id][0], state_values[agent_id][1]
             ):  # Analyze the "winners" of that step
                 for neighbor in neighborhood:
@@ -286,10 +272,6 @@ class Mate(ActorCritic):
             # for i, history, next_history in zip(
             #     range(self.nr_agents), joint_histories, next_joint_histories
             # ):
-            respond_enabled = i != defector_id or self.defect_mode not in [
-                MateConfig.DefectMode.DEFECT_ALL,
-                MateConfig.DefectMode.DEFECT_RESPONSE,
-            ]
 
             trust_requests = [
                 self.trust_request_matrix[i][self.agent_id_mapping[j]]
@@ -298,7 +280,7 @@ class Mate(ActorCritic):
             if len(trust_requests) > 0:
                 mate_rewards[agent_id] += numpy.max(trust_requests)
 
-            if respond_enabled and len(neighborhood) > 0:
+            if len(neighborhood) > 0:
                 if self.can_rely_on(
                     agent_id,
                     mate_rewards[agent_id],
@@ -319,12 +301,7 @@ class Mate(ActorCritic):
             neighborhood = self.neighborhood[agent_id]
             trust_responses = self.trust_response_matrix[i]
 
-            receive_enabled = i != defector_id or self.defect_mode not in [
-                MateConfig.DefectMode.DEFECT_ALL,
-                MateConfig.DefectMode.DEFECT_RESPONSE,
-            ]
-
-            if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
+            if len(neighborhood) > 0 and trust_responses.any():
                 filtered_trust_responses: list[Any] = [
                     trust_responses[self.agent_id_mapping[x]]
                     for x in neighborhood

@@ -15,3 +15,5 @@ class AgentType(str, Enum):
 
     MA_COIN_TO_MIDDLE_AC = "ma_coin_to_middle_ac"
     MA_COIN_TO_MIDDLE_MATE = "ma_coin_to_middle_mate"
+    MA_SOCIAL_WELLFARE_AC = "ma_social_wellfare_ac"
+    MA_SOCIAL_WELLFARE_MATE = "ma_social_wellfare_mate"

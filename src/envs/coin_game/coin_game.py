@@ -13,7 +13,7 @@ from gymnasium.spaces import Box, Discrete, Space
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector as AgentSelector, wrappers
 from pettingzoo.utils.conversions import parallel_wrapper_fn
-from pettingzoo.utils.env import ActionType, AgentID, ObsType
+from pettingzoo.utils.env import ActionType, AgentID, ObsType, ParallelEnv
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -24,7 +24,9 @@ def env(**kwargs):
     return env
 
 
-parallel_env = parallel_wrapper_fn(env)
+def parallel_env(**kwargs):
+    env = CoinGame(**kwargs)
+    return env
 
 
 SEED = 42
@@ -99,6 +101,9 @@ class GlobalState:
 
     def get_obs(self, agent_id: AgentID) -> np.ndarray:
         return self._obs[agent_id]
+
+    def get_all_obs(self) -> dict[AgentID, np.ndarray]:
+        return self._obs
 
 
 @dataclass(slots=True)
@@ -236,7 +241,7 @@ class CoinGamePygameRenderer:
         pygame.display.flip()
 
 
-class CoinGame(AECEnv):
+class CoinGame(ParallelEnv):
     metadata: Dict = {
         "render_modes": ["human"],
         "name": "coin_game_llewe",
@@ -318,21 +323,25 @@ class CoinGame(AECEnv):
                 width=700, height=700, grid_size=grid_size, n_players=n_players
             )
 
-        # Configure AECEnv
+        # Configure Agents
         self.agents: list[AgentID] = [f"player_{r}" for r in range(self.n_players)]
         self.possible_agents: list[AgentID] = self.agents[:]
 
         # init global state #TODO make this seed able and random
         self.state = GlobalState(
-            agent_states={agent: AgentState(x=1, y=2) for agent in self.agents},
-            coin_state=CoinState(x=3, y=4, owner=self.agents[0]),
+            agent_states={
+                agent: AgentState(x=1, y=2) for agent in self.possible_agents
+            },
+            coin_state=CoinState(x=3, y=4, owner=self.possible_agents[0]),
             coin_is_collected=False,
             steps_on_board=0,
             _obs={},
         )
 
         self.nr_actions = len(Action) if with_none_action else len(Action) - 1
-        self.action_spaces = {agent: Discrete(self.nr_actions) for agent in self.agents}
+        self.action_spaces = {
+            agent: Discrete(self.nr_actions) for agent in self.possible_agents
+        }
 
         self.observation_spaces = {
             agent: Box(
@@ -341,10 +350,12 @@ class CoinGame(AECEnv):
                 shape=(len(self.state.to_obs_list(agent)), 1),
                 dtype=np.int64,
             )
-            for agent in self.agents
+            for agent in self.possible_agents
         }
 
-        self.rewards: dict[AgentID, float] = {agent: 0 for agent in self.agents}
+        self.rewards: dict[AgentID, float] = {
+            agent: 0 for agent in self.possible_agents
+        }
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent: AgentID) -> Space:
@@ -391,7 +402,7 @@ class CoinGame(AECEnv):
         self.state.coin_state.x, self.state.coin_state.y = random.choice(possible_pos)
 
         if self.randomize_coin:
-            self.state.coin_state.owner = random.choice(self.agents)
+            self.state.coin_state.owner = random.choice(self.possible_agents)
 
         self.state.coin_is_collected = False
 
@@ -419,22 +430,28 @@ class CoinGame(AECEnv):
 
     def reinit(self, options=None) -> None:
         self.agents = self.possible_agents[:]
-        self.agent_selector: AgentSelector = AgentSelector(self.agents)
+        self.agent_selector: AgentSelector = AgentSelector(self.possible_agents)
 
         self.agent_selection: AgentID = self.agent_selector.next()
 
         self._clear_rewards()
-        self._cumulative_rewards: dict[AgentID, float] = {
-            agent: 0 for agent in self.agents
+
+        self._cumulative_rewards = {name: 0.0 for name in self.possible_agents}
+        self.terminations: dict[AgentID, bool] = {
+            agent: False for agent in self.possible_agents
         }
-        self.rewards = {name: 0.0 for name in self.agents}
-        self._cumulative_rewards = {name: 0.0 for name in self.agents}
-        self.terminations: dict[AgentID, bool] = {agent: False for agent in self.agents}
-        self.truncations: dict[AgentID, bool] = {agent: False for agent in self.agents}
-        self.infos: dict[AgentID, dict[str, Any]] = {agent: {} for agent in self.agents}
+        self.truncations: dict[AgentID, bool] = {
+            agent: False for agent in self.possible_agents
+        }
+        self.infos: dict[AgentID, dict[str, Any]] = {
+            agent: {} for agent in self.possible_agents
+        }
 
         self._reset_board()
         self.state.cal_obs()
+
+    def _clear_rewards(self) -> None:
+        self.rewards = {name: 0.0 for name in self.possible_agents}
 
     def _render_text(self) -> None:
         raise NotImplementedError("Text rendering is not implemented yet.")
@@ -468,7 +485,7 @@ class CoinGame(AECEnv):
         self,
         seed: int | None = None,
         options: dict | None = None,
-    ) -> None:
+    ) -> tuple[dict[AgentID, ObsType], dict[AgentID, dict]]:
         self.reinit(options=options)
         if options is None:
             self.current_history.clear()
@@ -477,6 +494,7 @@ class CoinGame(AECEnv):
             self.current_history.clear()
         else:
             self.log(options)
+        return self.state.get_all_obs(), self.infos
 
     def _check_bounds(self, new_pos: int) -> int:
         if self.walls:
@@ -537,59 +555,74 @@ class CoinGame(AECEnv):
             if self.state.coin_state.owner is not agent:
                 self.rewards[self.state.coin_state.owner] -= 2.0
 
-    def step(self, action: ActionType) -> None:
+    def step(
+        self, actions: dict[AgentID, ActionType]
+    ) -> tuple[
+        dict[AgentID, ObsType],  # observations
+        dict[AgentID, float],  # rewards
+        dict[AgentID, bool],  # dones
+        dict[AgentID, bool],  # truncations
+        dict[AgentID, dict],  # infos
+    ]:
+        """Receives a dictionary of actions keyed by the agent name.
+
+        Returns the observation dictionary, reward dictionary, terminated dictionary, truncated dictionary
+        and info dictionary, where each dictionary is keyed by the agent.
+        """
+
         self._clear_rewards()
-
-        agent: AgentID = self.agent_selection
-
-        if self.terminations[agent] or self.truncations[agent]:
-            self._was_dead_step(action)
-            return
-
-        if self.agent_selector.is_first():
-            # Resetting the rewards for each agent if its the first of this "time" step
-            self.current_history.append(
-                HistoryState(
-                    board_step=self.state.steps_on_board,
-                    rewards={},
-                    collected_coins={a: False for a in self.agents},
-                    coin_owner=self.state.coin_state.owner,
-                    actions={},
-                    pos={a: (s.x, s.y) for a, s in self.state.agent_states.items()},
-                    pos_coin=(self.state.coin_state.x, self.state.coin_state.y),
-                )
+        self.current_history.append(
+            HistoryState(
+                board_step=self.state.steps_on_board,
+                rewards={},
+                collected_coins={a: False for a in self.possible_agents},
+                coin_owner=self.state.coin_state.owner,
+                actions={},
+                pos={a: (s.x, s.y) for a, s in self.state.agent_states.items()},
+                pos_coin=(self.state.coin_state.x, self.state.coin_state.y),
             )
-            self.rewards = {name: 0.0 for name in self.agents}
+        )
+        # Step all agents
 
-        self._move_reward_agent(agent, Action(action))
+        agents_order = self.agents[:]
+        random.shuffle(agents_order)
+        for agent in agents_order:
+            action = actions[agent]
 
-        self.current_history[-1].actions[agent] = Action(action)
+            if self.truncations[agent]:
+                continue
+            self._move_reward_agent(agent, Action(action))
+
+            # Agent steps are done
+        if self.state.coin_is_collected:
+            self._generate_coin()
+
+        self.state.steps_on_board += 1
+
+        env_truncation = self.state.steps_on_board >= self.max_cycles
+
+        self.truncations = {
+            agent: env_truncation >= self.max_cycles for agent in self.possible_agents
+        }
+        if env_truncation:
+            self.agents = []
+
+        # update observations
+        self.state.cal_obs()
+
+        for a, r in self.rewards.items():
+            self.current_history[-1].rewards[a] = r
 
         if self.render_mode != "":
             self.render()
 
-        self._cumulative_rewards[agent] = 0
-        self._accumulate_rewards()
-
-        if self.agent_selector.is_last():
-            self.state.steps_on_board += 1
-
-            self.truncations = {
-                agent: self.state.steps_on_board >= self.max_cycles
-                for agent in self.agents
-            }
-
-            if self.state.coin_is_collected:
-                self._generate_coin()
-
-            for a, r in self._cumulative_rewards.items():
-                self.current_history[-1].rewards[a] = r
-
-            # update observations
-            self.state.cal_obs()
-
-        # Switch to next agent
-        self.agent_selection = self.agent_selector.next()
+        return (
+            self.state.get_all_obs().copy(),
+            self.rewards,
+            self.truncations,  # we don't use terminations
+            self.truncations,
+            self.infos,
+        )
 
     def log(self, options: dict) -> None:
         """
@@ -633,14 +666,15 @@ class CoinGame(AECEnv):
 
         log_name = f"coin_game-{tag}"
 
-        cumulative_rewards = {agent: 0.0 for agent in self.agents}
-        cnt_collected_coins = {agent: 0.0 for agent in self.agents}
+        cumulative_rewards = {agent: 0.0 for agent in self.possible_agents}
+        cnt_collected_coins = {agent: 0.0 for agent in self.possible_agents}
 
         total_collected_coins: float = 0.0
         total_coins_collected_by_owner: float = 0.0
 
         collected_coins_owner = {
-            agent: {agent: 0.0 for agent in self.agents} for agent in self.agents
+            agent: {agent: 0.0 for agent in self.agents}
+            for agent in self.possible_agents
         }
 
         divider: float = (
@@ -655,7 +689,7 @@ class CoinGame(AECEnv):
                 )
 
         for history in self.current_history:
-            for agent_id in self.agents:
+            for agent_id in self.possible_agents:
                 cumulative_rewards[agent_id] += history.rewards[agent_id]
                 cnt_collected_coins[agent_id] += history.collected_coins[agent_id]
                 if history.collected_coins[agent_id]:
@@ -678,7 +712,7 @@ class CoinGame(AECEnv):
                 for aa, cco in collected_coins_owner.items()
             }
 
-        for agent_id in self.agents:
+        for agent_id in self.possible_agents:
             self.summary_writer.add_scalar(
                 f"{log_name}/cumulative_reward/{agent_id}",
                 cumulative_rewards[agent_id],
@@ -717,7 +751,7 @@ class CoinGame(AECEnv):
             coin_pos = np.zeros((self.grid_size, self.grid_size))
             agent_pos = {
                 agent: np.zeros((self.grid_size, self.grid_size))
-                for agent in self.agents
+                for agent in self.possible_agents
             }
             for history in self.current_history:
                 coin_pos[history.pos_coin[0], history.pos_coin[1]] += 1
@@ -735,7 +769,7 @@ class CoinGame(AECEnv):
                 dataformats="NCHW",
             )
 
-            for agent_id in self.agents:
+            for agent_id in self.possible_agents:
                 agent_pos[agent_id] /= len(self.current_history)
                 # Convert the NumPy array to a torch.Tensor and add batch and channel dimensions
                 agent_image_data = (

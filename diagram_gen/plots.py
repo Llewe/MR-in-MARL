@@ -37,6 +37,7 @@ def write_scalars(
         line_name = e
     else:
         line_name = getattr(e.cfg, "NAME", e.path)
+
     axis.plot(
         df["Steps"],
         df["Rolling_Avg"],
@@ -81,6 +82,8 @@ def get_and_print_scalar_data(
                     if t not in data:
                         data[t] = {}
                     line_name = getattr(e.cfg, "NAME", e.path)
+                    if line_name == "":
+                        line_name = e.path
                     if t not in data:
                         data[t] = {}
                     if line_name not in data[t]:
