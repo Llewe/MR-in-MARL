@@ -16,7 +16,7 @@ class TrainingConfig(ExpConfig):
     EVAL_EPISODES: int = 100
     EVAL_EPOCH_INTERVAL: int = 50
 
-    AGENT_TYPE: AgentType = AgentType.MATE
+    AGENT_TYPE: AgentType = AgentType.MA_SOCIAL_WELLFARE_MATE
     ENV_NAME: EnvType = EnvType.P_COIN_GAME
     ENV_TAG: str = "n-4pl-5000"
 

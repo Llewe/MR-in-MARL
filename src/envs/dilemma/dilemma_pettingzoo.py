@@ -283,6 +283,7 @@ class DilemmaEnv(AECEnv):
 
         winner_p0: float = 0.0
         winner_p1: float = 0.0
+        draws: float = 0.0
 
         for history in self.current_history:
             reward_p0 += history.rewards["player_0"]
@@ -292,6 +293,8 @@ class DilemmaEnv(AECEnv):
                 winner_p0 += 1
             elif history.winner == "player_1":
                 winner_p1 += 1
+            else:
+                draws += 1
 
         if divider != 1.0:
             # scale rewards so they are comparable if the number of epochs changes
@@ -308,10 +311,10 @@ class DilemmaEnv(AECEnv):
         )
 
         # p0 win == 1, p1 win == -1, draw == 0
-        wins_p0_per_step = (winner_p0 - winner_p1) / history_len
-        self.summary_writer.add_scalar(
-            f"{log_name}/wins_p0_per_step", wins_p0_per_step, epoch
-        )
+        wins_p0_per_step = winner_p0 - winner_p1
+        self.summary_writer.add_scalar(f"{log_name}/wins_p0", winner_p0, epoch)
+        self.summary_writer.add_scalar(f"{log_name}/wins_p1", winner_p1, epoch)
+        self.summary_writer.add_scalar(f"{log_name}/draws", draws, epoch)
 
         self.current_history.clear()
 
