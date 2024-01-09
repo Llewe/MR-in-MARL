@@ -222,6 +222,7 @@ class ActorCritic(IController):
             action=last_action,
             value=self.critic_networks[agent_id](obs_curr.detach()),
             action_prob=local_probs,
+            info=info,
         )
 
     def step_finished(
