@@ -87,6 +87,7 @@ class GlobalState:
 
     # Walls = -1, Empty = 0, Agent = 1, Apple = 2
     _obs: dict[AgentID, np.ndarray]
+    _neighbours: dict[AgentID, List[AgentID]]
 
     fixed_spawn: bool
 
@@ -162,6 +163,7 @@ class GlobalState:
     ):
         self.agent_states = {}
         self._obs = {}
+        self._neighbours = {}
         self.map_width = map_width
         self.map_height = map_height
         self.vision_range = vision_range
@@ -169,12 +171,12 @@ class GlobalState:
         self.fixed_spawn = fixed_spawn
 
         outside_vision_range = 2 * self.vision_range + 1
-
         for agent in agents:
             self.agent_states[agent] = AgentState(0, 0, 0)
             self._obs[agent] = np.zeros(
                 (outside_vision_range * outside_vision_range, 1), dtype=np.int64
             )
+            self._neighbours[agent] = []
 
         self.vision_offsets = [
             (index, x, y)
@@ -203,10 +205,13 @@ class GlobalState:
             and abs(obj.y - agent.y) <= self.vision_range
         )
 
+    def get_neighbours(self) -> dict[AgentID, List[AgentID]]:
+        return self._neighbours
+
     def cal_obs(self) -> None:
         curr_map: np.ndarray = self.build_map()
-
         for agent_id, agent in self.agent_states.items():
+            self._neighbours[agent_id].clear()
             for index, x, y in self.vision_offsets:
                 if x == agent.x and y == agent.y:
                     self._obs[agent_id][index] = ObsTiles.SELF.value
@@ -214,6 +219,11 @@ class GlobalState:
                     self._obs[agent_id][index] = ObsTiles.OUTSIDE.value
                 else:
                     self._obs[agent_id][index] = curr_map[x, y]
+
+                    if curr_map[x, y] == ObsTiles.AGENT.value:
+                        for id, a in self.agent_states.items():
+                            if a.x == x and a.y == y:
+                                self._neighbours[agent_id].append(a)
 
     def build_map(self) -> np.ndarray:
         curr_map = np.copy(self.apples)
@@ -529,11 +539,17 @@ class Harvest(ParallelEnv):
         self._cumulative_rewards = {agent: 0 for agent in self.possible_agents}
         self.terminations = {agent: False for agent in self.possible_agents}
         self.truncations = {agent: False for agent in self.possible_agents}
-        self.infos = {agent: {} for agent in self.possible_agents}
 
         self._reset_board()
 
         self.global_state.cal_obs()
+
+        self.infos = {
+            agent: {
+                "neighbours": neighbours,
+            }
+            for agent, neighbours in self.global_state.get_neighbours().items()
+        }
         return self.global_state.get_all_obs().copy(), self.infos
 
     def _check_bounds_x(self, new_x: int) -> int:
@@ -774,9 +790,7 @@ class Harvest(ParallelEnv):
 
         env_truncation = self.global_state.steps_on_board >= self.max_cycles
 
-        self.truncations = {
-            agent: env_truncation >= self.max_cycles for agent in self.possible_agents
-        }
+        self.truncations = {agent: env_truncation for agent in self.possible_agents}
         if env_truncation:
             self.agents = []
 
@@ -787,6 +801,13 @@ class Harvest(ParallelEnv):
 
         for a, r in self.rewards.items():
             self.current_history[-1].rewards[a] = r
+
+        self.infos = {
+            agent: {
+                "neighbours": neighbours,
+            }
+            for agent, neighbours in self.global_state.get_neighbours().items()
+        }
 
         return (
             self.global_state.get_all_obs().copy(),
@@ -968,28 +989,8 @@ if __name__ == "__main__":
     # env = env(render_mode="human")
     # api_test(env, num_cycles=1000, verbose_progress=True)
     #
-    # parallel_api_test(parallel_env(), num_cycles=1000)
+    from pettingzoo.test.parallel_test import parallel_api_test
 
-    parallel_env = parallel_env(
-        render_mode="human",
-        n_players=6,
-        n_apples=10,
-        regrow_chance=0.01,
-        grid_width=18,
-        grid_height=10,
-        max_cycles=1000,
+    parallel_api_test(
+        parallel_env(fixed_spawn=True, grid_width=25, grid_height=9), num_cycles=1000
     )
-    for i in range(100):
-        observations, infos = parallel_env.reset(seed=42)
-        while parallel_env.agents:
-            pygame.event.get()
-            # this is where you would insert your policy
-            actions = {
-                agent: parallel_env.action_space(agent).sample()
-                for agent in parallel_env.agents
-            }
-
-            observations, rewards, terminations, truncations, infos = parallel_env.step(
-                actions
-            )
-    parallel_env.close()

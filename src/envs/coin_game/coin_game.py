@@ -607,9 +607,7 @@ class CoinGame(ParallelEnv):
 
         env_truncation = self.global_state.steps_on_board >= self.max_cycles
 
-        self.truncations = {
-            agent: env_truncation >= self.max_cycles for agent in self.possible_agents
-        }
+        self.truncations = {agent: env_truncation for agent in self.possible_agents}
         if env_truncation:
             self.agents = []
 
@@ -791,13 +789,8 @@ class CoinGame(ParallelEnv):
 
         self.current_history.clear()
 
-    def last(
-        self, observe: bool = True
-    ) -> tuple[ObsType | None, float, bool, bool, dict[str, Any]]:
-        if self._cumulative_rewards[self.agent_selection] != 0:
-            print("WARNING: A")
-        if self.rewards[self.agent_selection] != 0:
-            print(
-                "WARNING: You are accessing rewards before the environment has ended. This is not recommended."
-            )
-        return super().last(observe=observe)
+
+if __name__ == "__main__":
+    from pettingzoo.test.parallel_test import parallel_api_test
+
+    parallel_api_test(parallel_env(), num_cycles=1000)

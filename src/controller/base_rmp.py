@@ -96,6 +96,7 @@ class BaseRMP(Generic[BaseController], GenericHelper[BaseController]):
         last_action: ActionType,
         reward: float,
         done: bool,
+        info: dict,
     ) -> None:
         manipulated_by_agent: dict[AgentID, float] = {}
         for a in self.agents:
@@ -133,6 +134,7 @@ class BaseRMP(Generic[BaseController], GenericHelper[BaseController]):
             last_action=last_action,
             reward=manipulated_reward,
             done=done,
+            info=info,
         )
 
     def epoch_started(self, epoch: int) -> None:

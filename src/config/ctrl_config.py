@@ -88,7 +88,7 @@ class MaConfig(ACConfig):
 
 
 class MaACConfig(ACConfig):
-    MANIPULATION_AMOUNT: float = 1.0
+    MANIPULATION_AMOUNT: float = -3.0
 
 
 class MaMATEConfig(MateConfig):

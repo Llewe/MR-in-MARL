@@ -116,10 +116,7 @@ def _train_parallel_episode(
             episode_reward[agent_id] += reward
 
         controller.step_agent_parallel(
-            observations,
-            actions,
-            rewards,
-            terminations,
+            observations, actions, rewards, terminations, infos
         )
         controller.step_finished(timestep, new_observations)
 

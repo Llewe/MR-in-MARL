@@ -51,9 +51,10 @@ class GenericHelper(Generic[BaseController], IController):
         last_action: ActionType,
         reward: float,
         done: bool,
+        info: dict,
     ) -> None:
         self.base_class.step_agent(
-            agent_id, last_observation, last_action, reward, done
+            agent_id, last_observation, last_action, reward, done, info
         )
 
     def step_finished(

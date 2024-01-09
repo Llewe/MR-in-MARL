@@ -128,6 +128,7 @@ class IController(ABC):
         last_action: ActionType,
         reward: float,
         done: bool,
+        info: dict,
     ) -> None:
         pass
 
@@ -137,7 +138,10 @@ class IController(ABC):
         last_actions: dict[AgentID, ActionType],
         rewards: dict[AgentID, float],
         dones: dict[AgentID, bool],
+        infos: dict[AgentID, dict],
     ) -> None:
+        if not infos:
+            infos = {agent_id: {} for agent_id in last_observations.keys()}
         for agent_id in last_observations.keys():
             self.step_agent(
                 agent_id,
@@ -145,6 +149,7 @@ class IController(ABC):
                 last_actions[agent_id],
                 rewards[agent_id],
                 dones[agent_id],
+                infos[agent_id],
             )
 
     @abstractmethod

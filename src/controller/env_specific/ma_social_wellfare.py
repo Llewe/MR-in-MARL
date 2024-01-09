@@ -1,3 +1,4 @@
+from sys import float_info
 from typing import Optional, Union
 
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
@@ -20,6 +21,7 @@ class MaSocialWellfare(BaseRMP):
     running_social_wellfare: float  # t
     last_rewards: dict[AgentID, float]  # t-1
     current_rewards: dict[AgentID, float]  # t
+    avg_last_reward: float  # t-1
 
     def __init__(
         self,
@@ -47,19 +49,19 @@ class MaSocialWellfare(BaseRMP):
         if self.last_social_wellfare > self.current_social_wellfare:
             # social wellfare decreased -> lets punish someone
 
-            if self.last_rewards[agent_id] > 0:
+            if self.last_rewards[agent_id] > self.avg_last_reward:
                 # He did something bad for the others -> lets punish him
                 return -self.ma_amount
-            elif self.last_rewards[agent_id] < 0:
+            elif self.last_rewards[agent_id] < self.avg_last_reward:
                 # He got punished because of the others -> lets help him
                 return self.ma_amount
-
+            # Else he was not important for the social wellfare -> do nothing
         return 0.0
 
     def episode_started(self, episode: int) -> None:
         super().episode_started(episode)
-        self.last_social_wellfare = 0.0
-        self.current_social_wellfare = 0.0
+        self.last_social_wellfare = float_info.min
+        self.current_social_wellfare = float_info.min
         self.running_social_wellfare = 0.0
 
         for a in self.agents:
@@ -75,3 +77,5 @@ class MaSocialWellfare(BaseRMP):
 
         for a in self.agents:
             self.last_rewards[a] = self.current_rewards[a]
+
+        self.avg_last_reward = self.current_social_wellfare / len(self.agents)

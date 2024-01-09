@@ -9,7 +9,6 @@ from src.interfaces.controller_i import IController
 
 
 class RandomController(IController):
-
     def __init__(self, config: CtrlConfig):
         pass
 
@@ -31,6 +30,7 @@ class RandomController(IController):
     def epoch_finished(self, epoch: int, tag: str):
         # Nothing interesting to do here
         pass
+
     def episode_started(self, episode: int) -> None:
         # Nothing interesting to do here
         pass
@@ -49,6 +49,7 @@ class RandomController(IController):
         last_action: ActionType,
         reward: float,
         done: bool,
+        info: dict,
     ) -> None:
         # Random agents don't learn
         pass

@@ -46,7 +46,9 @@ class Mate(ActorCritic):
         self.nr_agents = len(action_space.keys())
 
         self.agent_id_mapping = {}
-        self.neighborhood = {}
+        self.neighborhood = (
+            {}
+        )  # TODO neighborhood needs to change if i wanna use it in harvest
 
         for i, agent_id in enumerate(action_space.keys()):
             self.agent_id_mapping[agent_id] = i
@@ -91,21 +93,6 @@ class Mate(ActorCritic):
         self.last_rewards_observed = {
             agent_id: [] for agent_id in self.actor_networks.keys()
         }
-
-    def episode_finished(self, episode: int, tag: str) -> None:
-        super(Mate, self).episode_finished(episode, tag)
-
-    def step_agent(
-        self,
-        agent_id: AgentID,
-        last_observation: ObsType,
-        last_action: ActionType,
-        reward: float,
-        done: bool,
-    ) -> None:
-        super(Mate, self).step_agent(
-            agent_id, last_observation, last_action, reward, done
-        )
 
     def step_finished(
         self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None

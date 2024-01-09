@@ -33,7 +33,6 @@ class Gifting(ActorCritic):
     current_budget: dict[AgentID, float]
     gift_init_budget: float
 
-
     steps: int
 
     def __init__(self, config: GiftingConfig):
@@ -108,13 +107,15 @@ class Gifting(ActorCritic):
                 mean(self.stats_gift_received.values()) / self.steps,
                 epoch,
             )
-            if self.gift_mode == GiftingConfig.Mode.FIXED_BUDGET or self.gift_mode == GiftingConfig.Mode.REPLENISHABLE_BUDGET:
+            if (
+                self.gift_mode == GiftingConfig.Mode.FIXED_BUDGET
+                or self.gift_mode == GiftingConfig.Mode.REPLENISHABLE_BUDGET
+            ):
                 self.writer.add_scalar(
                     f"{tag}/gifting/remaining_budget",
                     mean(self.current_budget.values()) / self.steps,
                     epoch,
                 )
-
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         action = super(Gifting, self).act(agent_id, observation, explore)
@@ -151,31 +152,27 @@ class Gifting(ActorCritic):
         last_action: ActionType,
         reward: float,
         done: bool,
+        info: dict,
     ) -> None:
-
-
         # recieve the gift
         if self.gift_mode == GiftingConfig.Mode.ZERO_SUM:
             reward += self.gift_received[agent_id]
         elif self.gift_mode == GiftingConfig.Mode.FIXED_BUDGET:
             # if an agent has no budget left, it can't receive gifts anymore
-            if self.current_budget[agent_id] - self.gift_reward < 0 :
+            if self.current_budget[agent_id] - self.gift_reward < 0:
                 self.gift_received[agent_id] = 0.0
             else:
                 reward += self.gift_received[agent_id]
         elif self.gift_mode == GiftingConfig.Mode.REPLENISHABLE_BUDGET:
-            budget_increase = reward*0.5
+            budget_increase = reward * 0.5
 
             self.current_budget[agent_id] += budget_increase
-            if self.current_budget[agent_id] - self.gift_reward > 0 :
+            if self.current_budget[agent_id] - self.gift_reward > 0:
                 reward += self.gift_received[agent_id]
-
-
-
 
         # handle learning by underlying algorithm
         super(Gifting, self).step_agent(
-            agent_id, last_observation, last_action, reward, done
+            agent_id, last_observation, last_action, reward, done, info
         )
 
     def get_target_agent(self, agent_id: AgentID, action: ActionType) -> AgentID:
@@ -188,17 +185,20 @@ class Gifting(ActorCritic):
 
         self.stats_gift_send[agent_id] += self.gift_reward
 
-    def send_gift_fixed_budget(self, agent_id: AgentID, target_agent_id: AgentID) -> None:
-        if self.current_budget[agent_id]-self.gift_reward >= 0:
+    def send_gift_fixed_budget(
+        self, agent_id: AgentID, target_agent_id: AgentID
+    ) -> None:
+        if self.current_budget[agent_id] - self.gift_reward >= 0:
             self.gifts_in_transit[agent_id] -= self.gift_reward
             self.gifts_in_transit[target_agent_id] += self.gift_reward
 
             self.stats_gift_send[agent_id] += self.gift_reward
             self.current_budget[agent_id] -= self.gift_reward
 
-
-    def send_gift_replenishable_budget(self, agent_id: AgentID, target_agent_id: AgentID) -> None:
-        if self.current_budget[agent_id]-self.gift_reward >= 0:
+    def send_gift_replenishable_budget(
+        self, agent_id: AgentID, target_agent_id: AgentID
+    ) -> None:
+        if self.current_budget[agent_id] - self.gift_reward >= 0:
             self.gifts_in_transit[agent_id] -= self.gift_reward
             self.gifts_in_transit[target_agent_id] += self.gift_reward
 

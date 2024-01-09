@@ -273,11 +273,11 @@ def draw_heatmaps(
 if __name__ == "__main__":
     # Config variables
 
-    # env_name = "../resources/p_coin_game"
-    # experiment_label = "n-4pl-5000"
+    env_name = "../resources/p_coin_game"
+    experiment_label = "n-4pl-5000"
 
-    env_name = "../resources/p_prisoners_dilemma"
-    experiment_label = "default-5000"
+    # env_name = "../resources/p_prisoners_dilemma"
+    # experiment_label = "default-5000"
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -286,6 +286,6 @@ if __name__ == "__main__":
     for exp in experiments:
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
     # draw_heatmaps(experiments, diagram_name)
-    plot_ipd(exp_files=experiments, output_file="ipd")
+    # plot_ipd(exp_files=experiments, output_file="ipd")
 
-    # plots_coin_game(exp_files=experiments, output_file="coin_game")
+    plots_coin_game(exp_files=experiments, output_file="coin_game")

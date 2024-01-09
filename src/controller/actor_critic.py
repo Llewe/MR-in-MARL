@@ -21,7 +21,6 @@ from src.utils.gym_utils import get_space_size
 
 
 class ActorCritic(IController):
-
     @dataclass
     class RolloutBuffer:
         rewards: list[float]
@@ -29,6 +28,7 @@ class ActorCritic(IController):
         values: list[Tensor]
         actions: list[ActionType]
         action_probs: list[np.ndarray]
+        info: list[dict]
 
         def __init__(self):
             self.rewards = []
@@ -36,16 +36,23 @@ class ActorCritic(IController):
             self.values = []
             self.actions = []
             self.action_probs = []
+            self.info = []
 
         def add(
-            self, reward: float, observation: Tensor, action: ActionType, value: Tensor,
-                action_prob: np.ndarray
+            self,
+            reward: float,
+            observation: Tensor,
+            action: ActionType,
+            value: Tensor,
+            action_prob: np.ndarray,
+            info: dict,
         ):
             self.rewards.append(reward)
             self.observations.append(observation)
             self.values.append(value)
             self.actions.append(action)
             self.action_probs.append(action_prob)
+            self.info.append(info)
 
         def clear(self):
             self.rewards.clear()
@@ -53,6 +60,7 @@ class ActorCritic(IController):
             self.values.clear()
             self.actions.clear()
             self.action_probs.clear()
+            self.info.clear()
 
     config: ACConfig
 
@@ -105,7 +113,9 @@ class ActorCritic(IController):
             )
             for agent_id in observation_space
         }
-        self.step_info = {agent_id: ActorCritic.RolloutBuffer() for agent_id in action_space}
+        self.step_info = {
+            agent_id: ActorCritic.RolloutBuffer() for agent_id in action_space
+        }
 
         self.actor_losses = {agent_id: [] for agent_id in self.actor_networks}
         self.critic_losses = {agent_id: [] for agent_id in self.actor_networks}
@@ -196,12 +206,15 @@ class ActorCritic(IController):
         last_action: ActionType,
         reward: float,
         done: bool,
+        info: dict,
     ) -> None:
         if self.config.REWARD_NORMALIZATION:
             scaled_reward: float = self.reward_norm[agent_id].normalize(reward)
         else:
             scaled_reward = reward
-        obs_curr: Tensor = torch.tensor(last_observation, dtype=torch.float32).unsqueeze(0)
+        obs_curr: Tensor = torch.tensor(
+            last_observation, dtype=torch.float32
+        ).unsqueeze(0)
         local_probs = self.local_probs(agent_id, obs_curr)
         self.step_info[agent_id].add(
             reward=scaled_reward,
