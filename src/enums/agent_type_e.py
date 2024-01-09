@@ -11,9 +11,10 @@ class AgentType(str, Enum):
     DEMO_MANIPULATION_AGENT = "demo_manipulation_agent"
 
     MA_IPD_PUNISH_DEFECT = "ma_ipd_punish_defect"
-    MA_IPD_EXPERIMENTS = "ma_ipd_experiments"
 
     MA_COIN_TO_MIDDLE_AC = "ma_coin_to_middle_ac"
     MA_COIN_TO_MIDDLE_MATE = "ma_coin_to_middle_mate"
     MA_SOCIAL_WELLFARE_AC = "ma_social_wellfare_ac"
     MA_SOCIAL_WELLFARE_MATE = "ma_social_wellfare_mate"
+    MA_COIN_DONT_TAKE_OTHERS_AC = "ma_dont_take_others_ac"
+    MA_COIN_DONT_TAKE_OTHERS_MATE = "ma_dont_take_others_mate"

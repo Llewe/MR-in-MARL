@@ -3,31 +3,30 @@ import os
 from os.path import join
 from typing import Tuple, Type
 
-from src.controller.actor_critic import ActorCritic
-from src.controller.env_specific.coin_game.ma_coin_to_middle import MaCoinToMiddle
-from src.controller.env_specific.ma_social_wellfare import MaSocialWellfare
-from src.controller.env_specific.demo_ma import DemoMa
-from src.controller.env_specific.ipd.experiments import MaIpdExperiments
-from src.controller.mate import Mate
-from src.controller.random_agents import RandomController
 from src.cfg_manager import get_cfg
-
-from src.controller.gifting import Gifting
-
-from src.controller.env_specific.ipd.punish_defect import MaIpdPunishDefect
-from src.controller.lola_pg import LolaPG
 from src.config.ctrl_config import (
     ACConfig,
     CtrlConfig,
-    DemoMaCoinConfig,
     DemoMaConfig,
     GiftingConfig,
     LolaPGConfig,
     MaACConfig,
+    MaConfig,
     MaMATEConfig,
     MateConfig,
-    MaConfig,
 )
+from src.controller.actor_critic import ActorCritic
+from src.controller.env_specific.coin_game.ma_coin_dont_take_others_coins import (
+    MaCoinDontTakeOthersCoins,
+)
+from src.controller.env_specific.coin_game.ma_coin_to_middle import MaCoinToMiddle
+from src.controller.env_specific.demo_ma import DemoMa
+from src.controller.env_specific.ipd.punish_defect import MaIpdPunishDefect
+from src.controller.env_specific.ma_social_wellfare import MaSocialWellfare
+from src.controller.gifting import Gifting
+from src.controller.lola_pg import LolaPG
+from src.controller.mate import Mate
+from src.controller.random_agents import RandomController
 from src.enums.agent_type_e import AgentType
 from src.interfaces.controller_i import IController
 from src.utils.data_loader import load_pydantic_object, save_pydantic_object
@@ -75,11 +74,13 @@ def get_agent_class(
         return MaCoinToMiddle, MaMATEConfig
     elif agent_type == AgentType.MA_IPD_PUNISH_DEFECT:
         return MaIpdPunishDefect, MaConfig
-    elif agent_type == AgentType.MA_IPD_EXPERIMENTS:
-        return MaIpdExperiments, MaConfig
     elif agent_type == AgentType.MA_SOCIAL_WELLFARE_AC:
         return MaSocialWellfare, MaACConfig
     elif agent_type == AgentType.MA_SOCIAL_WELLFARE_MATE:
         return MaSocialWellfare, MaMATEConfig
+    elif agent_type == AgentType.MA_COIN_DONT_TAKE_OTHERS_AC:
+        return MaCoinDontTakeOthersCoins, MaACConfig
+    elif agent_type == AgentType.MA_COIN_DONT_TAKE_OTHERS_MATE:
+        return MaCoinDontTakeOthersCoins, MaMATEConfig
 
     raise NotImplementedError

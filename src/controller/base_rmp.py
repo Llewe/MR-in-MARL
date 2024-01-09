@@ -105,8 +105,9 @@ class BaseRMP(Generic[BaseController], GenericHelper[BaseController]):
         # loop throw all callbacks and update the rewards individually
         for a_callback_id in self.callbacks:
             # skip if the agent is "itself"
-            if a_callback_id == agent_id:
-                continue
+            # skip is not necessary in the algorithm
+            # if a_callback_id == agent_id:
+            #     continue
 
             reward_offset = self.callbacks[a_callback_id](
                 agent_id, last_observation, last_action, reward
