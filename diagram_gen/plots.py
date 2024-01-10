@@ -272,6 +272,12 @@ def draw_heatmaps(
 
 if __name__ == "__main__":
     # Config variables
+    remove_experiments: List[str] = [
+        "MATE-Static",
+        "MATE-Value-Decompose",
+        "Gifting-Replenishable-Budget",
+        "Gifting-Fixed-Budget",
+    ]
 
     env_name = "../resources/p_coin_game"
     experiment_label = "n-4pl-5000"
@@ -285,6 +291,12 @@ if __name__ == "__main__":
 
     for exp in experiments:
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
+
+    for i, e in reversed(list(enumerate(experiments))):
+        line_name = getattr(e.cfg, "NAME", e.path)
+        if remove_experiments and line_name in remove_experiments and line_name != "":
+            experiments.remove(e)
+
     # draw_heatmaps(experiments, diagram_name)
     # plot_ipd(exp_files=experiments, output_file="ipd")
 

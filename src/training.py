@@ -10,9 +10,9 @@ from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
 from pettingzoo.utils.env import ActionType, AgentID
 from torch.utils.tensorboard import SummaryWriter
 
-from src.controller.utils.agents_helper import get_agents
 from src.cfg_manager import CfgManager, get_cfg, set_cfg
 from src.config.training_config import TrainingConfig
+from src.controller.utils.agents_helper import get_agents
 from src.envs import build_env
 from src.interfaces.controller_i import IController
 from src.utils.loggers.obs_logger import IObsLogger
@@ -49,9 +49,7 @@ def _train_epoch(
                 controller, env, current_epoch, episode, writer, obs_logger
             )
         else:
-            episode_reward = _train_aec_episode_simple(
-                controller, env, current_epoch, episode, writer, obs_logger
-            )
+            raise NotImplementedError("Only parallel envs are supported")
 
         for agent_id in episode_reward:
             epoch_rewards[agent_id].append(episode_reward[agent_id])
@@ -124,70 +122,6 @@ def _train_parallel_episode(
 
     env.close()
     controller.episode_finished(current_episode, "train")
-    return episode_reward
-
-
-def _train_aec_episode_simple(
-    controller: IController,
-    env: ParallelEnv,
-    current_epoch: int,
-    current_episode: int,
-    writer: SummaryWriter,
-    obs_logger: IObsLogger,
-) -> dict[AgentID, float]:
-    env.reset(
-        options={
-            "write_log": False,
-            "epoch": current_epoch,
-            "tag": "train",
-        }
-    )
-
-    while env.agents:
-        actions = {
-            agent: env.action_space(agent).sample() for agent in env.possible_agents
-        }
-
-        observations, rewards, terminations, truncations, infos = env.step(actions)
-
-    episode_reward: dict[AgentID, float] = defaultdict(lambda: 0)
-    # last_observation = {}
-
-    first_agent: Union[AgentID, None] = None
-    timestep: int = 0
-    for agent_id in env.agent_iter():
-        if get_cfg().get_render_mode() != "":
-            pygame.event.get()  # so that the window doesn't freeze
-
-        observation, reward, termination, truncation, info = env.last()
-
-        obs_logger.add_observation(agent_id, observation)
-
-        action = controller.act(agent_id=agent_id, observation=observation)
-        controller.step_agent(
-            agent_id,
-            observation,
-            action,
-            reward,
-            termination or truncation,
-        )
-
-        if termination or truncation:
-            env.step(None)
-            continue
-
-        env.step(action)
-
-        # new timestep detection
-        if first_agent is None:
-            first_agent = agent_id
-        if first_agent == env.agent_selection:
-            timestep += 1
-            controller.step_finished(timestep)
-
-        # logging
-        episode_reward[agent_id] += reward
-
     return episode_reward
 
 
@@ -281,89 +215,6 @@ def _eval_parallel_agents(
     )
 
 
-def _eval_aec_agents(
-    controller: IController,
-    env: AECEnv,
-    writer: SummaryWriter,
-    current_epoch: int,
-    obs_logger: IObsLogger,
-    num_eval_episodes: int,
-) -> None:
-    rewards: dict[AgentID, list[float]] = {}
-
-    actions = defaultdict(list)
-
-    for agent_name in env.possible_agents:
-        rewards[agent_name] = []
-    obs_logger.clear_buffer()
-
-    # For coin game this resets the history.Important in case e.g. eval is done in between
-    env.reset(options={"history_reset": True})
-
-    for steps in range(num_eval_episodes):
-        env.reset(
-            options={
-                "write_log": False,
-                "epoch": current_epoch,
-                "tag": "eval",
-            }
-        )
-
-        episode_reward = {}
-        for agent_name in env.possible_agents:
-            episode_reward[agent_name] = 0
-
-        for agent_name in env.agent_iter():
-            if get_cfg().get_render_mode() != "":
-                pygame.event.get()  # so that the window doesn't freeze
-            observation, reward, termination, truncation, info = env.last()
-
-            obs_logger.add_observation(agent_name, observation)
-
-            episode_reward[agent_name] += reward
-
-            if termination or truncation:
-                action = None
-            else:
-                action = controller.act(
-                    agent_id=agent_name, observation=observation, explore=False
-                )
-                actions[agent_name].append(action)
-
-            env.step(action)
-
-        for agent_id in env.possible_agents:
-            writer.add_scalar(
-                f"eval/rewards/epoch-{current_epoch}/{agent_id}",
-                episode_reward[agent_id],
-                steps,
-            )
-            rewards[agent_id].append(episode_reward[agent_id])
-
-    obs_logger.log_epoch(current_epoch, "eval")
-
-    for agent_id in env.possible_agents:
-        writer.add_scalar(
-            f"eval/rewards/mean/{agent_id}",
-            numpy.mean(rewards[agent_id]),
-            current_epoch,
-        )
-        action = numpy.array(actions[agent_id])
-
-        writer.add_histogram(
-            f"eval-actions/{agent_id}", action, global_step=current_epoch
-        )
-
-    # by resetting some envs (e.g. coin game) will log some env specific data
-    env.reset(
-        options={
-            "write_log": True,
-            "epoch": current_epoch,
-            "tag": "eval",
-        }
-    )
-
-
 def log_configs(writer: SummaryWriter) -> None:
     for key, value in _training_config.__dict__.items():
         writer.add_text(key, str(value))
@@ -381,6 +232,9 @@ def start_training() -> None:
         env: ParallelEnv | AECEnv = build_env(get_cfg().exp_config.ENV_NAME, writer)
 
         parallel: bool = isinstance(env, ParallelEnv)
+        if not parallel:
+            raise NotImplementedError("Only parallel envs are supported")
+
         obs_logger: IObsLogger
 
         if isinstance(env.unwrapped, SimpleEnv):
@@ -424,14 +278,7 @@ def start_training() -> None:
                         num_eval_episodes=_training_config.EVAL_EPISODES,
                     )
                 else:
-                    _eval_aec_agents(
-                        agents,
-                        env,
-                        writer,
-                        epoch,
-                        obs_logger,
-                        num_eval_episodes=_training_config.EVAL_EPISODES,
-                    )
+                    raise NotImplementedError("Only parallel envs are supported")
 
                 # save model
                 logging.info("Saving model")
