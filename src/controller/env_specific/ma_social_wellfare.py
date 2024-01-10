@@ -1,3 +1,4 @@
+import random
 from sys import float_info
 from typing import Optional, Union
 
@@ -16,12 +17,17 @@ class MaSocialWellfare(BaseRMP):
     This agent is used to manipulate all other agents to go to the middle of the map if its not there own coin.
     """
 
+    best_sw: float
+
     last_social_wellfare: float  # t-2
     current_social_wellfare: float  # t-1
     running_social_wellfare: float  # t
     last_rewards: dict[AgentID, float]  # t-1
     current_rewards: dict[AgentID, float]  # t
     avg_last_reward: float  # t-1
+
+    enable_best_sw: bool
+    enable_random: bool
 
     def __init__(
         self,
@@ -40,6 +46,9 @@ class MaSocialWellfare(BaseRMP):
 
         self.set_callback(agent_id="player_0", callback=self._man_agent_0)
 
+        self.enable_best_sw = False
+        self.enable_random = False
+
     def _man_agent_0(
         self, agent_id: AgentID, last_obs: ObsType, last_act: ActionType, reward: float
     ) -> float:
@@ -56,12 +65,22 @@ class MaSocialWellfare(BaseRMP):
                 # He got punished because of the others -> lets help him
                 return self.ma_amount
             # Else he was not important for the social wellfare -> do nothing
+            elif self.enable_random:
+                return self.ma_amount * random.uniform(-1, 1)
+
+        if self.enable_best_sw and self.last_social_wellfare < self.best_sw:
+            # Maybe this helps the other agent to change his mind
+            if self.enable_random:
+                return self.ma_amount * random.uniform(-1, 1)
+            else:
+                return self.ma_amount
         return 0.0
 
     def episode_started(self, episode: int) -> None:
         super().episode_started(episode)
         self.last_social_wellfare = float_info.min
         self.current_social_wellfare = float_info.min
+        self.best_sw = float_info.min
         self.running_social_wellfare = 0.0
 
         for a in self.agents:
@@ -79,3 +98,5 @@ class MaSocialWellfare(BaseRMP):
             self.last_rewards[a] = self.current_rewards[a]
 
         self.avg_last_reward = self.current_social_wellfare / len(self.agents)
+        if self.current_social_wellfare > self.best_sw:
+            self.best_sw = self.current_social_wellfare
