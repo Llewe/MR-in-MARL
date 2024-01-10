@@ -84,11 +84,11 @@ class GiftingConfig(ACConfig):
 
 
 class MaConfig(ACConfig):
-    MANIPULATION_AMOUNT: float = -2.0
+    MANIPULATION_AMOUNT: float = 2.0
 
 
 class MaACConfig(ACConfig):
-    MANIPULATION_AMOUNT: float = -3.0
+    MANIPULATION_AMOUNT: float = 3.0
 
 
 class MaMATEConfig(MateConfig):

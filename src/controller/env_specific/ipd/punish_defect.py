@@ -27,6 +27,6 @@ class MaIpdPunishDefect(BaseRMP):
         # check if we want to manipulate this agent
         if last_act == self.DEFECT:
             # manipulate the reward
-            return self.ma_amount
+            return -self.ma_amount
         else:
             return 0.0
