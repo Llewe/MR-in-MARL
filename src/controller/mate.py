@@ -167,6 +167,15 @@ class Mate(ActorCritic):
         if self.mate_mode == MateConfig.Mode.VALUE_DECOMPOSE_MODE:
             return False
 
+    def get_neighborhood(self, agent_id: AgentID) -> list[AgentID]:
+        if (
+            self.step_info[agent_id].info[-1]
+            and "neighbours" in self.step_info[agent_id].info[-1]
+        ):
+            return self.step_info[agent_id].info[-1]["neighbours"]
+        else:
+            return self.neighborhood[agent_id]
+
     def mate(self, next_observations: Optional[dict[AgentID, ObsType]] = None):
         """
         V = approximated value function
@@ -235,14 +244,7 @@ class Mate(ActorCritic):
 
         for agent_id, i in self.agent_id_mapping.items():
             reward = original_rewards[agent_id]
-            neighborhood = self.neighborhood[agent_id]
-
-            # for i, reward, history, next_history in zip(
-            #     range(self.nr_agents),
-            #     original_rewards,
-            #     joint_histories,
-            #     next_joint_histories,
-            # ):
+            neighborhood = self.get_neighborhood(agent_id)
 
             if self.can_rely_on(
                 agent_id, reward, state_values[agent_id][0], state_values[agent_id][1]
@@ -254,11 +256,7 @@ class Mate(ActorCritic):
 
         # 2. Send trust responses
         for agent_id, i in self.agent_id_mapping.items():
-            neighborhood = self.neighborhood[agent_id]
-
-            # for i, history, next_history in zip(
-            #     range(self.nr_agents), joint_histories, next_joint_histories
-            # ):
+            neighborhood = self.get_neighborhood(agent_id)
 
             trust_requests = [
                 self.trust_request_matrix[i][self.agent_id_mapping[j]]
@@ -285,7 +283,7 @@ class Mate(ActorCritic):
                             self.response_messages_sent += 1  # logging
         # 3. Receive trust responses
         for agent_id, i in self.agent_id_mapping.items():
-            neighborhood = self.neighborhood[agent_id]
+            neighborhood = self.get_neighborhood(agent_id)
             trust_responses = self.trust_response_matrix[i]
 
             if len(neighborhood) > 0 and trust_responses.any():

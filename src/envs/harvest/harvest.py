@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pygame
+import torch
 from gymnasium.spaces import Box, Discrete, Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType, ParallelEnv
 from torch.utils.tensorboard import SummaryWriter
@@ -47,6 +48,7 @@ class HistoryState:
     tagged_agents: dict[AgentID, int]
     apples_on_board: int
     actions: dict[AgentID, Action]
+    agents_pos: dict[AgentID, tuple[int, int]]
 
 
 @dataclass(slots=True)
@@ -213,17 +215,18 @@ class GlobalState:
         for agent_id, agent in self.agent_states.items():
             self._neighbours[agent_id].clear()
             for index, x, y in self.vision_offsets:
-                if x == agent.x and y == agent.y:
-                    self._obs[agent_id][index] = ObsTiles.SELF.value
-                elif not self.in_map(x, y):
+                if not self.in_map(x, y):
                     self._obs[agent_id][index] = ObsTiles.OUTSIDE.value
                 else:
-                    self._obs[agent_id][index] = curr_map[x, y]
+                    if x == agent.x and y == agent.y:
+                        self._obs[agent_id][index] = ObsTiles.SELF.value
+                    else:
+                        self._obs[agent_id][index] = curr_map[x, y]
 
                     if curr_map[x, y] == ObsTiles.AGENT.value:
                         for id, a in self.agent_states.items():
-                            if a.x == x and a.y == y:
-                                self._neighbours[agent_id].append(a)
+                            if a.x == x and a.y == y and id != agent_id:
+                                self._neighbours[agent_id].append(id)
 
     def build_map(self) -> np.ndarray:
         curr_map = np.copy(self.apples)
@@ -764,6 +767,9 @@ class Harvest(ParallelEnv):
                 tagged_agents={agent: 0 for agent in self.possible_agents},
                 apples_on_board=self.global_state.apples_on_board(),
                 actions={},
+                agents_pos={
+                    a: (s.x, s.y) for a, s in self.global_state.agent_states.items()
+                },
             )
         )
 
@@ -844,12 +850,16 @@ class Harvest(ParallelEnv):
 
         epoch: int = 0
         tag: str = ""
+        heatmap: bool = False
 
         if "epoch" in options:
             epoch = options["epoch"]
 
         if "tag" in options:
             tag = options["tag"]
+
+        if "heatmap" in options:
+            heatmap = options["heatmap"]
 
         log_name = f"harvest-{tag}"
 
@@ -981,6 +991,50 @@ class Harvest(ParallelEnv):
             peace,
             epoch,
         )
+
+        if heatmap:
+            # here x and y are switched so the pictures are horizontal
+            all_agents_pos = np.zeros(
+                shape=(self.global_state.map_height, self.global_state.map_width)
+            )
+
+            agent_pos = {
+                agent: np.zeros(
+                    shape=(self.global_state.map_height, self.global_state.map_width)
+                )
+                for agent in self.possible_agents
+            }
+            agent_divider: float = 1.0 / len(self.possible_agents)
+
+            for history in self.current_history:
+                for agent_id, pos in history.agents_pos.items():
+                    agent_pos[agent_id][pos[1], pos[0]] += 1
+                    all_agents_pos[pos[1], pos[0]] += agent_divider
+
+            all_agents_pos /= len(self.current_history)
+            image_data = torch.from_numpy(all_agents_pos).unsqueeze(0).unsqueeze(0)
+
+            # Log the 2D position as an image
+            self.summary_writer.add_image(
+                f"{log_name}/heatmap/all_agents",
+                image_data,
+                global_step=epoch,
+                dataformats="NCHW",
+            )
+
+            for agent_id in self.possible_agents:
+                agent_pos[agent_id] /= len(self.current_history)
+                # Convert the NumPy array to a torch.Tensor and add batch and channel dimensions
+                agent_image_data = (
+                    torch.from_numpy(agent_pos[agent_id]).unsqueeze(0).unsqueeze(0)
+                )
+                # Log the 2D position as an image
+                self.summary_writer.add_image(
+                    f"{log_name}/heatmap/{agent_id}",
+                    agent_image_data,
+                    global_step=epoch,
+                    dataformats="NCHW",
+                )
 
         self.current_history.clear()
 

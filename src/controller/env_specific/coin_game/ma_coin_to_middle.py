@@ -78,21 +78,21 @@ class MaCoinToMiddle(BaseRMP):
 
         next_pos: tuple[int, int]
 
-        if action == Action.LEFT:
-            next_pos = (target_pos[0] - 1, target_pos[1])
-        elif action == Action.RIGHT:
-            next_pos = (target_pos[0] + 1, target_pos[1])
-        elif action == Action.UP:
-            next_pos = (target_pos[0], target_pos[1] + 1)
-        elif action == Action.DOWN:
-            next_pos = (target_pos[0], target_pos[1] - 1)
-        elif action == Action.NONE:
-            next_pos = target_pos
-        else:
-            # unknown action -> no manipulation
-            return 0.0
+        # if action == Action.LEFT:
+        #     next_pos = (target_pos[0] - 1, target_pos[1])
+        # elif action == Action.RIGHT:
+        #     next_pos = (target_pos[0] + 1, target_pos[1])
+        # elif action == Action.UP:
+        #     next_pos = (target_pos[0], target_pos[1] + 1)
+        # elif action == Action.DOWN:
+        #     next_pos = (target_pos[0], target_pos[1] - 1)
+        # elif action == Action.NONE:
+        #     next_pos = target_pos
+        # else:
+        #     # unknown action -> no manipulation
+        #     return 0.0
 
-        if next_pos in self.middle:
+        if target_pos in self.middle:
             # target agent is already in the middle -> no manipulation
             return 0.0
 
