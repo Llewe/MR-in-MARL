@@ -273,17 +273,17 @@ def draw_heatmaps(
 if __name__ == "__main__":
     # Config variables
     remove_experiments: List[str] = [
-        "MATE-Static",
-        "MATE-Value-Decompose",
-        "Gifting-Replenishable-Budget",
-        "Gifting-Fixed-Budget",
+        #   "MATE-Static",
+        #   "MATE-Value-Decompose",
+        #   "Gifting-Replenishable-Budget",
+        #   "Gifting-Fixed-Budget",
     ]
 
-    env_name = "../resources/p_coin_game"
-    experiment_label = "n-4pl-5000"
+    # env_name = "../resources/p_coin_game"
+    # experiment_label = "n-4pl-5000"
 
-    # env_name = "../resources/p_prisoners_dilemma"
-    # experiment_label = "default-5000"
+    env_name = "../resources/p_prisoners_dilemma"
+    experiment_label = "default-5000"
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -298,6 +298,6 @@ if __name__ == "__main__":
             experiments.remove(e)
 
     # draw_heatmaps(experiments, diagram_name)
-    # plot_ipd(exp_files=experiments, output_file="ipd")
+    plot_ipd(exp_files=experiments, output_file="ipd")
 
-    plots_coin_game(exp_files=experiments, output_file="coin_game")
+    # plots_coin_game(exp_files=experiments, output_file="coin_game")
