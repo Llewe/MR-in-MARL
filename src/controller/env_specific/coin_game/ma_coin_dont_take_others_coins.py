@@ -39,20 +39,24 @@ class MaCoinDontTakeOthersCoins(BaseRMP):
     ) -> None:
         super().init_agents(action_space, observation_space)
 
+        self.last_rewards = {agent_id: 0.0 for agent_id in self.agents}
+
     def _man_agent_0(
         self, agent_id: AgentID, last_obs: ObsType, last_act: ActionType, reward: float
     ) -> float:
-        last_reward = self.last_rewards[agent_id]
+        last_r: float = self.last_rewards[agent_id]
         self.last_rewards[agent_id] = reward
         # check if we want to manipulate this agent
         if self.someone_missing_a_coin:
-            if last_reward > 0:
+            if last_r > 0:
                 # He did something bad for the others -> lets punish him
                 return -self.ma_amount
-            elif last_reward < 0:
+            elif last_r < 0:
                 #### THIS SHIFTES some of the punishment to the other agents
                 # He got punished because of the others -> lets help him
                 return self.ma_amount
+            else:
+                return 0.0
 
         else:
             return 0.0
@@ -65,7 +69,7 @@ class MaCoinDontTakeOthersCoins(BaseRMP):
         self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
     ) -> None:
         self.someone_missing_a_coin = False
-        for r in self.last_rewards:
+        for a, r in self.last_rewards.items():
             if r < 0:
                 self.someone_missing_a_coin = True
                 break
