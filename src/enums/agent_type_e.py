@@ -18,3 +18,6 @@ class AgentType(str, Enum):
     MA_SOCIAL_WELLFARE_MATE = "ma_social_wellfare_mate"
     MA_COIN_DONT_TAKE_OTHERS_AC = "ma_dont_take_others_ac"
     MA_COIN_DONT_TAKE_OTHERS_MATE = "ma_dont_take_others_mate"
+
+    MA_HARVEST_OPTIMAL_PATH_AC = "ma_harvest_optimal_path_ac"
+    MA_HARVEST_OPTIMAL_PATH_MATE = "ma_harvest_optimal_path_mate"

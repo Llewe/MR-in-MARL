@@ -189,7 +189,6 @@ class GlobalState:
                         range(-self.vision_range, self.vision_range + 1),
                         range(-self.vision_range, self.vision_range + 1),
                     )
-                    if not (x == 0 and y == 0)
                 ),
             )
         ]

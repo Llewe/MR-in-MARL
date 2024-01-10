@@ -7,7 +7,7 @@ from pydantic import Extra
 
 
 class CtrlConfig(BaseSettings):
-    NAME: str = "IPD-generic-test"
+    NAME: str = "Harvest Split Map"
 
     class Config:
         extra = Extra.allow

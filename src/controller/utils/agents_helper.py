@@ -21,6 +21,9 @@ from src.controller.env_specific.coin_game.ma_coin_dont_take_others_coins import
 )
 from src.controller.env_specific.coin_game.ma_coin_to_middle import MaCoinToMiddle
 from src.controller.env_specific.demo_ma import DemoMa
+from src.controller.env_specific.harvest.ma_harvest_optimal_path import (
+    MaHarvestOptimalPath,
+)
 from src.controller.env_specific.ipd.punish_defect import MaIpdPunishDefect
 from src.controller.env_specific.ma_social_wellfare import MaSocialWellfare
 from src.controller.gifting import Gifting
@@ -82,5 +85,9 @@ def get_agent_class(
         return MaCoinDontTakeOthersCoins, MaACConfig
     elif agent_type == AgentType.MA_COIN_DONT_TAKE_OTHERS_MATE:
         return MaCoinDontTakeOthersCoins, MaMATEConfig
+    elif agent_type == AgentType.MA_HARVEST_OPTIMAL_PATH_AC:
+        return MaHarvestOptimalPath, MaACConfig
+    elif agent_type == AgentType.MA_HARVEST_OPTIMAL_PATH_MATE:
+        return MaHarvestOptimalPath, MaMATEConfig
 
     raise NotImplementedError
