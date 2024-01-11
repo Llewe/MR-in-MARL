@@ -25,8 +25,8 @@ class SimpleAdversaryConfig(EnvConfig):
 
 
 class CoinGameConfig(EnvConfig):
-    PLAYERS: int = 4
-    GRID_SIZE: int = 5
+    PLAYERS: int = 2
+    GRID_SIZE: int = 3
     ALLOW_OVERLAP_PLAYERS: bool = True
     WALLS: bool = True
     WITH_NONE_ACTION: bool = False

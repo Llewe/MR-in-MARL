@@ -54,6 +54,7 @@ class CoinState:
 @dataclass(slots=True)
 class GlobalState:
     agent_states: dict[AgentID, AgentState]
+    agent_to_id: dict[AgentID, int]
     coin_state: CoinState
 
     coin_is_collected: bool
@@ -61,11 +62,14 @@ class GlobalState:
 
     _obs: dict[AgentID, np.ndarray]
 
+    _global_obs: np.ndarray | None
+
     def cal_obs(self) -> None:
         for agent_id in self.agent_states:
             self._obs[agent_id] = self.to_obs_list(agent_id)
+        self._global_obs = self.to_obs_list(None)
 
-    def to_obs_list(self, agent_id: AgentID) -> np.ndarray:
+    def to_obs_list(self, agent_id: AgentID | None) -> np.ndarray:
         """
 
         Parameters
@@ -93,12 +97,23 @@ class GlobalState:
             + [
                 np.array([self.coin_state.x]),
                 np.array([self.coin_state.y]),
-                np.array([int(self.coin_state.owner == agent_id)]),
+                np.array(
+                    [
+                        int(
+                            self.coin_state.owner == agent_id
+                            if agent_id is not None
+                            else self.agent_to_id[self.coin_state.owner]
+                        )
+                    ]
+                ),
             ]
         )
 
     def get_obs(self, agent_id: AgentID) -> np.ndarray:
         return self._obs[agent_id]
+
+    def get_global_obs(self) -> np.ndarray:
+        return self._global_obs.copy()
 
     def get_all_obs(self) -> dict[AgentID, np.ndarray]:
         return self._obs
@@ -330,9 +345,11 @@ class CoinGame(ParallelEnv):
             agent_states={
                 agent: AgentState(x=1, y=2) for agent in self.possible_agents
             },
+            agent_to_id={agent: i for i, agent in enumerate(self.possible_agents)},
             coin_state=CoinState(x=3, y=4, owner=self.possible_agents[0]),
             coin_is_collected=False,
             steps_on_board=0,
+            _global_obs=None,
             _obs={},
         )
 
@@ -354,6 +371,9 @@ class CoinGame(ParallelEnv):
         self.rewards: dict[AgentID, float] = {
             agent: 0 for agent in self.possible_agents
         }
+
+    def get_global_obs(self) -> np.ndarray:
+        return self.global_state.get_global_obs()
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent: AgentID) -> Space:

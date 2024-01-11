@@ -15,6 +15,10 @@ from diagram_gen.schemas.exp_file import ExpFile
 from diagram_gen.utils.diagram_loader import load_diagram_data
 from diagram_gen.utils.file_loader import find_matching_files
 
+NUM_COLORS = 20
+cm = plt.get_cmap("gist_rainbow")
+colors = [cm(1.0 * i / NUM_COLORS) for i in range(NUM_COLORS)]
+
 
 def write_scalars(
     axis: Axes,
@@ -30,14 +34,13 @@ def write_scalars(
         steps, values = zip(*values)
         df = DataFrame({"Steps": steps, "Values": values})
 
-    df["Rolling_Avg"] = df["Values"].rolling(window=3, min_periods=1).mean()
+    df["Rolling_Avg"] = df["Values"].rolling(window=10, min_periods=1).mean()
 
     line_name: str
     if isinstance(e, str):
         line_name = e
     else:
         line_name = getattr(e.cfg, "NAME", e.path)
-
     axis.plot(
         df["Steps"],
         df["Rolling_Avg"],
@@ -212,6 +215,8 @@ def plots_coin_game(
     fig_own_coin, ax_own_coin = plt.subplots()
     fig_coins_total, ax_coins_total = plt.subplots()
 
+    # ax_eff.set_prop_cycle(color=[cm(1.0 * i / NUM_COLORS) for i in range(NUM_COLORS)])
+
     wanted_data: Dict[str, Tuple[Axes, str, str]] = {
         "coin_game-eval/coins/own_coin/": (ax_own_coin, "Epoch", "Own Coin"),
         "eval/efficiency": (ax_eff, "Epoch", "Efficiency"),
@@ -277,13 +282,17 @@ if __name__ == "__main__":
         #   "MATE-Value-Decompose",
         #   "Gifting-Replenishable-Budget",
         #   "Gifting-Fixed-Budget",
+        # "RMP-MID (AC, x=0.5)",
+        # "RMP-MID (AC, x=1)",
+        # "RMP-MID (AC, x=2)",
     ]
 
-    # env_name = "../resources/p_coin_game"
-    # experiment_label = "n-4pl-5000"
+    env_name = "../resources/p_coin_game"
 
-    env_name = "../resources/p_prisoners_dilemma"
-    experiment_label = "sw-pd-5000"
+    experiment_label = "4pl-5000"
+
+    # env_name = "../resources/p_prisoners_dilemma"
+    # experiment_label = "sw-pd-5000"
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -298,6 +307,6 @@ if __name__ == "__main__":
             experiments.remove(e)
 
     # draw_heatmaps(experiments, diagram_name)
-    plot_ipd(exp_files=experiments, output_file="ipd-sw")
+    # plot_ipd(exp_files=experiments, output_file="ipd-sw")
 
-    # plots_coin_game(exp_files=experiments, output_file="coin_game")
+    plots_coin_game(exp_files=experiments, output_file="coin_game")

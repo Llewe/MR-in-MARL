@@ -61,6 +61,8 @@ class MaCoinToMiddle(BaseRMP):
     def _man_agent_0(
         self, agent_id: AgentID, last_obs: ObsType, last_act: ActionType, reward: float
     ) -> float:
+        # TODO replace l;ast_obs with internal BMA observation
+
         # check if we want to manipulate this agent
 
         if last_obs[-1] == 1:
