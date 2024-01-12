@@ -5,6 +5,8 @@ from pydantic_settings import BaseSettings
 from src.enums import EnvType
 from pydantic import Extra
 
+from src.enums.manipulation_modes_e import ManipulationMode
+
 
 class CtrlConfig(BaseSettings):
     NAME: str = "Harvest Split Map"
@@ -18,7 +20,7 @@ class ACConfig(CtrlConfig):
     CRITIC_LR: float = 0.001
     ACTOR_HIDDEN_UNITS: int = 64
     CRITIC_HIDDEN_UNITS: int = 64
-    DISCOUNT_FACTOR: float = 0.99
+    DISCOUNT_FACTOR: float = 0.95
 
     CLIP_NORM: float = 1.0
 

@@ -114,7 +114,7 @@ def _train_parallel_episode(
     ma_controller.episode_started(current_episode)
 
     obs_callback: Callable[[], ObsType] | None = get_global_obs(
-        _training_config.MANIPULATION_MODE, env
+        _training_config.MA_MODE, env
     )
 
     controller.episode_started(current_episode)
@@ -287,11 +287,11 @@ def start_training() -> None:
         )
 
         ma_controller: IMaController = get_ma_controller(
-            _training_config.MANIPULATION_MODE, get_cfg().exp_config.ENV_NAME
+            _training_config.MA_MODE, get_cfg().exp_config.ENV_NAME
         )
         ma_controller.set_logger(writer)
         ma_controller.set_agents(
-            env.possible_agents, get_obs_space(_training_config.MANIPULATION_MODE, env)
+            env.possible_agents, get_obs_space(_training_config.MA_MODE, env)
         )
 
         agents.set_logger(writer)

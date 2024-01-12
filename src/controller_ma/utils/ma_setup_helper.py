@@ -35,7 +35,7 @@ def get_ma_controller(
         from src.controller_ma.central_ma_heuristic_ipd import CentralMaHeuristicIPD
 
         return CentralMaHeuristicIPD()
-    if manipulation_mode == ManipulationMode.INDIVIDUAL_ACTOR_CRITIC:
+    if manipulation_mode == ManipulationMode.INDIVIDUAL_AC_PERCENTAGE:
         from src.controller_ma.individual_ma_ac_percentage import (
             IndividualMaAcPercentage,
         )
@@ -71,7 +71,7 @@ def get_global_obs(
 def get_obs_space(
     manipulation_mode: ManipulationMode, env: ParallelEnv
 ) -> Space | dict[AgentID, Space]:
-    if manipulation_mode == ManipulationMode.INDIVIDUAL_ACTOR_CRITIC:
+    if manipulation_mode == ManipulationMode.INDIVIDUAL_AC_PERCENTAGE:
         return {a: env.observation_space(a) for a in env.possible_agents}
     if (
         manipulation_mode == ManipulationMode.CENTRAL_AC_PERCENTAGE

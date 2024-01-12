@@ -22,7 +22,7 @@ class TrainingConfig(ExpConfig):
     ENV_NAME: EnvType = EnvType.P_HARVEST
     ENV_TAG: str = "test"
 
-    MANIPULATION_MODE: ManipulationMode = ManipulationMode.CENTRAL_FIXED_PERCENTAGE
+    MA_MODE: ManipulationMode = ManipulationMode.CENTRAL_FIXED_PERCENTAGE
 
     EXP_UNIQUE_NAME: str = (
         f"{datetime.fromtimestamp(time()).isoformat(timespec='seconds')} - {EXP_TAG}"

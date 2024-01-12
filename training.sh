@@ -70,24 +70,44 @@ poetry install --sync --all-extras
 #train AGENT_TYPE=ma_dont_take_others_mate NAME="RMP-DTOC (MATE-TD, x=0.5)"  EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=0.5
 #train AGENT_TYPE=ma_dont_take_others_mate NAME="RMP-DTOC (MATE-TD, x=1)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=1.0
 #train AGENT_TYPE=ma_dont_take_others_mate NAME="RMP-DTOC (MATE-TD, x=2)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=2.0
-train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=0.5)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=0.5
-train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=1)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=1.0
-train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=1.5)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=1.5
-train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=2)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=2.0
+#train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=0.5)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=0.5
+#train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=1)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=1.0
+#train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=1.5)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=1.5
+#train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=2)" EPOCHS=5000 ENV_NAME=p_coin_game ENV_TAG="4pl-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=2.0
 
 
 #################################
 # IPD
 #################################
 #
-#train AGENT_TYPE=random NAME="Zufall" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95
-#train AGENT_TYPE=actor_critic NAME="Actor-Critic" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95
-#train AGENT_TYPE=mate NAME="MATE-TD" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 MANIPULATION_AMOUNT=1.0
-#train AGENT_TYPE=mate NAME="MATE-Static" MODE="static" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 MANIPULATION_AMOUNT=1.0
-#train AGENT_TYPE=mate NAME="MATE-Value-Decompose" MODE="value_decompose" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 MANIPULATION_AMOUNT=1.0
-#train AGENT_TYPE=gifting NAME="Gifting-ZS" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 GIFT_REWARD=1.0 GIFT_MODE="zero_sum" ACTION_MODE="random"
-#train AGENT_TYPE=gifting NAME="Gifting-FB (10)" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 GIFT_REWARD=1.0 GIFT_MODE="fixed_budget" ACTION_MODE="random"
-#train AGENT_TYPE=gifting NAME="Gifting-RB" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 GIFT_REWARD=1.0 GIFT_MODE="replenishable_budget" ACTION_MODE="random"
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=none AGENT_TYPE=random NAME="Zufall" EXP_TAG="Zufall"
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=none AGENT_TYPE=actor_critic NAME="Actor-Critic" EXP_TAG="Actor-Critic 1"
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=none AGENT_TYPE=actor_critic NAME="Actor-Critic" EXP_TAG="Actor-Critic 2"
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=none AGENT_TYPE=mate NAME="MATE-TD" EXP_TAG="MATE-TD 1" TOKEN_VALUE=1.0
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=none AGENT_TYPE=mate NAME="MATE-TD" EXP_TAG="MATE-TD 2" TOKEN_VALUE=1.0
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=none AGENT_TYPE=mate NAME="MATE-TD" EXP_TAG="MATE-TD 3" TOKEN_VALUE=1.0
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=none AGENT_TYPE=gifting NAME="Gifting-ZS" EXP_TAG="Gifting-ZS 1"  GIFT_REWARD=1.0 GIFT_MODE="zero_sum" ACTION_MODE="random"
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=none AGENT_TYPE=gifting NAME="Gifting-ZS" EXP_TAG="Gifting-ZS 2"  GIFT_REWARD=1.0 GIFT_MODE="zero_sum" ACTION_MODE="random"
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_heuristic AGENT_TYPE=actor_critic NAME="Heuristik" EXP_TAG="Heuristik 1"
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_heuristic AGENT_TYPE=actor_critic NAME="Heuristik" EXP_TAG="Heuristik 2"
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_fixed_percentage AGENT_TYPE=actor_critic NAME="Zentraler Prozentsatz" EXP_TAG="Zentraler Prozentsatz 1 - 0.8" PERCENTAGE=0.8
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_fixed_percentage AGENT_TYPE=actor_critic NAME="Zentraler Prozentsatz" EXP_TAG="Zentraler Prozentsatz 2 - 0.8" PERCENTAGE=0.8
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_fixed_percentage AGENT_TYPE=actor_critic NAME="Zentraler Prozentsatz" EXP_TAG="Zentraler Prozentsatz 1 - 1.0" PERCENTAGE=1.0
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_fixed_percentage AGENT_TYPE=actor_critic NAME="Zentraler Prozentsatz" EXP_TAG="Zentraler Prozentsatz 2 - 1.0" PERCENTAGE=1.0
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_ac_percentage AGENT_TYPE=actor_critic NAME="Zentrale AC-Strafe" EXP_TAG="Zentrale AC-Strafe 1 - -0.5-0.5" LOWER_BOUND=-0.5 UPPER_BOUND=0.5
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_ac_percentage AGENT_TYPE=actor_critic NAME="Zentrale AC-Strafe" EXP_TAG="Zentrale AC-Strafe 2 - -0.5-0.5" LOWER_BOUND=-0.5 UPPER_BOUND=0.5
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_ac_percentage AGENT_TYPE=actor_critic NAME="Zentrale AC-Strafe" EXP_TAG="Zentrale AC-Strafe 1 - 0-0.5" LOWER_BOUND=0 UPPER_BOUND=0.5
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_ac_percentage AGENT_TYPE=actor_critic NAME="Zentrale AC-Strafe" EXP_TAG="Zentrale AC-Strafe 2 - 0-0.5" LOWER_BOUND=0 UPPER_BOUND=0.5
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_ac_percentage AGENT_TYPE=actor_critic NAME="Zentrale AC-Strafe" EXP_TAG="Zentrale AC-Strafe 1 - 0-1.0" LOWER_BOUND=0 UPPER_BOUND=1.0
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=central_ac_percentage AGENT_TYPE=actor_critic NAME="Zentrale AC-Strafe" EXP_TAG="Zentrale AC-Strafe 2 - 0-1.0" LOWER_BOUND=0 UPPER_BOUND=1.0
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_percentage AGENT_TYPE=actor_critic NAME="Individuelle AC-Strafe" EXP_TAG="Individuelle AC-Strafe 1 - -0.5-0.5" LOWER_BOUND=-0.5 UPPER_BOUND=0.5
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_percentage AGENT_TYPE=actor_critic NAME="Individuelle AC-Strafe" EXP_TAG="Individuelle AC-Strafe 2 - -0.5-0.5" LOWER_BOUND=-0.5 UPPER_BOUND=0.5
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_percentage AGENT_TYPE=actor_critic NAME="Individuelle AC-Strafe" EXP_TAG="Individuelle AC-Strafe 1 - 0-0.5" LOWER_BOUND=0 UPPER_BOUND=0.5
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_percentage AGENT_TYPE=actor_critic NAME="Individuelle AC-Strafe" EXP_TAG="Individuelle AC-Strafe 2 - 0-0.5" LOWER_BOUND=0 UPPER_BOUND=0.5
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_percentage AGENT_TYPE=actor_critic NAME="Individuelle AC-Strafe" EXP_TAG="Individuelle AC-Strafe 1 - 0-1.0" LOWER_BOUND=0 UPPER_BOUND=1.0
+train EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="final-5000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_percentage AGENT_TYPE=actor_critic NAME="Individuelle AC-Strafe" EXP_TAG="Individuelle AC-Strafe 2 - 0-1.0" LOWER_BOUND=0 UPPER_BOUND=1.0
+
+
 #train AGENT_TYPE=ma_ipd_punish_defect NAME="RMP-PD (x=0.5)" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=0.5
 #train AGENT_TYPE=ma_ipd_punish_defect NAME="RMP-PD (x=1.)" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=1.0
 #train AGENT_TYPE=ma_ipd_punish_defect NAME="RMP-PD (x=1.5)" EPOCHS=5000 ENV_NAME=p_prisoners_dilemma ENV_TAG="default-5000" DISCOUNT_FACTOR=0.95 ACTOR_LR=0.001 CRITIC_LR=0.001 MANIPULATION_AMOUNT=1.5
@@ -143,10 +163,10 @@ train AGENT_TYPE=ma_dont_take_others_ac NAME="RMP-DTOC (AC, x=2)" EPOCHS=5000 EN
 # HARVEST
 #################################
 
-train AGENT_TYPE=random NAME="Zufall" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 ACTOR_LR=0.001 CRITIC_LR=0.001
-train AGENT_TYPE=actor_critic NAME="Actor-Critic" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0
-train AGENT_TYPE=actor_critic NAME="Actor-Critic" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0
-train AGENT_TYPE=mate NAME="Mate-TD" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0 MODE="td_error"
-train AGENT_TYPE=mate NAME="Mate-TD" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0 MODE="td_error"
-train AGENT_TYPE=ma_harvest_optimal_path_ac NAME="Harvest-ToTheWall (x=1)" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0
-train AGENT_TYPE=ma_harvest_optimal_path_ac NAME="Harvest-ToTheWall (x=2)" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=2.0
+#train AGENT_TYPE=random NAME="Zufall" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 ACTOR_LR=0.001 CRITIC_LR=0.001
+#train AGENT_TYPE=actor_critic NAME="Actor-Critic" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0
+#train AGENT_TYPE=actor_critic NAME="Actor-Critic" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0
+#train AGENT_TYPE=mate NAME="Mate-TD" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0 MODE="td_error"
+#train AGENT_TYPE=mate NAME="Mate-TD" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0 MODE="td_error"
+#train AGENT_TYPE=ma_harvest_optimal_path_ac NAME="Harvest-ToTheWall (x=1)" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=1.0
+#train AGENT_TYPE=ma_harvest_optimal_path_ac NAME="Harvest-ToTheWall (x=2)" EPOCHS=15000 ENV_NAME=p_harvest ENV_TAG="default-15000" DISCOUNT_FACTOR=0.99 MANIPULATION_AMOUNT=2.0
