@@ -8,7 +8,7 @@ from src.enums import AgentType, EnvType
 
 
 class PyGameConfig(BaseSettings):
-    RENDER_MODE: str = ""
+    RENDER_MODE: str = "human"
     RENDER_FPS: int = 30
 
 

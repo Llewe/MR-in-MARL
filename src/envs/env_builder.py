@@ -25,6 +25,7 @@ from src.envs.env_setup_parallel import (
     _p_setup_harvest,
     _p_setup_coin_game,
     _p_setup_prisoners,
+    _p_setup_simple_tag,
 )
 from src.envs.env_setup_aec import (
     _setup_chicken,
@@ -60,7 +61,7 @@ def build_env(
     elif env_name == EnvType.P_SIMPLE:
         raise NotImplementedError
     elif env_name == EnvType.P_SIMPLE_TAG:
-        raise NotImplementedError
+        return _p_setup_simple_tag(writer, config)
     elif env_name == EnvType.P_SIMPLE_SPREAD:
         raise NotImplementedError
     elif env_name == EnvType.P_SIMPLE_ADVERSARY:
@@ -86,7 +87,7 @@ def build_env(
 
 
 def get_env_class(env_name: EnvType) -> Type[T]:
-    if env_name == EnvType.SIMPLE_TAG:
+    if env_name == EnvType.SIMPLE_TAG or env_name == EnvType.P_SIMPLE_TAG:
         return SimpleTagConfig
     elif env_name == EnvType.SIMPLE_SPREAD:
         return SimpleSpreadConfig

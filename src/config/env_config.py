@@ -42,6 +42,7 @@ class HarvestConfig(EnvConfig):
 
     MAX_CYCLES: int = 250
     FIXED_APPLE_SPAWN: bool = True
+    FIXED_APPLE_RESPAWN: bool = True
 
 
 class PrisonersConfig(EnvConfig):

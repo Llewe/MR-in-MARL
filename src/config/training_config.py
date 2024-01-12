@@ -19,10 +19,10 @@ class TrainingConfig(ExpConfig):
     EVAL_EPOCH_INTERVAL: int = 50
 
     AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
-    ENV_NAME: EnvType = EnvType.P_COIN_GAME
-    ENV_TAG: str = "new_test"
+    ENV_NAME: EnvType = EnvType.P_HARVEST
+    ENV_TAG: str = "test"
 
-    MANIPULATION_MODE: ManipulationMode = ManipulationMode.INDIVIDUAL_ACTOR_CRITIC
+    MANIPULATION_MODE: ManipulationMode = ManipulationMode.CENTRAL_FIXED_PERCENTAGE
 
     EXP_UNIQUE_NAME: str = (
         f"{datetime.fromtimestamp(time()).isoformat(timespec='seconds')} - {EXP_TAG}"

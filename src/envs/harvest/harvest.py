@@ -94,6 +94,7 @@ class GlobalState:
     fixed_spawn: bool
 
     steps_on_board: int = 0
+    curr_map: np.ndarray = np.zeros(shape=(1, 1), dtype=np.int32)
 
     """
          0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
@@ -194,6 +195,8 @@ class GlobalState:
         ]
         self.reset_apple_map(None)
 
+        self.curr_map = self.build_map()
+
     def pos_to_obs_index(self, x: int, y: int) -> int:
         return x * self.vision_range + y
 
@@ -226,6 +229,7 @@ class GlobalState:
                         for id, a in self.agent_states.items():
                             if a.x == x and a.y == y and id != agent_id:
                                 self._neighbours[agent_id].append(id)
+        self.curr_map = curr_map
 
     def build_map(self) -> np.ndarray:
         curr_map = np.copy(self.apples)
@@ -369,6 +373,7 @@ class Harvest(ParallelEnv):
     max_cycles: int
     init_apples: int
     regrow_chance: float
+    fixed_respawn: bool
 
     tag_time: int
 
@@ -392,6 +397,7 @@ class Harvest(ParallelEnv):
         regrow_chance: float = 0.001,
         summary_writer: Optional[SummaryWriter] = None,
         fixed_spawn: bool = True,
+        fixed_respawn: bool = True,
     ):
         super().__init__()
 
@@ -404,6 +410,7 @@ class Harvest(ParallelEnv):
         self.agents: list[AgentID] = [f"player_{r}" for r in range(self.n_players)]
         self.possible_agents: list[AgentID] = self.agents[:]
         self.nr_actions = len(Action)
+        self.fixed_respawn = fixed_respawn
         self.action_spaces = {
             agent: Discrete(self.nr_actions) for agent in self.possible_agents
         }
@@ -460,6 +467,17 @@ class Harvest(ParallelEnv):
     def _render_pygame(self) -> None:
         if self.pygame_renderer is not None:
             self.pygame_renderer.draw(self.global_state)
+
+    def get_global_obs_space(self) -> Space:
+        return Box(
+            low=min(item.value for item in ObsTiles),
+            high=max(item.value for item in ObsTiles) + 1,
+            shape=(self.global_state.map_height * self.global_state.map_width, 1),
+            dtype=np.int64,
+        )
+
+    def get_global_obs(self) -> ObsType:
+        return self.global_state.curr_map
 
     def render(self) -> None:
         """
@@ -669,10 +687,16 @@ class Harvest(ParallelEnv):
         for x, y in product(
             range(self.global_state.map_width), range(self.global_state.map_height)
         ):
+            if (
+                self.fixed_respawn
+                and (x, y) not in self.global_state.fixed_spawn_positions
+            ):
+                continue
             if self.global_state.apples[x][y] == 0 and (x, y) not in agent_pos:
                 apple_count = 0
                 for offset_x, offset_y in product(range(-2, 3), range(-2, 3)):
                     pos_x, pos_y = x + offset_x, y + offset_y
+
                     if self.global_state.in_map(pos_x, pos_y):
                         distance = abs(offset_x) + abs(
                             offset_y

@@ -48,7 +48,9 @@ class IndividualMaAcPercentage(ActorCritic, IMaController):
         policy_network = self.actor_networks[agent_id]
         return policy_network(obs_tensor).detach().numpy()[0]
 
-    def set_agents(self, agents: List[AgentID], observation_space: Space) -> None:
+    def set_agents(
+        self, agents: List[AgentID], observation_space: dict[AgentID, Space]
+    ) -> None:
         self.nr_agents = len(agents)
         self.ma_agents = {a: f"ma_{a}" for a in agents}
 
@@ -63,7 +65,9 @@ class IndividualMaAcPercentage(ActorCritic, IMaController):
             )
             for a, ma in self.ma_agents.items()
         }
-        observation_space = {ma: observation_space for _, ma in self.ma_agents.items()}
+        observation_space = {
+            ma: observation_space[ma] for _, ma in self.ma_agents.items()
+        }
 
         self.init_agents(action_space, observation_space)
 

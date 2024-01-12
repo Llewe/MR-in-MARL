@@ -1,12 +1,15 @@
 from typing import Callable
 from pettingzoo import ParallelEnv
-from pettingzoo.utils.env import ObsType
+from pettingzoo.utils.env import AgentID, ObsType
 
 from src.enums import EnvType
 from src.enums.manipulation_modes_e import ManipulationMode
 from src.envs.coin_game.coin_game import CoinGame
+from src.envs.harvest.harvest import Harvest
 from src.interfaces.ma_controller_i import IMaController
 from pettingzoo.utils.conversions import aec_to_parallel_wrapper
+
+from gymnasium import Space
 
 
 def get_ma_controller(
@@ -56,8 +59,25 @@ def get_global_obs(
             env, aec_to_parallel_wrapper
         ):  # TODO: this is currently for the Dilemma env -> better would be a propper interface
             return env.aec_env.env.get_global_obs
+        if isinstance(env, Harvest):
+            return env.get_global_obs
         raise ValueError(
             f"Unknown env type: {type(env)}, don't know how to get global obs"
         )
     else:
         return None
+
+
+def get_obs_space(
+    manipulation_mode: ManipulationMode, env: ParallelEnv
+) -> Space | dict[AgentID, Space]:
+    if manipulation_mode == ManipulationMode.INDIVIDUAL_ACTOR_CRITIC:
+        return {a: env.observation_space(a) for a in env.possible_agents}
+    if (
+        manipulation_mode == ManipulationMode.CENTRAL_AC_PERCENTAGE
+        or manipulation_mode == ManipulationMode.CENTRAL_FIXED_PERCENTAGE
+    ):
+        if isinstance(env, Harvest):
+            return env.get_global_obs_space()
+
+    return env.observation_space(env.possible_agents[0])

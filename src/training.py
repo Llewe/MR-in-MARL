@@ -13,7 +13,11 @@ from torch.utils.tensorboard import SummaryWriter
 from src.cfg_manager import CfgManager, get_cfg, set_cfg
 from src.config.training_config import TrainingConfig
 from src.controller.utils.agents_helper import get_agents
-from src.controller_ma.utils.ma_setup_helper import get_global_obs, get_ma_controller
+from src.controller_ma.utils.ma_setup_helper import (
+    get_global_obs,
+    get_ma_controller,
+    get_obs_space,
+)
 from src.envs import build_env
 from src.interfaces.controller_i import IController
 from src.interfaces.ma_controller_i import IMaController
@@ -287,7 +291,7 @@ def start_training() -> None:
         )
         ma_controller.set_logger(writer)
         ma_controller.set_agents(
-            env.possible_agents, env.observation_space(env.possible_agents[0])
+            env.possible_agents, get_obs_space(_training_config.MANIPULATION_MODE, env)
         )
 
         agents.set_logger(writer)

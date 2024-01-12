@@ -4,11 +4,14 @@ import numpy
 from gymnasium import Space
 from gymnasium.spaces import Box, Discrete
 
-def get_space_size(space: Space) -> Union[numpy.int64,int]:
+from gymnasium.spaces.utils import flatdim
+
+
+def get_space_size(space: Space) -> Union[numpy.int64, int]:
     if isinstance(space, Discrete):
         return space.n
     elif isinstance(space, Box):
-        return space.shape[0]
+        return flatdim(space)  # old was space.shape[0]
     else:
         raise ValueError("Unsupported space type")
 
