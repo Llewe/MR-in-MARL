@@ -101,6 +101,9 @@ class DilemmaEnv(AECEnv):
     def action_space(self, agent):
         return self.action_spaces[agent]
 
+    def get_global_obs(self) -> np.ndarray:
+        return np.array(self.observations[self.possible_agents[0]])
+
     def reinit(self):
         self.agents = self.possible_agents[:]
         self._agent_selector = agent_selector(self.agents)
@@ -142,7 +145,9 @@ class DilemmaEnv(AECEnv):
 
     def observe(self, agent):
         # observation of one agent is the previous state of the other
-        return np.array(self.observations[agent])
+        return np.array(
+            self.observations[self.agents[0]]
+        )  # all agents have  the same observation
 
     def close(self):
         pass

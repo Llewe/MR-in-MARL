@@ -372,7 +372,7 @@ class CoinGame(ParallelEnv):
             agent: 0 for agent in self.possible_agents
         }
 
-    def get_global_obs(self) -> np.ndarray:
+    def get_global_obs(self) -> ObsType:
         return self.global_state.get_global_obs()
 
     @functools.lru_cache(maxsize=None)

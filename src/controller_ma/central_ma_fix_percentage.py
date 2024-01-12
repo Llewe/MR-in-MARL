@@ -1,15 +1,19 @@
 from statistics import mean
-from typing import List
 
 from gymnasium.spaces import Discrete, Space
 from pettingzoo.utils.env import AgentID, ObsType
 
-from src.config.ctrl_config import ManipulationAgentConfig
+from src.config.ctrl_config import ACConfig
 from src.controller.actor_critic import ActorCritic
+from src.interfaces.ma_controller_i import IMaController
 
 
-class ManipulationAgent(ActorCritic):
-    agent_name = "ma_controller"
+class CentralMaFixedPercentageConfig(ACConfig):
+    PERCENTAGE: float = 0.8
+
+
+class CentralMaFixedPercentage(ActorCritic, IMaController):
+    agent_name = "central_ma_fixed_percentage_controller"
     nr_agents: int
 
     agent_id_mapping: dict[AgentID, int]
@@ -17,8 +21,8 @@ class ManipulationAgent(ActorCritic):
     # stats for logs
     changed_rewards: list[float]
 
-    def __init__(self, config: ManipulationAgentConfig):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__(CentralMaFixedPercentageConfig())
         self.changed_rewards = []
 
     def set_agents(self, agents: list[AgentID], observation_space: Space) -> None:
@@ -32,8 +36,21 @@ class ManipulationAgent(ActorCritic):
         self.init_agents(action_space, observation_space)
 
     def update_rewards(
-        self, obs: ObsType, rewards: dict[AgentID, float]
+        self, obs: ObsType | dict[AgentID, ObsType], rewards: dict[AgentID, float]
     ) -> dict[AgentID, float]:
+        """
+        Only central = ma_agents == None, obs is ObsType
+        Parameters
+        ----------
+        obs
+        rewards
+        ma_agents
+
+        Returns
+        -------
+
+        """
+
         punish_agent: int = self.act(self.agent_name, obs)
 
         # This is like the environment's

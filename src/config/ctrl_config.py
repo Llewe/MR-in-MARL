@@ -29,10 +29,6 @@ class ACConfig(CtrlConfig):
     EPSILON_DECAY: float = 3.0e-05
 
 
-class ManipulationAgentConfig(ACConfig):
-    PERCENTAGE: float = 1.2
-
-
 class MateConfig(ACConfig):
     class Mode(str, Enum):
         STATIC_MODE = "static"

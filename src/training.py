@@ -1,20 +1,22 @@
 import logging
 from collections import defaultdict
-from typing import Union
+from typing import Callable, Union
 
 import numpy
 import numpy as np
 import pygame
 from pettingzoo import AECEnv, ParallelEnv
 from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
-from pettingzoo.utils.env import ActionType, AgentID
+from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
 from src.cfg_manager import CfgManager, get_cfg, set_cfg
 from src.config.training_config import TrainingConfig
 from src.controller.utils.agents_helper import get_agents
+from src.controller_ma.utils.ma_setup_helper import get_global_obs, get_ma_controller
 from src.envs import build_env
 from src.interfaces.controller_i import IController
+from src.interfaces.ma_controller_i import IMaController
 from src.utils.loggers.obs_logger import IObsLogger
 from src.utils.loggers.simple_env_logger import SimpleEnvLogger
 from src.utils.loggers.util_logger import log_efficiency
@@ -23,6 +25,7 @@ _training_config = TrainingConfig()
 
 
 def _train_epoch(
+    ma_controller: IMaController,
     controller: IController,
     env: Union[AECEnv, ParallelEnv],
     current_epoch: int,
@@ -31,6 +34,7 @@ def _train_epoch(
     parallel: bool = False,
 ) -> None:
     controller.epoch_started(current_epoch)
+    ma_controller.epoch_started(current_epoch)
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
     env.reset(options={"history_reset": True})
@@ -46,7 +50,13 @@ def _train_epoch(
         )
         if parallel:
             episode_reward: dict[AgentID, float] = _train_parallel_episode(
-                controller, env, current_epoch, episode, writer, obs_logger
+                ma_controller,
+                controller,
+                env,
+                current_epoch,
+                episode,
+                writer,
+                obs_logger,
             )
         else:
             raise NotImplementedError("Only parallel envs are supported")
@@ -74,9 +84,11 @@ def _train_epoch(
     obs_logger.log_epoch(current_epoch, "train")
 
     controller.epoch_finished(current_epoch, "train")
+    ma_controller.epoch_finished(current_epoch, "train")
 
 
 def _train_parallel_episode(
+    ma_controller: IMaController,
     controller: IController,
     env: ParallelEnv,
     current_epoch: int,
@@ -95,6 +107,12 @@ def _train_parallel_episode(
     )
     episode_reward: dict[AgentID, float] = {a: 0 for a in env.possible_agents}
 
+    ma_controller.episode_started(current_episode)
+
+    obs_callback: Callable[[], ObsType] | None = get_global_obs(
+        _training_config.MANIPULATION_MODE, env
+    )
+
     controller.episode_started(current_episode)
     while env.agents:
         if get_cfg().get_render_mode() != "":
@@ -110,11 +128,20 @@ def _train_parallel_episode(
 
         new_observations, rewards, terminations, truncations, infos = env.step(actions)
 
+        if obs_callback is not None:
+            manipulated_rewards = ma_controller.update_rewards(
+                obs=obs_callback(), rewards=rewards.copy()
+            )  # For envs where all agents see the same global observation
+        else:
+            manipulated_rewards = ma_controller.update_rewards(
+                obs=observations, rewards=rewards.copy()
+            )
+
         for agent_id, reward in rewards.items():
             episode_reward[agent_id] += reward
 
         controller.step_agent_parallel(
-            observations, actions, rewards, terminations, infos
+            observations, actions, manipulated_rewards, terminations, infos
         )
         controller.step_finished(timestep, new_observations)
 
@@ -122,6 +149,7 @@ def _train_parallel_episode(
 
     env.close()
     controller.episode_finished(current_episode, "train")
+    ma_controller.episode_finished(current_episode, "train")
     return episode_reward
 
 
@@ -254,6 +282,14 @@ def start_training() -> None:
             },
         )
 
+        ma_controller: IMaController = get_ma_controller(
+            _training_config.MANIPULATION_MODE, get_cfg().exp_config.ENV_NAME
+        )
+        ma_controller.set_logger(writer)
+        ma_controller.set_agents(
+            env.possible_agents, env.observation_space(env.possible_agents[0])
+        )
+
         agents.set_logger(writer)
 
         log_configs(writer)
@@ -264,7 +300,9 @@ def start_training() -> None:
         # for epoch in range(1, _training_config.EPOCHS + 1):
         # normal evaluation/epoch counter
         for epoch in range(0, _training_config.EPOCHS + 1):
-            _train_epoch(agents, env, epoch, writer, obs_logger, parallel=parallel)
+            _train_epoch(
+                ma_controller, agents, env, epoch, writer, obs_logger, parallel=parallel
+            )
 
             if epoch % _training_config.EVAL_EPOCH_INTERVAL == 0:
                 logging.info("Evaluating agents")
