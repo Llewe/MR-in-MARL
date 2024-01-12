@@ -93,8 +93,8 @@ class GlobalState:
 
     fixed_spawn: bool
 
+    curr_map: np.ndarray
     steps_on_board: int = 0
-    curr_map = np.zeros(shape=(1, 1), dtype=np.int32)
 
     """
          0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
@@ -172,6 +172,7 @@ class GlobalState:
         self.vision_range = vision_range
         self.tag_beam_width = tag_beam_width
         self.fixed_spawn = fixed_spawn
+        self.curr_map = np.zeros(shape=(map_width, map_height), dtype=np.int32)
 
         outside_vision_range = 2 * self.vision_range + 1
         for agent in agents:

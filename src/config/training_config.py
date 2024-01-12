@@ -11,7 +11,7 @@ from src.enums.manipulation_modes_e import ManipulationMode
 
 class TrainingConfig(ExpConfig):
     # EXP_TAG: str = names.get_first_name()
-    EXP_TAG: str = "individual-3ma-0.5-0.5"
+    EXP_TAG: str = "test"
     EPISODES: int = 10
     EPOCHS: int = 5000
 
@@ -24,6 +24,8 @@ class TrainingConfig(ExpConfig):
 
     MA_MODE: ManipulationMode = ManipulationMode.CENTRAL_FIXED_PERCENTAGE
 
-    EXP_UNIQUE_NAME: str = (
-        f"{datetime.fromtimestamp(time()).isoformat(timespec='seconds')} - {EXP_TAG}"
-    )
+    EXP_UNIQUE_NAME: str = ""
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.EXP_UNIQUE_NAME = f"{datetime.fromtimestamp(time()).isoformat(timespec='seconds')} - {self.EXP_TAG}"
