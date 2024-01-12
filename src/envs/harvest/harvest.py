@@ -94,7 +94,7 @@ class GlobalState:
     fixed_spawn: bool
 
     steps_on_board: int = 0
-    curr_map: np.ndarray = np.zeros(shape=(1, 1), dtype=np.int32)
+    curr_map = np.zeros(shape=(1, 1), dtype=np.int32)
 
     """
          0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
