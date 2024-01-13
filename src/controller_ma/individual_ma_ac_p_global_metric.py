@@ -91,7 +91,7 @@ class IndividualMaACPGlobalMetric(ActorCritic, IMaController):
         filtered_obs = {ma: obs[a] for a, ma in self.ma_agents.items()}
         metric_rewards = {
             ma: metric
-            for (metric_name, metric), (ma, a) in zip(
+            for (metric_name, metric), (a, ma) in zip(
                 metrics.items(), self.ma_agents.items()
             )
         }

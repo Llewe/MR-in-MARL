@@ -82,7 +82,10 @@ def get_global_obs(
 def get_obs_space(
     manipulation_mode: ManipulationMode, env: ParallelEnv
 ) -> Space | dict[AgentID, Space]:
-    if manipulation_mode == ManipulationMode.INDIVIDUAL_AC_PERCENTAGE:
+    if (
+        manipulation_mode == ManipulationMode.INDIVIDUAL_AC_PERCENTAGE
+        or manipulation_mode == ManipulationMode.INDIVIDUAL_AC_P_GLOBAL_METRIC
+    ):
         return {a: env.observation_space(a) for a in env.possible_agents}
     if (
         manipulation_mode == ManipulationMode.CENTRAL_AC_PERCENTAGE
@@ -112,7 +115,8 @@ def get_metrics(
         for metric in metrics:
             if metric == MetricsE.EFFICIENCY:
                 return_dict[metric] = sum(rewards.values())
-            raise NotImplementedError(f"Metric {metric} not implemented")
+            else:
+                raise NotImplementedError(f"Metric {metric} not implemented")
         return return_dict
     else:
         return None
