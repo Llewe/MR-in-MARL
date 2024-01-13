@@ -19,10 +19,10 @@ class TrainingConfig(ExpConfig):
     EVAL_EPOCH_INTERVAL: int = 50
 
     AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
-    ENV_NAME: EnvType = EnvType.P_HARVEST
+    ENV_NAME: EnvType = EnvType.P_PRISONERS_DILEMMA
     ENV_TAG: str = "test"
 
-    MA_MODE: ManipulationMode = ManipulationMode.CENTRAL_FIXED_PERCENTAGE
+    MA_MODE: ManipulationMode = ManipulationMode.INDIVIDUAL_AC_PERCENTAGE
 
     EXP_UNIQUE_NAME: str = ""
 

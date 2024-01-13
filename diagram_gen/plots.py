@@ -26,6 +26,7 @@ def write_scalars(
     values: Union[DataFrame, Any],
     x_label: str,
     y_label: str,
+    print_final_value: bool = True,
 ) -> None:
     df: DataFrame
     if isinstance(values, DataFrame):
@@ -36,6 +37,8 @@ def write_scalars(
 
     df["Rolling_Avg"] = df["Values"].rolling(window=10, min_periods=1).mean()
 
+    final_value = df["Rolling_Avg"].iloc[-1]
+
     line_name: str
     if isinstance(e, str):
         line_name = e
@@ -44,7 +47,9 @@ def write_scalars(
     axis.plot(
         df["Steps"],
         df["Rolling_Avg"],
-        label=f"{line_name}",
+        label=f"{line_name} ({final_value:.2f})"
+        if print_final_value
+        else f"{line_name}",
         alpha=0.7,
     )
     axis.set_xlabel(x_label)
@@ -291,8 +296,8 @@ if __name__ == "__main__":
 
     experiment_label = "4pl-5000"
 
-    # env_name = "../resources/p_prisoners_dilemma"
-    # experiment_label = "sw-pd-5000"
+    env_name = "../resources/p_prisoners_dilemma"
+    experiment_label = "final-5000"
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -307,6 +312,6 @@ if __name__ == "__main__":
             experiments.remove(e)
 
     # draw_heatmaps(experiments, diagram_name)
-    # plot_ipd(exp_files=experiments, output_file="ipd-sw")
+    plot_ipd(exp_files=experiments, output_file="ipd-sw")
 
-    plots_coin_game(exp_files=experiments, output_file="coin_game")
+    # plots_coin_game(exp_files=experiments, output_file="coin_game")

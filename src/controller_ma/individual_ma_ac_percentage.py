@@ -66,7 +66,7 @@ class IndividualMaAcPercentage(ActorCritic, IMaController):
             for a, ma in self.ma_agents.items()
         }
         observation_space = {
-            ma: observation_space[ma] for _, ma in self.ma_agents.items()
+            ma: observation_space[a] for a, ma in self.ma_agents.items()
         }
 
         self.init_agents(action_space, observation_space)
