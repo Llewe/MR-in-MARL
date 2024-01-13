@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from gymnasium.spaces import Box, Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
+from torch.utils.tensorboard import SummaryWriter
 
 from src.config.ctrl_config import ACConfig
 from src.controller.actor_critic import ActorCritic
@@ -13,15 +14,18 @@ from src.enums.metrics_e import MetricsE
 from src.interfaces.ma_controller_i import IMaController
 
 
-class IndividualMaAcPercentageConfig(ACConfig):
+class IndividualMaACPGlobalMetricConfig(ACConfig):
     UPPER_BOUND: float = 0.5
     LOWER_BOUND: float = -0.5
+
+    METRICS: List[MetricsE] = [MetricsE.EFFICIENCY]
 
     NR_MA_AGENTS: int = 1
 
 
-class IndividualMaAcPercentage(ActorCritic, IMaController):
-    agent_name = "individual_ma_percentage_controller"
+class IndividualMaACPGlobalMetric(ActorCritic, IMaController):
+    agent_name = "individual_ma_ac_p_global_metric_controller"
+
     nr_agents: int
 
     agent_id_mapping: dict[AgentID, int]
@@ -36,8 +40,10 @@ class IndividualMaAcPercentage(ActorCritic, IMaController):
     # stats for logs
     changed_rewards: List[float]
 
+    writer: SummaryWriter
+
     def __init__(self):
-        super().__init__(IndividualMaAcPercentageConfig())
+        super().__init__(IndividualMaACPGlobalMetricConfig())
         self.changed_rewards = []
 
         self.upper_bound = self.config.UPPER_BOUND
@@ -77,10 +83,18 @@ class IndividualMaAcPercentage(ActorCritic, IMaController):
         self,
         obs: ObsType | Dict[AgentID, ObsType],
         rewards: Dict[AgentID, float],
-        metrics: Dict[MetricsE, float] | None = None,
+        metrics: Dict[MetricsE, float] | None,
     ) -> Dict[AgentID, float]:
+        assert metrics is not None
+        assert len(metrics) == len(self.ma_agents)
+
         filtered_obs = {ma: obs[a] for a, ma in self.ma_agents.items()}
-        filtered_rewards = {ma: rewards[a] for a, ma in self.ma_agents.items()}
+        metric_rewards = {
+            ma: metric
+            for (metric_name, metric), (ma, a) in zip(
+                metrics.items(), self.ma_agents.items()
+            )
+        }
 
         percentage_changes: Dict[AgentID, List[float]] = self.act_parallel(filtered_obs)
 
@@ -105,22 +119,29 @@ class IndividualMaAcPercentage(ActorCritic, IMaController):
         self.step_agent_parallel(
             last_observations=filtered_obs,
             last_actions=percentage_changes,
-            rewards=filtered_rewards,
+            rewards=metric_rewards,
             dones={ma: False for a, ma in self.ma_agents.items()},
             infos={},
         )
 
         return new_rewards
 
+    def episode_started(self, episode: int) -> None:
+        pass
+
+    def episode_finished(self, episode: int, tag: str) -> None:
+        pass
+
+    def set_logger(self, writer: SummaryWriter) -> None:
+        self.writer = writer
+
     def epoch_started(self, epoch: int) -> None:
-        super().epoch_started(epoch)
         self.changed_rewards.clear()
 
     def epoch_finished(self, epoch: int, tag: str) -> None:
-        super().episode_finished(epoch, tag)
         if self.writer is not None:
             self.writer.add_scalar(
-                tag=f"{self.agent_name}/percentage_reward",
+                tag=f"{self.agent_name}/changed_rewards",
                 scalar_value=mean(self.changed_rewards),
                 global_step=epoch,
             )

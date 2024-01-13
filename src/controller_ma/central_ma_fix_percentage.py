@@ -5,6 +5,7 @@ from pettingzoo.utils.env import AgentID, ObsType
 
 from src.config.ctrl_config import ACConfig
 from src.controller.actor_critic import ActorCritic
+from src.enums.metrics_e import MetricsE
 from src.interfaces.ma_controller_i import IMaController
 
 
@@ -36,12 +37,16 @@ class CentralMaFixedPercentage(ActorCritic, IMaController):
         self.init_agents(action_space, observation_space)
 
     def update_rewards(
-        self, obs: ObsType | dict[AgentID, ObsType], rewards: dict[AgentID, float]
+        self,
+        obs: ObsType | dict[AgentID, ObsType],
+        rewards: dict[AgentID, float],
+        metrics: dict[MetricsE, float] | None = None,
     ) -> dict[AgentID, float]:
         """
         Only central = ma_agents == None, obs is ObsType
         Parameters
         ----------
+        metrics
         obs
         rewards
         ma_agents

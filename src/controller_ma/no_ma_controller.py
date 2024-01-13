@@ -1,7 +1,10 @@
+from typing import Dict
+
 from gymnasium import Space
 from pettingzoo.utils.env import AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
+from src.enums.metrics_e import MetricsE
 from src.interfaces.ma_controller_i import IMaController
 
 
@@ -22,6 +25,7 @@ class NoMaController(IMaController):
         self,
         obs: ObsType | dict[AgentID, ObsType],
         rewards: dict[AgentID, float],
+        metrics: Dict[MetricsE, float] | None = None,
     ) -> dict[AgentID, float]:
         return rewards
 

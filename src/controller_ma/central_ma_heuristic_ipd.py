@@ -6,6 +6,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.config.ctrl_config import ACConfig
 from src.controller.actor_critic import ActorCritic
+from src.enums.metrics_e import MetricsE
 from src.interfaces.ma_controller_i import IMaController
 
 
@@ -22,6 +23,7 @@ class CentralMaHeuristicIPD(IMaController):
         self,
         obs: ObsType | dict[AgentID, ObsType],
         rewards: dict[AgentID, float],
+        metrics: dict[MetricsE, float] | None = None,
     ) -> dict[AgentID, float]:
         sw = sum(rewards.values())
         rewards = {agent: 0.0 for agent in rewards.keys()}

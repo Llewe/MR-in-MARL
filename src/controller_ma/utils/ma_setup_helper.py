@@ -1,7 +1,10 @@
-from typing import Callable
+from typing import Callable, Dict, List
 from pettingzoo import ParallelEnv
 from pettingzoo.utils.env import AgentID, ObsType
 
+from src.controller_ma.individual_ma_ac_p_global_metric import (
+    IndividualMaACPGlobalMetricConfig,
+)
 from src.enums import EnvType
 from src.enums.manipulation_modes_e import ManipulationMode
 from src.envs.coin_game.coin_game import CoinGame
@@ -10,6 +13,8 @@ from src.interfaces.ma_controller_i import IMaController
 from pettingzoo.utils.conversions import aec_to_parallel_wrapper
 
 from gymnasium import Space
+
+from src.enums.metrics_e import MetricsE
 
 
 def get_ma_controller(
@@ -41,6 +46,12 @@ def get_ma_controller(
         )
 
         return IndividualMaAcPercentage()
+    if manipulation_mode == ManipulationMode.INDIVIDUAL_AC_P_GLOBAL_METRIC:
+        from src.controller_ma.individual_ma_ac_p_global_metric import (
+            IndividualMaACPGlobalMetric,
+        )
+
+        return IndividualMaACPGlobalMetric()
 
     raise ValueError(f"Unknown manipulation mode: {manipulation_mode}")
 
@@ -81,3 +92,27 @@ def get_obs_space(
             return env.get_global_obs_space()
 
     return env.observation_space(env.possible_agents[0])
+
+
+def get_wanted_metrics(manipulation_mode: ManipulationMode) -> List[MetricsE]:
+    if manipulation_mode == ManipulationMode.INDIVIDUAL_AC_P_GLOBAL_METRIC:
+        return IndividualMaACPGlobalMetricConfig().METRICS
+    else:
+        return []
+
+
+def get_metrics(
+    manipulation_mode: ManipulationMode,
+    env: ParallelEnv,
+    metrics: List[MetricsE],
+    rewards: Dict[AgentID, float],
+) -> Dict[MetricsE, float] | None:
+    if manipulation_mode == ManipulationMode.INDIVIDUAL_AC_P_GLOBAL_METRIC:
+        return_dict: Dict[MetricsE, float] = {}
+        for metric in metrics:
+            if metric == MetricsE.EFFICIENCY:
+                return_dict[metric] = sum(rewards.values())
+            raise NotImplementedError(f"Metric {metric} not implemented")
+        return return_dict
+    else:
+        return None

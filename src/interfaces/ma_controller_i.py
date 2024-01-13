@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import Dict, TypeVar
 
 from gymnasium.spaces import Space
 from pettingzoo.utils.env import AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
 from src.enums.manipulation_modes_e import ManipulationMode
+from src.enums.metrics_e import MetricsE
 from src.interfaces import IController
 
 BaseController = TypeVar("BaseController", bound=IController)
@@ -31,11 +32,15 @@ class IMaController(ABC):
 
     @abstractmethod
     def update_rewards(
-        self, obs: ObsType | dict[AgentID, ObsType], rewards: dict[AgentID, float]
-    ) -> dict[AgentID, float]:
+        self,
+        obs: ObsType | Dict[AgentID, ObsType],
+        rewards: Dict[AgentID, float],
+        metrics: Dict[MetricsE, float] | None,
+    ) -> Dict[AgentID, float]:
         """
         Parameters
         ----------
+        metrics
         ma_agents
         obs
         rewards

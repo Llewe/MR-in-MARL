@@ -1,4 +1,5 @@
 from statistics import mean
+from typing import Dict
 
 import numpy as np
 import torch
@@ -61,6 +62,7 @@ class CentralMaAcPercentage(ActorCritic, IMaController):
         self,
         obs: ObsType | dict[AgentID, ObsType],
         rewards: dict[AgentID, float],
+        metrics: Dict[str, float] | None = None,
     ) -> dict[AgentID, float]:
         percentage_changes: list[float] = self.act(self.agent_name, obs)
 

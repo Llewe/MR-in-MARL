@@ -22,7 +22,7 @@ class TrainingConfig(ExpConfig):
     ENV_NAME: EnvType = EnvType.P_PRISONERS_DILEMMA
     ENV_TAG: str = "test"
 
-    MA_MODE: ManipulationMode = ManipulationMode.INDIVIDUAL_AC_PERCENTAGE
+    MA_MODE: ManipulationMode = ManipulationMode.INDIVIDUAL_AC_P_GLOBAL_METRIC
 
     EXP_UNIQUE_NAME: str = ""
 

@@ -16,7 +16,9 @@ from src.controller.utils.agents_helper import get_agents
 from src.controller_ma.utils.ma_setup_helper import (
     get_global_obs,
     get_ma_controller,
+    get_metrics,
     get_obs_space,
+    get_wanted_metrics,
 )
 from src.envs import build_env
 from src.interfaces.controller_i import IController
@@ -116,6 +118,7 @@ def _train_parallel_episode(
     obs_callback: Callable[[], ObsType] | None = get_global_obs(
         _training_config.MA_MODE, env
     )
+    metrics = get_wanted_metrics(_training_config.MA_MODE)
 
     controller.episode_started(current_episode)
     while env.agents:
@@ -132,13 +135,19 @@ def _train_parallel_episode(
 
         new_observations, rewards, terminations, truncations, infos = env.step(actions)
 
+        current_metrics = (
+            get_metrics(_training_config.MA_MODE, env, metrics, rewards)
+            if metrics
+            else None
+        )
+
         if obs_callback is not None:
             manipulated_rewards = ma_controller.update_rewards(
-                obs=obs_callback(), rewards=rewards.copy()
+                obs=obs_callback(), rewards=rewards.copy(), metrics=current_metrics
             )  # For envs where all agents see the same global observation
         else:
             manipulated_rewards = ma_controller.update_rewards(
-                obs=observations, rewards=rewards.copy()
+                obs=observations, rewards=rewards.copy(), metrics=current_metrics
             )
 
         for agent_id, reward in rewards.items():
