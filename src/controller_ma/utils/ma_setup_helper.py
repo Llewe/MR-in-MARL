@@ -40,6 +40,15 @@ def get_ma_controller(
         from src.controller_ma.central_ma_heuristic_ipd import CentralMaHeuristicIPD
 
         return CentralMaHeuristicIPD()
+    if (
+        manipulation_mode == ManipulationMode.CENTRAL_HEURISTIC
+        and env_type == EnvType.P_COIN_GAME
+    ):
+        from src.controller_ma.central_ma_heuristic_coin_game import (
+            CentralMaHeuristicCoinGame,
+        )
+
+        return CentralMaHeuristicCoinGame()
     if manipulation_mode == ManipulationMode.INDIVIDUAL_AC_PERCENTAGE:
         from src.controller_ma.individual_ma_ac_percentage import (
             IndividualMaAcPercentage,
