@@ -312,6 +312,6 @@ if __name__ == "__main__":
             experiments.remove(e)
 
     # draw_heatmaps(experiments, diagram_name)
-    plot_ipd(exp_files=experiments, output_file="ipd-sw")
+    plot_ipd(exp_files=experiments, output_file="ipd")
 
     # plots_coin_game(exp_files=experiments, output_file="coin_game")
