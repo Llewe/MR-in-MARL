@@ -61,19 +61,16 @@ class CentralMaFixedPercentage(ActorCritic, IMaController):
         # This is like the environment's
         punish_agent_id: AgentID = self.agent_id_mapping[punish_agent]
 
-        percentage_reward: float = rewards[punish_agent_id] * self.config.PERCENTAGE
-        add_to_others = percentage_reward / (self.nr_agents - 1)
+        new_rewards: dict[AgentID, float] = rewards.copy()
 
-        for agent_id in self.agent_id_mapping.values():
-            if agent_id != punish_agent_id:
-                rewards[agent_id] += add_to_others
-            else:
-                rewards[agent_id] -= percentage_reward
+        changed_reward: float = IMaController.distribute_to_others(
+            rewards, new_rewards, punish_agent_id, self.config.PERCENTAGE
+        )
 
         # Reward for manipulator
         social_welfare = sum(rewards.values())
 
-        self.changed_rewards.append(percentage_reward)
+        self.changed_rewards.append(changed_reward)
 
         self.step_agent(
             agent_id=self.agent_name,

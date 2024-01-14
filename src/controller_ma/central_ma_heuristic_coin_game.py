@@ -1,4 +1,5 @@
 from statistics import mean
+from typing import Dict
 
 from gymnasium.spaces import Discrete, Space
 from pettingzoo.utils.env import AgentID, ObsType
@@ -21,18 +22,35 @@ class CentralMaHeuristicCoinGame(IMaController):
 
     def update_rewards(
         self,
-        obs: ObsType | dict[AgentID, ObsType],
-        rewards: dict[AgentID, float],
-        metrics: dict[MetricsE, float] | None = None,
-    ) -> dict[AgentID, float]:
+        obs: ObsType | Dict[AgentID, ObsType],
+        rewards: Dict[AgentID, float],
+        metrics: Dict[MetricsE, float] | None = None,
+    ) -> Dict[AgentID, float]:
         min_reward = min(rewards.values())
-        if min_reward < 0:
-            sw = sum(rewards.values())
-            reward_for_each = sw / len(rewards)
-            ma_rewards = {a: reward_for_each for a in rewards.keys()}
 
-            for r in rewards.values():
-                self.changed_rewards.append(r - reward_for_each)
+        if min_reward < 0:
+            # find coin owner
+            coin_owner = None
+
+            ma_rewards = {}
+
+            for a, r in rewards.items():
+                if r == min_reward:
+                    coin_owner = a
+                    break
+            # give all except coin owner a small punishment
+
+            sw: float = sum(rewards.values())
+            other_agents = len(rewards) - 1
+            reward_for_each = sw / other_agents
+
+            for a, r in rewards.items():
+                if a == coin_owner:
+                    ma_rewards[a] = 0.0
+                    self.changed_rewards.append(0.0 - r)
+                else:
+                    ma_rewards[a] = reward_for_each
+                    self.changed_rewards.append(r - reward_for_each)
 
             return ma_rewards
 

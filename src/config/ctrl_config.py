@@ -28,7 +28,7 @@ class ACConfig(CtrlConfig):
 
     EPSILON_INIT: float = 0.0
     EPSILON_MIN: float = 0.0
-    EPSILON_DECAY: float = 3.0e-05
+    EPSILON_DECAY: float = 2.25e-05
 
 
 class MateConfig(ACConfig):
@@ -107,7 +107,7 @@ class DemoMaConfig(ACConfig):
 
 if __name__ == "__main__":
     # Calculate Decay rate:
-    epoch_reached_min = 2000
+    epoch_reached_min = 4000
 
     a2c_config = ACConfig()
 

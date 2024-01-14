@@ -11,7 +11,7 @@ from src.enums.manipulation_modes_e import ManipulationMode
 
 class TrainingConfig(ExpConfig):
     # EXP_TAG: str = names.get_first_name()
-    EXP_TAG: str = "test"
+    EXP_TAG: str = "INDIVIDUAL_AC_PERCENTAGE"
     EPISODES: int = 10
     EPOCHS: int = 5000
 
@@ -19,10 +19,10 @@ class TrainingConfig(ExpConfig):
     EVAL_EPOCH_INTERVAL: int = 50
 
     AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
-    ENV_NAME: EnvType = EnvType.P_PRISONERS_DILEMMA
-    ENV_TAG: str = "test"
+    ENV_NAME: EnvType = EnvType.P_COIN_GAME
+    ENV_TAG: str = "new_test_2"
 
-    MA_MODE: ManipulationMode = ManipulationMode.INDIVIDUAL_AC_P_GLOBAL_METRIC
+    MA_MODE: ManipulationMode = ManipulationMode.INDIVIDUAL_AC_PERCENTAGE
 
     EXP_UNIQUE_NAME: str = ""
 

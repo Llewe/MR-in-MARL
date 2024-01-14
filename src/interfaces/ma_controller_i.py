@@ -107,3 +107,24 @@ class IMaController(ABC):
     @abstractmethod
     def set_logger(self, writer: SummaryWriter) -> None:
         pass
+
+    @staticmethod
+    def distribute_to_others(
+        original_rewards: dict[AgentID, float],
+        changed_rewards: dict[AgentID, float],
+        punish_agent_id: AgentID,
+        percentage: float,
+    ) -> float:
+        percentage_reward: float = original_rewards[punish_agent_id] * percentage
+
+        changed_reward = original_rewards[punish_agent_id] - percentage_reward
+
+        add_to_others = changed_reward / (len(original_rewards) - 1)
+
+        for agent_id, reward in original_rewards.items():
+            if agent_id == punish_agent_id:
+                changed_rewards[agent_id] -= percentage_reward
+            else:
+                changed_rewards[agent_id] += add_to_others
+
+        return changed_reward

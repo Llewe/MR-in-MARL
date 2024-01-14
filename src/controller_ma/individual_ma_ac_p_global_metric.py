@@ -1,3 +1,4 @@
+import statistics
 from itertools import islice
 from statistics import mean
 from typing import Dict, List
@@ -98,23 +99,20 @@ class IndividualMaACPGlobalMetric(ActorCritic, IMaController):
 
         percentage_changes: Dict[AgentID, List[float]] = self.act_parallel(filtered_obs)
 
-        new_rewards: Dict[AgentID, float] = {}
+        changed_reward: float = 0
+        new_rewards: dict[AgentID, float] = rewards.copy()
 
-        missing_reward: float = 0
+        transposed_lists = zip(*percentage_changes.values())
+        averages = list(map(statistics.mean, transposed_lists))
 
-        for a, percentages in percentage_changes.items():
-            for i, percentage in enumerate(percentages):
-                agent_id: AgentID = self.agent_id_mapping[i]
-                percentage_reward = rewards[agent_id] * percentage
-                new_rewards[agent_id] = rewards[agent_id] - percentage_reward
-                missing_reward += percentage_reward
+        for i, percentage in enumerate(averages):
+            agent_id: AgentID = self.agent_id_mapping[i]
 
-        remove_from_all = missing_reward / self.nr_agents
+            changed_reward += IMaController.distribute_to_others(
+                rewards, new_rewards, agent_id, percentage
+            )
 
-        for a in new_rewards:
-            new_rewards[a] += remove_from_all
-
-        self.changed_rewards.append(remove_from_all)
+        self.changed_rewards.append(changed_reward)
 
         self.step_agent_parallel(
             last_observations=filtered_obs,
