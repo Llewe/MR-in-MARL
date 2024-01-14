@@ -81,7 +81,7 @@ class CentralMaFixedPercentage(ActorCritic, IMaController):
             info={},
         )
 
-        return rewards
+        return new_rewards
 
     def epoch_started(self, epoch: int) -> None:
         super().epoch_started(epoch)
