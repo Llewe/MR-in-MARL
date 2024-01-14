@@ -136,9 +136,11 @@ class IndividualMaACPGlobalMetric(ActorCritic, IMaController):
         self.writer = writer
 
     def epoch_started(self, epoch: int) -> None:
+        super().epoch_started(epoch)
         self.changed_rewards.clear()
 
     def epoch_finished(self, epoch: int, tag: str) -> None:
+        super().episode_finished(epoch, tag)
         if self.writer is not None:
             self.writer.add_scalar(
                 tag=f"{self.agent_name}/changed_rewards",
