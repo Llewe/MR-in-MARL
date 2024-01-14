@@ -26,7 +26,7 @@ class CentralMaHeuristicIPD(IMaController):
         metrics: dict[MetricsE, float] | None = None,
     ) -> dict[AgentID, float]:
         sw = sum(rewards.values())
-        rewards = {agent: 0.0 for agent in rewards.keys()}
+
         if sw == -3:
             assert len(rewards) == 2
             self.changed_rewards.append(-1.5)
