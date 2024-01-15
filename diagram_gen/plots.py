@@ -68,6 +68,7 @@ def get_and_print_scalar_data(
 
     Parameters
     ----------
+    print_final_value
     wanted_data: Dict[str, Tuple[Axes, str, str]]
         Dict with the wanted data. The key is the tag and the value is a tuple with the axis, x_label and y_label
 
@@ -127,6 +128,19 @@ def get_and_print_scalar_data(
     return data
 
 
+def save_legend(config: PlotConfig, handles, labels, name: str) -> None:
+    labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+    fig = Figure()
+    fig.legend(
+        handles,
+        labels,
+        ncols=4,
+        loc="center",
+        frameon=False,
+    )
+    config.save(fig, f"{name}-legend")
+
+
 def plot_ipd(
     exp_files: List[ExpFile],
     output_file: str = "plot",
@@ -140,7 +154,7 @@ def plot_ipd(
     fig_eff, ax_eff = plt.subplots()
 
     wanted_data: Dict[str, Tuple[Axes, str, str]] = {
-        "pd-eval/efficiency_per_step": (ax_eff, "Epoch", "Efficiency pro Step")
+        "pd-eval/efficiency_per_step": (ax_eff, "Epoche", "Effizienz pro Zug"),
     }
 
     get_and_print_scalar_data(
@@ -152,16 +166,7 @@ def plot_ipd(
 
     handles, labels = ax_eff.get_legend_handles_labels()
     # sort both labels and handles by labels
-    labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
-
-    fig_eff.legend(
-        handles,
-        labels,
-        ncols=4,
-        loc="upper left",
-        frameon=False,
-        bbox_to_anchor=(0, 1.0),
-    )
+    save_legend(config, handles, labels, f"{output_file}-efficiency")
     config.save(fig_eff, f"{output_file}-efficiency")
 
     # tables
@@ -216,8 +221,8 @@ def plot_ipd(
         loc="center",
         cellLoc="center",
         colLabels=[
-            "Algorithm",
-            "Efficiency",
+            "Algorithmus",
+            "Effizienz",
             "Siege Sp. 0",
             "Siege Sp. 1",
             "Unentschieden",
@@ -243,6 +248,7 @@ def plots_coin_game(
     exp_files: List[ExpFile],
     output_file: str = "plot",
     merge_same_name: bool = True,
+    print_final_value=False,
 ) -> None:
     config: PlotConfig = PlotConfig()
 
@@ -255,26 +261,39 @@ def plots_coin_game(
     # ax_eff.set_prop_cycle(color=[cm(1.0 * i / NUM_COLORS) for i in range(NUM_COLORS)])
 
     wanted_data: Dict[str, Tuple[Axes, str, str]] = {
-        "coin_game-eval/coins/own_coin/": (ax_own_coin, "Epoch", "Own Coin"),
-        "eval/efficiency": (ax_eff, "Epoch", "Efficiency"),
-        "coin_game-eval/coins/total/": (ax_coins_total, "Epoch", "Total Coins"),
+        "coin_game-eval/coins/own_coin/": (
+            ax_own_coin,
+            "Epoche",
+            "Anteil eigene Münzen",
+        ),
+        "eval/efficiency": (ax_eff, "Epoche", "Effizienz"),
+        "coin_game-eval/coins/total/": (
+            ax_coins_total,
+            "Epoche",
+            "gesammt einsammelte Münzen",
+        ),
     }
 
     get_and_print_scalar_data(
         wanted_data=wanted_data,
         exp_files=exp_files,
         merge_same_name=merge_same_name,
+        print_final_value=print_final_value,
     )
 
-    fig_eff.legend(ncols=3, loc="upper left", frameon=False, bbox_to_anchor=(0, 1.15))
+    # Efficiency
+    handles, labels = ax_eff.get_legend_handles_labels()
+    save_legend(config, handles, labels, f"{output_file}-efficiency")
     config.save(fig_eff, f"{output_file}-efficiency")
-    fig_own_coin.legend(
-        ncols=3, loc="upper left", frameon=False, bbox_to_anchor=(0, 1.15)
-    )
+
+    # Own Coin
+    handles, labels = ax_own_coin.get_legend_handles_labels()
+    save_legend(config, handles, labels, f"{output_file}-own_coin")
     config.save(fig_own_coin, f"{output_file}-own_coin")
-    fig_coins_total.legend(
-        ncols=3, loc="upper left", frameon=False, bbox_to_anchor=(0, 1.15)
-    )
+
+    # Coins Total
+    handles, labels = ax_coins_total.get_legend_handles_labels()
+    save_legend(config, handles, labels, f"{output_file}-coins_total")
     config.save(fig_coins_total, f"{output_file}-coins_total")
 
 
@@ -322,35 +341,34 @@ if __name__ == "__main__":
         # "RMP-MID (AC, x=0.5)",
         # "RMP-MID (AC, x=1)",
         # "RMP-MID (AC, x=2)",
-        # "Zentraler Prozentsatz - [1.0]",
-        # "Zentrale AC-Strafe - [-0.5-0.5]",
-        # "Zentrale AC-Strafe - [0-1.5]",
-        # "Zentrale AC-Strafe - [0-0.5]",
-        # "Zentraler Prozentsatz - [0.8]",
-        # "Zentraler Prozentsatz - [0.8]",
-        # "Individuelle AC-Strafe - [-0.5-0.5]",
-        # "Individuelle AC-Strafe - [0-0.5]",
-        # "Individuelle AC-Strafe - [0-1.5]",
-        # "Individuelle Metric AC-Strafe - [0-0.5]",
-        # "Individuelle Metric AC-Strafe - [-0.5-0.5]",
+        "Zentraler Prozentsatz - [0.8]",
+        "Zentraler Prozentsatz - [1.0]",
+        "Zentrale AC-Strafe - [-0.5-0.5]",
+        "Zentrale AC-Strafe - [0-1.5]",
+        "Zentrale AC-Strafe - [0-0.5]",
+        "Individuelle Metric AC-Strafe - [-0.5-0.5]",
+        "Individuelle Metric AC-Strafe - [0-0.5]",
         # "Individuelle Metric AC-Strafe - [0-1.5]",
-        # "Gifting-ZS [0.5]",
-        # "Gifting-ZS [1.5]",
+        "Individuelle AC-Strafe - [-0.5-0.5]",
+        "Individuelle AC-Strafe - [0-0.5]",
+        # "Individuelle AC-Strafe - [0-1.5]",
+        "Gifting-ZS [0.5]",
+        "Gifting-ZS [1.5]",
     ]
 
     replace_dict: Dict[str, str] = {
-        "Actor-Critic": "Native Learner - 1",
+        "Actor-Critic": "Native Learner",
         "Zentrale AC-Strafe": "RMP Stufe 1",
         "Individuelle Metric AC-Strafe": "RMP Stufe 2",
         "Individuelle AC-Strafe": "RMP Stufe 3",
-        "Gifting-ZS - [1]": "Gifting-ZS - [1]",
+        "Gifting-ZS [1]": "Gifting-ZS",
     }
 
-    # env_name = "../resources/p_coin_game"
+    env_name = "../resources/p_coin_game"
 
     # experiment_label = "4pl-5000"
 
-    env_name = "../resources/p_prisoners_dilemma"
+    # env_name = "../resources/p_prisoners_dilemma"
     experiment_label = "final-5000"
 
     experiments: List[ExpFile] = find_matching_files(
@@ -373,6 +391,8 @@ if __name__ == "__main__":
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
     # draw_heatmaps(experiments, diagram_name)
 
-    plot_ipd(exp_files=experiments, output_file="ipd", print_final_value=False)
+    # plot_ipd(exp_files=experiments, output_file="ipd", print_final_value=False)
 
-    # plots_coin_game(exp_files=experiments, output_file="coin_game")
+    plots_coin_game(
+        exp_files=experiments, output_file="coin_game-short", print_final_value=False
+    )

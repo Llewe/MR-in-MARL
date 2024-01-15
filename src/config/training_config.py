@@ -11,7 +11,7 @@ from src.enums.manipulation_modes_e import ManipulationMode
 
 class TrainingConfig(ExpConfig):
     # EXP_TAG: str = names.get_first_name()
-    EXP_TAG: str = "MATE"
+    EXP_TAG: str = "INDIVIDUAL_AC_P_GLOBAL_METRIC - [0-10]"
     EPISODES: int = 10
     EPOCHS: int = 15000
 
@@ -22,7 +22,7 @@ class TrainingConfig(ExpConfig):
     ENV_NAME: EnvType = EnvType.P_HARVEST
     ENV_TAG: str = "test"
 
-    MA_MODE: ManipulationMode = ManipulationMode.NONE
+    MA_MODE: ManipulationMode = ManipulationMode.INDIVIDUAL_AC_P_GLOBAL_METRIC
 
     EXP_UNIQUE_NAME: str = ""
 

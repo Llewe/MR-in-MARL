@@ -16,8 +16,8 @@ from src.interfaces.ma_controller_i import IMaController
 
 
 class IndividualMaACPGlobalMetricConfig(ACConfig):
-    UPPER_BOUND: float = 0.5
-    LOWER_BOUND: float = -0.5
+    UPPER_BOUND: float = 10
+    LOWER_BOUND: float = 0
 
     METRICS: List[MetricsE] = [MetricsE.EFFICIENCY]
 
