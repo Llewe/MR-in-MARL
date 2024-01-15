@@ -15,8 +15,8 @@ from src.interfaces.ma_controller_i import IMaController
 
 
 class IndividualMaAcPercentageConfig(ACConfig):
-    UPPER_BOUND: float = 0.5
-    LOWER_BOUND: float = -0.5
+    UPPER_BOUND: float = 1.0
+    LOWER_BOUND: float = 0.0
 
     NR_MA_AGENTS: int = 1
 

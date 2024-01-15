@@ -62,6 +62,7 @@ def get_and_print_scalar_data(
     wanted_data: Dict[str, Tuple[Axes, str, str]],
     exp_files: List[ExpFile],
     merge_same_name: bool = True,
+    print_final_value: bool = True,
 ) -> Dict[str, Dict[str, Union[DataFrame, List[DataFrame]]]]:
     """
 
@@ -118,10 +119,10 @@ def get_and_print_scalar_data(
     for tag, (ax, x_label, y_label) in wanted_data.items():
         for line_name, value in data[tag].items():
             if merge_same_name:
-                write_scalars(ax, line_name, value, x_label, y_label)
+                write_scalars(ax, line_name, value, x_label, y_label, print_final_value)
             else:
                 for d in value:
-                    write_scalars(ax, line_name, d, x_label, y_label)
+                    write_scalars(ax, line_name, d, x_label, y_label, print_final_value)
 
     return data
 
@@ -130,6 +131,7 @@ def plot_ipd(
     exp_files: List[ExpFile],
     output_file: str = "plot",
     merge_same_name: bool = True,
+    print_final_value: bool = True,
 ) -> None:
     config: PlotConfig = PlotConfig()
 
@@ -145,15 +147,28 @@ def plot_ipd(
         wanted_data=wanted_data,
         exp_files=exp_files,
         merge_same_name=merge_same_name,
+        print_final_value=print_final_value,
     )
 
-    fig_eff.legend(ncols=3, loc="upper left", frameon=False, bbox_to_anchor=(0, 1.1))
+    handles, labels = ax_eff.get_legend_handles_labels()
+    # sort both labels and handles by labels
+    labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+
+    fig_eff.legend(
+        handles,
+        labels,
+        ncols=4,
+        loc="upper left",
+        frameon=False,
+        bbox_to_anchor=(0, 1.0),
+    )
     config.save(fig_eff, f"{output_file}-efficiency")
 
     # tables
     wins_p0: dict[str, float] = {}
     wins_p1: dict[str, float] = {}
     draws: dict[str, float] = {}
+    efficiency: dict[str, float] = {}
 
     for e in exp_files:
         if e.diagram_data is not None:
@@ -176,6 +191,12 @@ def plot_ipd(
                     line_name = getattr(e.cfg, "NAME", e.path)
 
                     draws[line_name] = values[-1]
+                if t == "pd-eval/efficiency_per_step":
+                    steps, values = zip(*values)
+
+                    line_name = getattr(e.cfg, "NAME", e.path)
+
+                    efficiency[line_name] = values[-1]
 
         else:
             print(f"Diagram data for {e.path} is None")
@@ -189,13 +210,24 @@ def plot_ipd(
     # Erstelle eine Tabelle mit den Daten
     table_data = []
     for k in wins_p0.keys():
-        table_data.append([k, wins_p0[k], wins_p1[k], draws[k]])
+        table_data.append([k, efficiency[k], wins_p0[k], wins_p1[k], draws[k]])
     table = ax_wins.table(
         cellText=table_data,
         loc="center",
         cellLoc="center",
-        colLabels=["Algorithm", "Siege Sp. 0", "Siege Sp. 1", "Unentschieden"],
+        colLabels=[
+            "Algorithm",
+            "Efficiency",
+            "Siege Sp. 0",
+            "Siege Sp. 1",
+            "Unentschieden",
+        ],
     )
+
+    # Set column widths based on the maximum string length in each column
+    for i, col in enumerate(table_data[0]):
+        col_width = max([len(str(row[i])) for row in table_data])
+        table.auto_set_column_width([i])
 
     # Konfiguriere das Aussehen der Tabelle
     table.auto_set_font_size(False)
@@ -290,11 +322,33 @@ if __name__ == "__main__":
         # "RMP-MID (AC, x=0.5)",
         # "RMP-MID (AC, x=1)",
         # "RMP-MID (AC, x=2)",
+        # "Zentraler Prozentsatz - [1.0]",
+        # "Zentrale AC-Strafe - [-0.5-0.5]",
+        # "Zentrale AC-Strafe - [0-1.5]",
+        # "Zentrale AC-Strafe - [0-0.5]",
+        # "Zentraler Prozentsatz - [0.8]",
+        # "Zentraler Prozentsatz - [0.8]",
+        # "Individuelle AC-Strafe - [-0.5-0.5]",
+        # "Individuelle AC-Strafe - [0-0.5]",
+        # "Individuelle AC-Strafe - [0-1.5]",
+        # "Individuelle Metric AC-Strafe - [0-0.5]",
+        # "Individuelle Metric AC-Strafe - [-0.5-0.5]",
+        # "Individuelle Metric AC-Strafe - [0-1.5]",
+        # "Gifting-ZS [0.5]",
+        # "Gifting-ZS [1.5]",
     ]
 
-    env_name = "../resources/p_coin_game"
+    replace_dict: Dict[str, str] = {
+        "Actor-Critic": "Native Learner - 1",
+        "Zentrale AC-Strafe": "RMP Stufe 1",
+        "Individuelle Metric AC-Strafe": "RMP Stufe 2",
+        "Individuelle AC-Strafe": "RMP Stufe 3",
+        "Gifting-ZS - [1]": "Gifting-ZS - [1]",
+    }
 
-    experiment_label = "4pl-5000"
+    # env_name = "../resources/p_coin_game"
+
+    # experiment_label = "4pl-5000"
 
     env_name = "../resources/p_prisoners_dilemma"
     experiment_label = "final-5000"
@@ -303,15 +357,22 @@ if __name__ == "__main__":
         exp_path=env_name, exp_label=experiment_label
     )
 
-    for exp in experiments:
-        exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
-
     for i, e in reversed(list(enumerate(experiments))):
         line_name = getattr(e.cfg, "NAME", e.path)
         if remove_experiments and line_name in remove_experiments and line_name != "":
             experiments.remove(e)
 
+    for e in experiments:
+        assert e.cfg is not None
+        name = getattr(e.cfg, "NAME", "")
+        for k, v in replace_dict.items():
+            if k in name:
+                e.cfg.NAME = name.replace(k, v)  # .split(" - ")[0]
+
+    for exp in experiments:
+        exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
     # draw_heatmaps(experiments, diagram_name)
-    plot_ipd(exp_files=experiments, output_file="ipd")
+
+    plot_ipd(exp_files=experiments, output_file="ipd", print_final_value=False)
 
     # plots_coin_game(exp_files=experiments, output_file="coin_game")

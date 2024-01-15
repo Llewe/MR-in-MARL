@@ -12,7 +12,7 @@ from src.interfaces.ma_controller_i import IMaController
 
 
 class CentralMaAcPercentageConfig(ACConfig):
-    UPPER_BOUND: float = 3.0
+    UPPER_BOUND: float = 1.0
     LOWER_BOUND: float = 0.0
 
 
@@ -60,10 +60,10 @@ class CentralMaAcPercentage(ActorCritic, IMaController):
 
     def update_rewards(
         self,
-        obs: ObsType | dict[AgentID, ObsType],
-        rewards: dict[AgentID, float],
+        obs: ObsType | Dict[AgentID, ObsType],
+        rewards: Dict[AgentID, float],
         metrics: Dict[str, float] | None = None,
-    ) -> dict[AgentID, float]:
+    ) -> Dict[AgentID, float]:
         percentage_changes: list[float] = self.act(self.agent_name, obs)
 
         new_rewards: dict[AgentID, float] = rewards.copy()
