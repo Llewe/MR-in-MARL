@@ -1,78 +1,16 @@
-import statistics
-from itertools import islice
-from statistics import mean
-from typing import Dict, List
+from typing import Dict
 
-import numpy as np
-import torch
-from gymnasium.spaces import Box, Space
-from pettingzoo.utils.env import ActionType, AgentID, ObsType
+from pettingzoo.utils.env import AgentID, ObsType
 
-from src.config.ctrl_config import ACConfig
-from src.controller.actor_critic import ActorCritic
+from src.controller_ma.utils.ma_ac import MaAc, MaAcConfig
 from src.enums.metrics_e import MetricsE
-from src.interfaces.ma_controller_i import IMaController
 
 
-class IndividualMaAcPercentageConfig(ACConfig):
-    UPPER_BOUND: float = 1.0
-    LOWER_BOUND: float = 0.0
-
-    NR_MA_AGENTS: int = 1
-
-
-class IndividualMaAcPercentage(ActorCritic, IMaController):
+class IndividualMaAcPercentage(MaAc):
     agent_name = "individual_ma_percentage_controller"
-    nr_agents: int
-
-    agent_id_mapping: dict[AgentID, int]
-
-    ma_agents: dict[
-        AgentID, str
-    ]  # used for internal names so that the logging is to two different graphs
-
-    upper_bound: float
-    lower_bound: float
-
-    # stats for logs
-    changed_rewards: List[float]
 
     def __init__(self):
-        super().__init__(IndividualMaAcPercentageConfig())
-        self.changed_rewards = []
-
-        self.upper_bound = self.config.UPPER_BOUND
-        self.lower_bound = self.config.LOWER_BOUND
-        self.nr_ma_agents = self.config.NR_MA_AGENTS
-
-    def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
-        obs_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
-
-        policy_network = self.actor_networks[agent_id]
-        return policy_network(obs_tensor).detach().numpy()[0]
-
-    def set_agents(
-        self, agents: List[AgentID], observation_space: dict[AgentID, Space]
-    ) -> None:
-        self.nr_agents = len(agents)
-        self.ma_agents = {a: f"ma_{a}" for a in islice(agents, self.nr_ma_agents)}
-
-        self.agent_id_mapping = {i: agent_id for i, agent_id in enumerate(agents)}
-
-        action_space = {
-            ma: Box(
-                low=self.lower_bound,
-                high=self.upper_bound,
-                shape=(self.nr_agents,),
-                dtype=np.float32,
-            )
-            for a, ma in self.ma_agents.items()
-        }
-        observation_space = {
-            ma: observation_space[a] for a, ma in self.ma_agents.items()
-        }
-
-        self.init_agents(action_space, observation_space)
+        super().__init__(MaAcConfig())
 
     def update_rewards(
         self,
@@ -81,44 +19,16 @@ class IndividualMaAcPercentage(ActorCritic, IMaController):
         metrics: Dict[MetricsE, float] | None = None,
     ) -> Dict[AgentID, float]:
         filtered_obs = {ma: obs[a] for a, ma in self.ma_agents.items()}
-        filtered_rewards = {ma: rewards[a] for a, ma in self.ma_agents.items()}
+        value_to_optimize = {ma: rewards[a] for a, ma in self.ma_agents.items()}
 
-        percentage_changes: Dict[AgentID, List[float]] = self.act_parallel(filtered_obs)
-
-        changed_reward: float = 0
-        new_rewards: dict[AgentID, float] = rewards.copy()
-
-        transposed_lists = zip(*percentage_changes.values())
-        averages = list(map(statistics.mean, transposed_lists))
-
-        for i, percentage in enumerate(averages):
-            agent_id: AgentID = self.agent_id_mapping[i]
-
-            changed_reward += IMaController.distribute_to_others(
-                rewards, new_rewards, agent_id, percentage
-            )
-
-        self.changed_rewards.append(changed_reward)
+        new_rewards, percentage_changes = self.proxy_step(filtered_obs, rewards)
 
         self.step_agent_parallel(
             last_observations=filtered_obs,
             last_actions=percentage_changes,
-            rewards=filtered_rewards,
+            rewards=value_to_optimize,
             dones={ma: False for a, ma in self.ma_agents.items()},
             infos={},
         )
 
         return new_rewards
-
-    def epoch_started(self, epoch: int) -> None:
-        super().epoch_started(epoch)
-        self.changed_rewards.clear()
-
-    def epoch_finished(self, epoch: int, tag: str) -> None:
-        super().episode_finished(epoch, tag)
-        if self.writer is not None:
-            self.writer.add_scalar(
-                tag=f"{self.agent_name}/percentage_reward",
-                scalar_value=mean(self.changed_rewards),
-                global_step=epoch,
-            )

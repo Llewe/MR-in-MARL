@@ -331,16 +331,60 @@ def draw_heatmaps(
             config.save(fig, f"{output_file}-{tag.split('/')[-1]}-step-{imagee.step}")
 
 
-if __name__ == "__main__":
+def start_ipd_plot() -> None:
     # Config variables
     remove_experiments: List[str] = [
-        #   "MATE-Static",
-        #   "MATE-Value-Decompose",
-        #   "Gifting-Replenishable-Budget",
-        #   "Gifting-Fixed-Budget",
-        # "RMP-MID (AC, x=0.5)",
-        # "RMP-MID (AC, x=1)",
-        # "RMP-MID (AC, x=2)",
+        "Zentraler Prozentsatz - [0.8]",
+        "Zentraler Prozentsatz - [1.0]",
+        "Zentrale AC-Strafe - [-0.5-0.5]",
+        "Zentrale AC-Strafe - [0-1.5]",
+        "Zentrale AC-Strafe - [0-0.5]",
+        "Individuelle Metric AC-Strafe - [-0.5-0.5]",
+        "Individuelle Metric AC-Strafe - [0-0.5]",
+        "Individuelle Metric AC-Strafe - [0-1.5]",
+        "Individuelle AC-Strafe - [-0.5-0.5]",
+        "Individuelle AC-Strafe - [0-0.5]",
+        "Individuelle AC-Strafe - [0-1.5]",
+        "Gifting-ZS [0.5]",
+        "Gifting-ZS [1.5]",
+    ]
+
+    replace_dict: Dict[str, str] = {
+        "Actor-Critic": "Native Learner - 1",
+        "Zentrale AC-Strafe": "RMP Stufe 1",
+        "Individuelle Metric AC-Strafe": "RMP Stufe 2",
+        "Individuelle AC-Strafe": "RMP Stufe 3",
+        "Gifting-ZS - [1]": "Gifting-ZS - [1]",
+    }
+
+    env_name = "../resources/p_prisoners_dilemma"
+    experiment_label = "final-5000"
+
+    experiments: List[ExpFile] = find_matching_files(
+        exp_path=env_name, exp_label=experiment_label
+    )
+
+    for i, e in reversed(list(enumerate(experiments))):
+        line_name = getattr(e.cfg, "NAME", e.path)
+        if remove_experiments and line_name in remove_experiments and line_name != "":
+            experiments.remove(e)
+
+    for e in experiments:
+        assert e.cfg is not None
+        name = getattr(e.cfg, "NAME", "")
+        for k, v in replace_dict.items():
+            if k in name:
+                e.cfg.NAME = name.replace(k, v).split(" - ")[0]
+
+    for exp in experiments:
+        exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
+
+    plot_ipd(exp_files=experiments, output_file="ipd-short", print_final_value=False)
+
+
+def start_coin_game_2_plot() -> None:
+    # Config variables
+    remove_experiments: List[str] = [
         "Zentraler Prozentsatz - [0.8]",
         "Zentraler Prozentsatz - [1.0]",
         "Zentrale AC-Strafe - [-0.5-0.5]",
@@ -365,10 +409,6 @@ if __name__ == "__main__":
     }
 
     env_name = "../resources/p_coin_game"
-
-    # experiment_label = "4pl-5000"
-
-    # env_name = "../resources/p_prisoners_dilemma"
     experiment_label = "final-5000"
 
     experiments: List[ExpFile] = find_matching_files(
@@ -391,8 +431,11 @@ if __name__ == "__main__":
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
     # draw_heatmaps(experiments, diagram_name)
 
-    # plot_ipd(exp_files=experiments, output_file="ipd", print_final_value=False)
-
     plots_coin_game(
         exp_files=experiments, output_file="coin_game-short", print_final_value=False
     )
+
+
+if __name__ == "__main__":
+    start_ipd_plot()
+    # start_coin_game_2_plot()
