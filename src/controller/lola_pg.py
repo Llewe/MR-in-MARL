@@ -139,7 +139,7 @@ class LolaPG(ActorCritic):
         print("preprocess finished")
         super(LolaPG, self).epoch_finished(epoch, tag)
 
-    def _update_actor(self, agent_id: AgentID, gamma: float, returns) -> None:
+    def update_actor(self, agent_id: AgentID, gamma: float, returns) -> None:
         print("update bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
         actor_net = self.actor_networks[agent_id]
         actor_net.optimizer.zero_grad()

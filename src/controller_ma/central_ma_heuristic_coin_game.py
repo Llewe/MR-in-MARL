@@ -20,11 +20,10 @@ class CentralMaHeuristicCoinGame(IMaController):
     def __init__(self):
         self.changed_rewards = []
 
-    def update_rewards(
-        self,
+    @staticmethod
+    def get_modified_reward(
         obs: ObsType | Dict[AgentID, ObsType],
         rewards: Dict[AgentID, float],
-        metrics: Dict[MetricsE, float] | None = None,
     ) -> Dict[AgentID, float]:
         min_reward = min(rewards.values())
 
@@ -47,15 +46,21 @@ class CentralMaHeuristicCoinGame(IMaController):
             for a, r in rewards.items():
                 if a == coin_owner:
                     ma_rewards[a] = 0.0
-                    self.changed_rewards.append(0.0 - r)
                 else:
                     ma_rewards[a] = reward_for_each
-                    self.changed_rewards.append(r - reward_for_each)
 
             return ma_rewards
+        return rewards.copy()
 
-        for r in rewards.values():
-            self.changed_rewards.append(0)
+    def update_rewards(
+        self,
+        obs: ObsType | Dict[AgentID, ObsType],
+        rewards: Dict[AgentID, float],
+        metrics: Dict[MetricsE, float] | None = None,
+    ) -> Dict[AgentID, float]:
+        ma_reward = CentralMaHeuristicCoinGame.get_modified_reward(obs, rewards)
+        for a, r in ma_reward.items():
+            self.changed_rewards.append(r - rewards[a])
 
         return rewards
 

@@ -11,7 +11,7 @@ from src.enums.manipulation_modes_e import ManipulationMode
 
 class TrainingConfig(ExpConfig):
     # EXP_TAG: str = names.get_first_name()
-    EXP_TAG: str = "CENTRAL_AC_PERCENTAGE - [0-10] concentration 1"
+    EXP_TAG: str = "CENTRAL_AC_PERCENTAGE [-1-1] - double-update"
     EPISODES: int = 10
     EPOCHS: int = 1000
 
@@ -20,7 +20,7 @@ class TrainingConfig(ExpConfig):
 
     AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
     ENV_NAME: EnvType = EnvType.P_COIN_GAME
-    ENV_TAG: str = "new_test"
+    ENV_TAG: str = "test_4"
 
     MA_MODE: ManipulationMode = ManipulationMode.CENTRAL_AC_PERCENTAGE
 

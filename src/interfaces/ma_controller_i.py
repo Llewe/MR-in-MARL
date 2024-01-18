@@ -113,18 +113,22 @@ class IMaController(ABC):
         original_rewards: dict[AgentID, float],
         changed_rewards: dict[AgentID, float],
         punish_agent_id: AgentID,
-        percentage: float,
+        value: float,
+        is_percentage: bool = True,
     ) -> float:
-        percentage_reward: float = original_rewards[punish_agent_id] * percentage
+        punishment: float
 
-        changed_reward = original_rewards[punish_agent_id] - percentage_reward
+        if is_percentage:
+            punishment = original_rewards[punish_agent_id] * value
+        else:
+            punishment = value
 
-        add_to_others = changed_reward / (len(original_rewards) - 1)
+        add_to_others = punishment / (len(original_rewards) - 1)
 
         for agent_id, reward in original_rewards.items():
             if agent_id == punish_agent_id:
-                changed_rewards[agent_id] -= percentage_reward
+                changed_rewards[agent_id] -= punishment
             else:
                 changed_rewards[agent_id] += add_to_others
 
-        return changed_reward
+        return punishment

@@ -3,12 +3,12 @@ from abc import ABC
 from itertools import islice
 from statistics import mean
 from typing import Dict, List, Tuple
-from torch import Tensor
 
 import numpy as np
 import torch
 from gymnasium.spaces import Box, Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
+from torch import Tensor
 from torch.distributions import Beta
 from torch.utils.tensorboard import SummaryWriter
 
@@ -18,12 +18,16 @@ from src.interfaces.ma_controller_i import IMaController
 
 
 class MaAcConfig(ACConfig):
-    UPPER_BOUND: float = 10
-    LOWER_BOUND: float = 0
+    UPPER_BOUND: float = 1.0
+    LOWER_BOUND: float = -1.0
 
     NR_MA_AGENTS: int = 1
 
-    BETA_PROB_CONCENTRATION: float = 1.0
+    BETA_PROB_CONCENTRATION: float = 2.0
+
+    PERCENTAGE_MODE: bool = True
+
+    USE_BETA_DISTRIBUTION: bool = False
 
 
 class MaAc(ActorCritic, IMaController, ABC):
@@ -43,6 +47,8 @@ class MaAc(ActorCritic, IMaController, ABC):
     # stats for logs
     changed_rewards: List[float]
 
+    use_beta_distribution: bool
+
     writer: SummaryWriter
 
     def __init__(self, config: MaAcConfig):
@@ -52,6 +58,7 @@ class MaAc(ActorCritic, IMaController, ABC):
         self.upper_bound = self.config.UPPER_BOUND
         self.lower_bound = self.config.LOWER_BOUND
         self.nr_ma_agents = self.config.NR_MA_AGENTS
+        self.use_beta_distribution = self.config.USE_BETA_DISTRIBUTION
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         obs_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
@@ -60,12 +67,13 @@ class MaAc(ActorCritic, IMaController, ABC):
 
         action_probabilities = policy_network(obs_tensor).detach()[0]
 
-        # Calculate shape parameters
-        alpha, beta = self.get_alpha_beta(action_probabilities)
+        if self.use_beta_distribution:
+            alpha, beta = self.get_alpha_beta(action_probabilities)
 
-        c = Beta(alpha, beta).sample()
-
-        return c.tolist()
+            c = Beta(alpha, beta).sample()
+            return c.tolist()
+        else:
+            return action_probabilities.tolist()
 
     def get_alpha_beta(self, action_probabilities: Tensor) -> Tuple[Tensor, Tensor]:
         """
@@ -84,7 +92,7 @@ class MaAc(ActorCritic, IMaController, ABC):
         beta = (1 - action_probabilities) * self.config.BETA_PROB_CONCENTRATION
         return alpha, beta
 
-    def _update_actor(self, agent_id, gamma: float, returns) -> None:
+    def update_actor(self, agent_id, gamma: float, returns) -> None:
         actor = self.actor_networks[agent_id]
 
         obs = torch.stack(self.step_info[agent_id].observations)
@@ -94,13 +102,19 @@ class MaAc(ActorCritic, IMaController, ABC):
         critic_values = torch.stack(self.step_info[agent_id].values).squeeze().detach()
 
         actor_probs = actor(obs.detach())
-
         advantages = returns.detach() - critic_values
 
-        alpha, beta = self.get_alpha_beta(actor_probs)
-
-        m1 = Beta(alpha, beta)
-        actor_loss = (-m1.log_prob(actions) * advantages).sum()
+        if self.use_beta_distribution:
+            alpha, beta = self.get_alpha_beta(actor_probs)
+            m1 = Beta(alpha, beta)
+            log_prob = torch.sum(m1.log_prob(actor_probs), dim=-1)
+            actor_loss = (-log_prob * advantages).sum()
+        else:
+            # log_prob = torch.sum(
+            #     -0.5 * ((actions - actor_probs) ** 2), dim=-1
+            # )  # Assuming Gaussian policy
+            log_prob = torch.sum(actor_probs * torch.log(actor_probs), dim=-1)
+            actor_loss = (-log_prob * advantages).sum()
 
         self.actor_losses[agent_id].append(actor_loss.detach())
 
@@ -145,7 +159,10 @@ class MaAc(ActorCritic, IMaController, ABC):
 
         # scale percentage to desired bounds
         scaled_percentage_changes = {
-            a: [self.lower_bound + (self.upper_bound - self.lower_bound) * f for f in p]
+            a: [
+                self.lower_bound + ((self.upper_bound - self.lower_bound) * f)
+                for f in p
+            ]
             for a, p in percentage_changes.items()
         }
         # build average of all percentage changes
@@ -174,10 +191,21 @@ class MaAc(ActorCritic, IMaController, ABC):
         self.changed_rewards.clear()
 
     def epoch_finished(self, epoch: int, tag: str) -> None:
-        super().episode_finished(epoch, tag)
+        super().epoch_finished(epoch, tag)
         if self.writer is not None:
             self.writer.add_scalar(
                 tag=f"{self.agent_name}/changed_rewards",
                 scalar_value=mean(self.changed_rewards),
                 global_step=epoch,
             )
+
+    def episode_started(self, episode: int) -> None:
+        super().episode_started(episode)
+        if episode == 5:
+            for agent_id in self.actor_networks:
+                self.learn(agent_id, self.config.DISCOUNT_FACTOR)
+
+            for agent_id in self.step_info:
+                self.step_info[agent_id].clear()
+                self.actor_losses[agent_id].clear()
+                self.critic_losses[agent_id].clear()

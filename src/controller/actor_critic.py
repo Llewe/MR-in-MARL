@@ -249,7 +249,7 @@ class ActorCritic(IController):
 
         return discounted_returns
 
-    def _update_critic(self, agent_id, gamma: float, returns) -> None:
+    def update_critic(self, agent_id, gamma: float, returns) -> None:
         critic = self.critic_networks[agent_id]
 
         critic_values = torch.stack(self.step_info[agent_id].values).squeeze()
@@ -263,7 +263,7 @@ class ActorCritic(IController):
         torch.nn.utils.clip_grad_norm_(critic.parameters(), self.config.CLIP_NORM)
         critic.optimizer.step()
 
-    def _update_actor(self, agent_id, gamma: float, returns) -> None:
+    def update_actor(self, agent_id, gamma: float, returns) -> None:
         actor = self.actor_networks[agent_id]
         critic = self.critic_networks[agent_id]
 
@@ -297,8 +297,8 @@ class ActorCritic(IController):
             self.compute_returns(self.step_info[agent_id].rewards, gamma),
             dtype=torch.float32,
         )
-        self._update_critic(agent_id, gamma, returns)
-        self._update_actor(agent_id, gamma, returns)
+        self.update_critic(agent_id, gamma, returns)
+        self.update_actor(agent_id, gamma, returns)
 
         self.step_info[agent_id].clear()
 

@@ -65,27 +65,27 @@ def get_ma_controller(
     raise ValueError(f"Unknown manipulation mode: {manipulation_mode}")
 
 
-def get_global_obs(
-    manipulation_mode: ManipulationMode, env: ParallelEnv
-) -> Callable[[], ObsType] | None:
+def get_global_obs(env: ParallelEnv) -> Callable[[], ObsType]:
+    if isinstance(env, CoinGame):
+        return env.get_global_obs
+    if isinstance(
+        env, aec_to_parallel_wrapper
+    ):  # TODO: this is currently for the Dilemma env -> better would be a propper interface
+        return env.aec_env.env.get_global_obs
+    if isinstance(env, Harvest):
+        return env.get_global_obs
+    raise ValueError(f"Unknown env type: {type(env)}, don't know how to get global obs")
+
+
+def use_global_obs(manipulation_mode: ManipulationMode) -> bool:
     if (
         manipulation_mode == ManipulationMode.CENTRAL_HEURISTIC
         or manipulation_mode == ManipulationMode.CENTRAL_FIXED_PERCENTAGE
         or manipulation_mode == ManipulationMode.CENTRAL_AC_PERCENTAGE
     ):
-        if isinstance(env, CoinGame):
-            return env.get_global_obs
-        if isinstance(
-            env, aec_to_parallel_wrapper
-        ):  # TODO: this is currently for the Dilemma env -> better would be a propper interface
-            return env.aec_env.env.get_global_obs
-        if isinstance(env, Harvest):
-            return env.get_global_obs
-        raise ValueError(
-            f"Unknown env type: {type(env)}, don't know how to get global obs"
-        )
+        return True
     else:
-        return None
+        return False
 
 
 def get_obs_space(

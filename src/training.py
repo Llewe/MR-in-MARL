@@ -19,10 +19,12 @@ from src.controller_ma.utils.ma_setup_helper import (
     get_metrics,
     get_obs_space,
     get_wanted_metrics,
+    use_global_obs,
 )
 from src.envs import build_env
 from src.interfaces.controller_i import IController
 from src.interfaces.ma_controller_i import IMaController
+from src.utils.loggers.heuristic_compare_logger import HeuristicCompareLogger
 from src.utils.loggers.obs_logger import IObsLogger
 from src.utils.loggers.simple_env_logger import SimpleEnvLogger
 from src.utils.loggers.util_logger import log_efficiency
@@ -36,6 +38,7 @@ def _train_epoch(
     env: Union[AECEnv, ParallelEnv],
     current_epoch: int,
     writer: SummaryWriter,
+    heuristic_compare_logger: HeuristicCompareLogger,
     obs_logger: IObsLogger,
     parallel: bool = False,
 ) -> None:
@@ -48,7 +51,7 @@ def _train_epoch(
     obs_logger.clear_buffer()
 
     epoch_rewards: dict[AgentID, list[float]] = {a: [] for a in env.agents}
-
+    heuristic_compare_logger.reset()
     for episode in range(1, _training_config.EPISODES + 1):
         logging.info(
             f"Epoch {current_epoch}/{_training_config.EPOCHS}"
@@ -61,15 +64,17 @@ def _train_epoch(
                 env,
                 current_epoch,
                 episode,
-                writer,
+                heuristic_compare_logger,
                 obs_logger,
             )
+
         else:
             raise NotImplementedError("Only parallel envs are supported")
 
         for agent_id in episode_reward:
             epoch_rewards[agent_id].append(episode_reward[agent_id])
 
+    heuristic_compare_logger.log_and_clear(current_epoch, "train")
     # by resetting some envs (e.g. coin game) will log some env specific data
     env.reset(
         options={
@@ -99,7 +104,7 @@ def _train_parallel_episode(
     env: ParallelEnv,
     current_epoch: int,
     current_episode: int,
-    writer: SummaryWriter,
+    heuristic_compare_logger: HeuristicCompareLogger,
     obs_logger: IObsLogger,
 ) -> dict[AgentID, float]:
     timestep: int = 0
@@ -115,9 +120,9 @@ def _train_parallel_episode(
 
     ma_controller.episode_started(current_episode)
 
-    obs_callback: Callable[[], ObsType] | None = get_global_obs(
-        _training_config.MA_MODE, env
-    )
+    obs_callback: Callable[[], ObsType] = get_global_obs(env)
+    is_gloal_ma: bool = use_global_obs(_training_config.MA_MODE)
+
     metrics = get_wanted_metrics(_training_config.MA_MODE)
 
     controller.episode_started(current_episode)
@@ -133,6 +138,8 @@ def _train_parallel_episode(
         for agent_id, observation in observations.items():
             obs_logger.add_observation(agent_id, observation)
 
+        global_obs = obs_callback()
+
         new_observations, rewards, terminations, truncations, infos = env.step(actions)
 
         current_metrics = (
@@ -141,14 +148,16 @@ def _train_parallel_episode(
             else None
         )
 
-        if obs_callback is not None:
+        if is_gloal_ma:
             manipulated_rewards = ma_controller.update_rewards(
-                obs=obs_callback(), rewards=rewards.copy(), metrics=current_metrics
+                obs=global_obs, rewards=rewards.copy(), metrics=current_metrics
             )  # For envs where all agents see the same global observation
         else:
             manipulated_rewards = ma_controller.update_rewards(
                 obs=observations, rewards=rewards.copy(), metrics=current_metrics
             )
+
+        heuristic_compare_logger.add(global_obs, rewards, manipulated_rewards)
 
         for agent_id, reward in rewards.items():
             episode_reward[agent_id] += reward
@@ -157,6 +166,7 @@ def _train_parallel_episode(
             observations, actions, manipulated_rewards, terminations, infos
         )
         controller.step_finished(timestep, new_observations)
+        ma_controller.step_finished(timestep, new_observations)
 
         observations = new_observations
 
@@ -309,12 +319,23 @@ def start_training() -> None:
         if get_cfg().get_render_mode() != "":
             pygame.init()
 
+        heuristic_compare_logger: HeuristicCompareLogger = HeuristicCompareLogger(
+            writer, get_cfg().exp_config.ENV_NAME
+        )
+
         # if fast first results are needed
         # for epoch in range(1, _training_config.EPOCHS + 1):
         # normal evaluation/epoch counter
         for epoch in range(0, _training_config.EPOCHS + 1):
             _train_epoch(
-                ma_controller, agents, env, epoch, writer, obs_logger, parallel=parallel
+                ma_controller,
+                agents,
+                env,
+                epoch,
+                writer,
+                heuristic_compare_logger,
+                obs_logger,
+                parallel=parallel,
             )
 
             if epoch % _training_config.EVAL_EPOCH_INTERVAL == 0:

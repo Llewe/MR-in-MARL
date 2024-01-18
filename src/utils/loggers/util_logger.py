@@ -1,6 +1,8 @@
 from pettingzoo.utils.env import AgentID
 from torch.utils.tensorboard import SummaryWriter
 
+from src.enums import EnvType
+
 
 def log_efficiency(
     epoch: int,
