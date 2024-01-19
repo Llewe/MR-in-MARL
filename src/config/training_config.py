@@ -42,7 +42,7 @@ class TrainingConfig(ExpConfig):
             or self.MA_MODE == ManipulationMode.INDIVIDUAL_AC_PERCENTAGE
         ):
             cfg = MaAcConfig()
-            self.EXP_TAG = f"{self.EXP_TAG} - [{cfg.LOWER_BOUND}-{cfg.UPPER_BOUND}] {cfg.DIST_TYPE.value}"
+            self.EXP_TAG = f"{self.EXP_TAG} - [{cfg.LOWER_BOUND}-{cfg.UPPER_BOUND}] {cfg.DIST_TYPE.value} - Disc{cfg.DISCOUNT_FACTOR}"
 
             if cfg.DIST_TYPE == MaAcConfig.DISTRIBUTION.BETA:
                 self.EXP_TAG = f"{self.EXP_TAG} - Beta={cfg.BETA_PROB_CONCENTRATION}"
