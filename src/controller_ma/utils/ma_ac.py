@@ -1,9 +1,10 @@
 import statistics
 from abc import ABC
+from enum import Enum
 from itertools import islice
 from statistics import mean
 from typing import Dict, List, Tuple
-
+import torch.nn.functional as F
 import numpy as np
 import torch
 from gymnasium.spaces import Box, Space
@@ -18,16 +19,26 @@ from src.interfaces.ma_controller_i import IMaController
 
 
 class MaAcConfig(ACConfig):
-    UPPER_BOUND: float = 1.0
-    LOWER_BOUND: float = -1.0
+    UPPER_BOUND: float = 2.0
+    LOWER_BOUND: float = 0.0
 
     NR_MA_AGENTS: int = 1
 
     BETA_PROB_CONCENTRATION: float = 2.0
 
+    class DISTRIBUTION(Enum):
+        DIRECT = "direct"
+        BETA = "beta"
+        GAUSSIAN = "gaussian"
+        FMAX = "fmax"
+
     PERCENTAGE_MODE: bool = True
 
     USE_BETA_DISTRIBUTION: bool = False
+
+    UPDATE_EVERY_X_EPISODES: int = 0
+
+    DIST_TYPE: DISTRIBUTION = DISTRIBUTION.DIRECT
 
 
 class MaAc(ActorCritic, IMaController, ABC):
@@ -47,7 +58,8 @@ class MaAc(ActorCritic, IMaController, ABC):
     # stats for logs
     changed_rewards: List[float]
 
-    use_beta_distribution: bool
+    update_every_x_episodes: int
+    dist_type: MaAcConfig.DISTRIBUTION
 
     writer: SummaryWriter
 
@@ -58,7 +70,8 @@ class MaAc(ActorCritic, IMaController, ABC):
         self.upper_bound = self.config.UPPER_BOUND
         self.lower_bound = self.config.LOWER_BOUND
         self.nr_ma_agents = self.config.NR_MA_AGENTS
-        self.use_beta_distribution = self.config.USE_BETA_DISTRIBUTION
+        self.update_every_x_episodes = self.config.UPDATE_EVERY_X_EPISODES
+        self.dist_type = self.config.DIST_TYPE
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         obs_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
@@ -67,7 +80,7 @@ class MaAc(ActorCritic, IMaController, ABC):
 
         action_probabilities = policy_network(obs_tensor).detach()[0]
 
-        if self.use_beta_distribution:
+        if self.dist_type == MaAcConfig.DISTRIBUTION.BETA:
             alpha, beta = self.get_alpha_beta(action_probabilities)
 
             c = Beta(alpha, beta).sample()
@@ -104,19 +117,25 @@ class MaAc(ActorCritic, IMaController, ABC):
         actor_probs = actor(obs.detach())
         advantages = returns.detach() - critic_values
 
-        if self.use_beta_distribution:
+        if self.dist_type == MaAcConfig.DISTRIBUTION.BETA:
             alpha, beta = self.get_alpha_beta(actor_probs)
             m1 = Beta(alpha, beta)
             log_prob = torch.sum(m1.log_prob(actor_probs), dim=-1)
             actor_loss = (-log_prob * advantages).sum()
-        else:
-            # log_prob = torch.sum(
-            #     -0.5 * ((actions - actor_probs) ** 2), dim=-1
-            # )  # Assuming Gaussian policy
-            log_prob = torch.sum(actor_probs * torch.log(actor_probs), dim=-1)
-            actor_loss = (-log_prob * advantages).sum()
+        elif self.dist_type == MaAcConfig.DISTRIBUTION.GAUSSIAN:
+            log_probs = torch.sum(
+                -0.5 * ((actions - actor_probs) ** 2), dim=-1
+            )  # Assuming Gaussian policy
+            actor_loss = (-log_probs * advantages).sum()
+        elif self.dist_type == MaAcConfig.DISTRIBUTION.FMAX:
+            log_probs = torch.sum(F.log_softmax(actor_probs, dim=1), dim=-1)
 
-        self.actor_losses[agent_id].append(actor_loss.detach())
+            actor_loss = (-log_probs * advantages).sum()
+        elif self.dist_type == MaAcConfig.DISTRIBUTION.DIRECT:
+            log_probs = torch.sum(actor_probs * torch.log(actor_probs), dim=-1)
+            actor_loss = (-log_probs * advantages).sum()
+        else:
+            raise ValueError("Unknown distribution type")
 
         actor.optimizer.zero_grad()
         actor_loss.backward()
@@ -201,7 +220,8 @@ class MaAc(ActorCritic, IMaController, ABC):
 
     def episode_started(self, episode: int) -> None:
         super().episode_started(episode)
-        if episode == 5:
+        e = episode - 1
+        if self.update_every_x_episodes > 0 and e % self.update_every_x_episodes == 0:
             for agent_id in self.actor_networks:
                 self.learn(agent_id, self.config.DISCOUNT_FACTOR)
 
