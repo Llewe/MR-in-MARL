@@ -118,7 +118,7 @@ class MaAc(ActorCritic, IMaController, ABC):
         advantages = returns.detach() - critic_values
 
         if self.dist_type == MaAcConfig.DISTRIBUTION.BETA:
-            alpha, beta = self.get_alpha_beta(actor_probs)
+            alpha, beta = self.get_alpha_beta(actions)
             m1 = Beta(alpha, beta)
             log_prob = torch.sum(m1.log_prob(actor_probs), dim=-1)
             actor_loss = (-log_prob * advantages).sum()
