@@ -122,7 +122,12 @@ poetry install --sync --all-extras
 #train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_p_global_metric AGENT_TYPE=actor_critic NAME="Individuelle Metric AC-Strafe - [0-1.0]" EXP_TAG="Individuelle Metric AC-Strafe 2 - [0-1.0]" LOWER_BOUND=0 UPPER_BOUND=1.0
 #train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_p_global_metric AGENT_TYPE=actor_critic NAME="Individuelle Metric AC-Strafe - [0-1.5]" EXP_TAG="Individuelle Metric AC-Strafe 1 - [0-1.5]" LOWER_BOUND=0 UPPER_BOUND=1.5
 #train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_p_global_metric AGENT_TYPE=actor_critic NAME="Individuelle Metric AC-Strafe - [0-1.5]" EXP_TAG="Individuelle Metric AC-Strafe 2 - [0-1.5]" LOWER_BOUND=0 UPPER_BOUND=1.5
-
+train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=central_ac_percentage  AGENT_TYPE=actor_critic NAME="Zentrale Metric AC-Strafe - [0-2]" EXP_TAG="Zentrale Metric 1 - [0-2] (fmax)" LOWER_BOUND=0.0 UPPER_BOUND=2.0 DIST_TYPE="fmax"
+train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=central_ac_percentage  AGENT_TYPE=actor_critic NAME="Zentrale Metric AC-Strafe - [0-2]" EXP_TAG="Zentrale Metric 2 - [0-2] (fmax)" LOWER_BOUND=0.0 UPPER_BOUND=2.0 DIST_TYPE="fmax"
+train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_p_global_metric  AGENT_TYPE=actor_critic NAME="Individuelle Metric - [0-2]" EXP_TAG="Individuelle Metric 1 - [0-2] (fmax)" LOWER_BOUND=0.0 UPPER_BOUND=2.0 DIST_TYPE="fmax"
+train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_p_global_metric  AGENT_TYPE=actor_critic NAME="Individuelle Metric - [0-2]" EXP_TAG="Individuelle Metric 2 - [0-2] (fmax)" LOWER_BOUND=0.0 UPPER_BOUND=2.0 DIST_TYPE="fmax"
+train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_percentage AGENT_TYPE=actor_critic NAME="Individuelle AC-Strafe - [0-2]" EXP_TAG="Individuelle AC-Strafe 1 - [0-2] (fmax)" LOWER_BOUND=0.0 UPPER_BOUND=2.0 DIST_TYPE="fmax"
+train EPOCHS=15000 ENV_NAME=p_coin_game PLAYERS=4 GRID_SIZE=5 ENV_TAG="4pl-final-15000" DISCOUNT_FACTOR=0.95 MA_MODE=individual_ac_percentage AGENT_TYPE=actor_critic NAME="Individuelle AC-Strafe - [0-2]" EXP_TAG="Individuelle AC-Strafe 2 -  [0-2] (fmax)" LOWER_BOUND=0.0 UPPER_BOUND=2.0 DIST_TYPE="fmax"
 
 
 
