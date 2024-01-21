@@ -1,5 +1,6 @@
 from enum import Enum
 
+import numpy as np
 from pydantic_settings import BaseSettings
 
 from src.enums import EnvType
@@ -27,8 +28,8 @@ class ACConfig(CtrlConfig):
     REWARD_NORMALIZATION: bool = False
 
     EPSILON_INIT: float = 0.0
-    EPSILON_MIN: float = 0.0
-    EPSILON_DECAY: float = 2.25e-05
+    EPSILON_MIN: float = 0.00
+    EPSILON_DECAY: float = 9.75e-05
 
 
 class MateConfig(ACConfig):
@@ -120,3 +121,4 @@ if __name__ == "__main__":
     print(
         f"EPSILON_INIT={a2c_config.EPSILON_INIT} EPSILON_DECAY={decay} EPSILON_MIN={a2c_config.EPSILON_MIN}"
     )
+    print(np.random.rand(3))

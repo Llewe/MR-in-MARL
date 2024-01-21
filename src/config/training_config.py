@@ -14,14 +14,14 @@ class TrainingConfig(ExpConfig):
     # EXP_TAG: str = names.get_first_name()
     EXP_TAG: str = ""
     EPISODES: int = 10
-    EPOCHS: int = 1000
+    EPOCHS: int = 5000
 
     EVAL_EPISODES: int = 100
     EVAL_EPOCH_INTERVAL: int = 50
 
     AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
     ENV_NAME: EnvType = EnvType.P_COIN_GAME
-    ENV_TAG: str = "test_4"
+    ENV_TAG: str = "test_3_3x3"
 
     MA_MODE: ManipulationMode = ManipulationMode.CENTRAL_AC_PERCENTAGE
 

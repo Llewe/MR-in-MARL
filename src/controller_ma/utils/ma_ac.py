@@ -36,7 +36,7 @@ class MaAcConfig(ACConfig):
 
     USE_BETA_DISTRIBUTION: bool = False
 
-    UPDATE_EVERY_X_EPISODES: int = 0
+    UPDATE_EVERY_X_EPISODES: int = 5
 
     DIST_TYPE: DISTRIBUTION = DISTRIBUTION.DIRECT
 
@@ -64,6 +64,11 @@ class MaAc(ActorCritic, IMaController, ABC):
     writer: SummaryWriter
 
     def __init__(self, config: MaAcConfig):
+        # config.EPSILON_INIT = 0.0
+        # config.EPSILON_MIN = 0.00
+        # config.EPSILON_DECAY = 9.75e-05
+        # config.DISCOUNT_FACTOR = 0.95
+
         super().__init__(config)
         self.changed_rewards = []
 
@@ -74,19 +79,23 @@ class MaAc(ActorCritic, IMaController, ABC):
         self.dist_type = self.config.DIST_TYPE
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
-        obs_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
-
-        policy_network = self.actor_networks[agent_id]
-
-        action_probabilities = policy_network(obs_tensor).detach()[0]
-
-        if self.dist_type == MaAcConfig.DISTRIBUTION.BETA:
-            alpha, beta = self.get_alpha_beta(action_probabilities)
-
-            c = Beta(alpha, beta).sample()
-            return c.tolist()
+        if explore and self.epsilon > 0 and np.random.rand() < self.epsilon:
+            actions = np.random.rand(self.actor_networks[agent_id].num_actions).tolist()
+            # log_prob = -np.log(1.0 / self.actor_networks[agent_id].action_space.n)
+            return actions
         else:
-            return action_probabilities.tolist()
+            obs_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
+
+            policy_network = self.actor_networks[agent_id]
+
+            action_probabilities = policy_network(obs_tensor).detach()[0]
+            if self.dist_type == MaAcConfig.DISTRIBUTION.BETA:
+                alpha, beta = self.get_alpha_beta(action_probabilities)
+
+                c = Beta(alpha, beta).sample()
+                return c.tolist()
+            else:
+                return action_probabilities.tolist()
 
     def get_alpha_beta(self, action_probabilities: Tensor) -> Tuple[Tensor, Tensor]:
         """
