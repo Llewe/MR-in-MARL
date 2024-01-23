@@ -7,7 +7,7 @@ import pandas as pd
 from PIL import Image
 from matplotlib.ticker import PercentFormatter
 from pandas import DataFrame
-from pylab import Figure, Axes
+from pylab import Axes, Figure
 from tensorboard.backend.event_processing import event_accumulator
 
 from diagram_gen.config.plot_config import PlotConfig
@@ -63,6 +63,7 @@ def get_and_print_scalar_data(
     exp_files: List[ExpFile],
     merge_same_name: bool = True,
     print_final_value: bool = True,
+    max_epochs: Optional[int] = None,
 ) -> Dict[str, Dict[str, Union[DataFrame, List[DataFrame]]]]:
     """
 
@@ -101,6 +102,10 @@ def get_and_print_scalar_data(
 
                     steps, values = zip(*values)
                     df = pd.DataFrame({"Steps": steps, "Values": values})
+
+                    if max_epochs is not None:
+                        df = df[df["Steps"] <= max_epochs]
+
                     data[t][line_name].append(df)
 
         else:
@@ -249,6 +254,7 @@ def plots_coin_game(
     output_file: str = "plot",
     merge_same_name: bool = True,
     print_final_value=False,
+    max_epochs: Optional[int] = None,
 ) -> None:
     config: PlotConfig = PlotConfig()
 
@@ -279,6 +285,7 @@ def plots_coin_game(
         exp_files=exp_files,
         merge_same_name=merge_same_name,
         print_final_value=print_final_value,
+        max_epochs=max_epochs,
     )
 
     # Efficiency
@@ -437,5 +444,5 @@ def start_coin_game_2_plot() -> None:
 
 
 if __name__ == "__main__":
-    start_ipd_plot()
-    # start_coin_game_2_plot()
+    # start_ipd_plot()
+    start_coin_game_2_plot()

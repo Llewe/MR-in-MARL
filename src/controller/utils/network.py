@@ -1,8 +1,9 @@
 import numpy
 import torch
+import torch.nn.init as init
 from torch.nn import ELU, Linear, Module, Sequential
 from torch.nn.functional import softmax
-import torch.nn.init as init
+
 
 def initialize_weights(layer):
     """
@@ -17,16 +18,16 @@ def initialize_weights(layer):
 
     """
     if isinstance(layer, Linear):
-        init.kaiming_normal_(layer.weight, nonlinearity='relu')
-        init.constant_(layer.bias, 0)
+        init.xavier_uniform_(layer.weight)
+
 
 def preprocessing_module(nr_input_features, nr_hidden_units, last_layer_units):
-    model=  Sequential(
-        Linear(nr_input_features, nr_hidden_units),
+    model = Sequential(
+        Linear(nr_input_features, nr_hidden_units, dtype=torch.float64),
         ELU(),
-        Linear(nr_hidden_units, nr_hidden_units),
+        Linear(nr_hidden_units, nr_hidden_units, dtype=torch.float64),
         ELU(),
-        Linear(nr_hidden_units, last_layer_units),
+        Linear(nr_hidden_units, last_layer_units, dtype=torch.float64),
     )
     # if needed here initialize weights can be applied
     # model.apply(initialize_weights)
@@ -41,11 +42,11 @@ class ActorNetwork(Module):
     optimizer: torch.optim.Adam
 
     def __init__(
-            self,
-            observation_space,
-            num_actions: numpy.int32,
-            hidden_units: int,
-            learning_rate: float,
+        self,
+        observation_space,
+        num_actions: numpy.int32,
+        hidden_units: int,
+        learning_rate: float,
     ):
         super(ActorNetwork, self).__init__()
         self.num_actions = num_actions
@@ -56,7 +57,7 @@ class ActorNetwork(Module):
     def forward(self, x):
         batch_size = x.size(0)
         x = x.view(batch_size, -1)
-        return softmax(self.fc_net(x), dim=-1)
+        return softmax(self.fc_net(x), dim=-1, dtype=torch.float64)
 
 
 class CriticNetwork(Module):

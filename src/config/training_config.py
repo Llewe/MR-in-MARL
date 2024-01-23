@@ -1,8 +1,5 @@
 from datetime import datetime
-from enum import Enum
 from time import time
-
-import names
 
 from src.cfg_manager import ExpConfig
 from src.controller_ma.utils.ma_ac import MaAcConfig
@@ -12,7 +9,7 @@ from src.enums.manipulation_modes_e import ManipulationMode
 
 class TrainingConfig(ExpConfig):
     # EXP_TAG: str = names.get_first_name()
-    EXP_TAG: str = ""
+    EXP_TAG: str = "ELU-clip 0.9"
     EPISODES: int = 10
     EPOCHS: int = 5000
 
@@ -21,7 +18,7 @@ class TrainingConfig(ExpConfig):
 
     AGENT_TYPE: AgentType = AgentType.ACTOR_CRITIC
     ENV_NAME: EnvType = EnvType.P_COIN_GAME
-    ENV_TAG: str = "test_3_3x3"
+    ENV_TAG: str = "test_4-300"
 
     MA_MODE: ManipulationMode = ManipulationMode.CENTRAL_AC_PERCENTAGE
 

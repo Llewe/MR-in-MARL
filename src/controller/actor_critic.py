@@ -13,9 +13,9 @@ from torch.distributions import Categorical
 from torch.nn.functional import mse_loss
 from torch.utils.tensorboard import SummaryWriter
 
+from src.config.ctrl_config import ACConfig
 from src.controller.utils.network import ActorNetwork, CriticNetwork
 from src.controller.utils.reward_normalization import RewardNormalization
-from src.config.ctrl_config import ACConfig
 from src.interfaces.controller_i import IController
 from src.utils.gym_utils import get_space_size
 
@@ -88,6 +88,8 @@ class ActorCritic(IController):
         self.epsilon = config.EPSILON_INIT
         self.epsilon_final = config.EPSILON_MIN
         self.epsilon_decay_rate = config.EPSILON_DECAY
+
+        torch.set_default_dtype(torch.float64)
 
     def init_agents(
         self,
@@ -183,7 +185,7 @@ class ActorCritic(IController):
 
             # convert observation to float tensor, add 1 dimension, allocate tensor on device
 
-            obs_tensor = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
+            obs_tensor = torch.tensor(observation, dtype=torch.float64).unsqueeze(0)
 
             action_probs = policy_network(obs_tensor)  # [0].detach().numpy()
             m = Categorical(probs=action_probs)
@@ -213,7 +215,7 @@ class ActorCritic(IController):
         else:
             scaled_reward = reward
         obs_curr: Tensor = torch.tensor(
-            last_observation, dtype=torch.float32
+            last_observation, dtype=torch.float64
         ).unsqueeze(0)
         local_probs = self.local_probs(agent_id, obs_curr)
         self.step_info[agent_id].add(
@@ -232,7 +234,7 @@ class ActorCritic(IController):
 
     @staticmethod
     def compute_returns(rewards, gamma: float):
-        discounted_returns = np.zeros_like(rewards, dtype=np.float32)
+        discounted_returns = np.zeros_like(rewards, dtype=np.float64)
         running_add: float = 0.0
         for t in reversed(range(len(rewards))):
             running_add = running_add * gamma + rewards[t]
@@ -295,7 +297,7 @@ class ActorCritic(IController):
 
         returns = torch.tensor(
             self.compute_returns(self.step_info[agent_id].rewards, gamma),
-            dtype=torch.float32,
+            dtype=torch.float64,
         )
         self.update_critic(agent_id, gamma, returns)
         self.update_actor(agent_id, gamma, returns)

@@ -974,36 +974,36 @@ class Harvest(ParallelEnv):
 
         # calculate sustainability sustainability (S) (the average time at which apples are collected)
 
-        # avg_t_per_agent: dict[AgentID, float] = {
-        #     agent: 0 for agent in self.possible_agents
-        # }
-        # for episodes in range(episodes):
-        #     episode_avg_t_per_agent: dict[AgentID, float] = {
-        #         agent: 0 for agent in self.possible_agents
-        #     }
-        #     for t in range(self.max_cycles):
-        #         for agent in self.possible_agents:
-        #             if (
-        #                 self.current_history[
-        #                     t + episodes * self.max_cycles
-        #                 ].collected_apples[agent]
-        #                 > 0
-        #             ):
-        #                 episode_avg_t_per_agent[agent] += t
-        #     for agent in self.possible_agents:
-        #         avg_t_per_agent[agent] += (
-        #             self.max_cycles / episode_avg_t_per_agent[agent]
-        #         )
-        #
-        # for agent in self.possible_agents:
-        #     avg_t_per_agent[agent] = avg_t_per_agent[agent] / episodes
-        #
-        # sustainability: float = sum(avg_t_per_agent.values()) / self.n_players
-        # self.summary_writer.add_scalar(
-        #     f"{log_name}/sustainability",
-        #     sustainability,
-        #     epoch,
-        # )
+        avg_t_per_agent: dict[AgentID, float] = {
+            agent: 0 for agent in self.possible_agents
+        }
+        for episodes in range(episodes):
+            episode_avg_t_per_agent: dict[AgentID, float] = {
+                agent: 0 for agent in self.possible_agents
+            }
+            for t in range(self.max_cycles):
+                for agent in self.possible_agents:
+                    if (
+                        self.current_history[
+                            t + episodes * self.max_cycles
+                        ].collected_apples[agent]
+                        > 0
+                    ):
+                        episode_avg_t_per_agent[agent] += t
+            for agent in self.possible_agents:
+                avg_t_per_agent[agent] += (
+                    self.max_cycles / episode_avg_t_per_agent[agent]
+                )
+
+        for agent in self.possible_agents:
+            avg_t_per_agent[agent] = avg_t_per_agent[agent] / episodes
+
+        sustainability: float = sum(avg_t_per_agent.values()) / self.n_players
+        self.summary_writer.add_scalar(
+            f"{log_name}/sustainability",
+            sustainability,
+            epoch,
+        )
 
         # calculate peace
 
