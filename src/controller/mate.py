@@ -57,10 +57,10 @@ class Mate(ActorCritic):
             ]
 
         self.trust_request_matrix: numpy.ndarray = numpy.zeros(
-            (self.nr_agents, self.nr_agents), dtype=numpy.float32
+            (self.nr_agents, self.nr_agents), dtype=numpy.float64
         )
         self.trust_response_matrix: numpy.ndarray = numpy.zeros(
-            (self.nr_agents, self.nr_agents), dtype=numpy.float32
+            (self.nr_agents, self.nr_agents), dtype=numpy.float64
         )
 
         self.last_rewards_observed = {agent_id: [] for agent_id in action_space.keys()}
@@ -231,7 +231,7 @@ class Mate(ActorCritic):
             last_obs_index = -1
             next_observations = {  # type: ignore
                 agent_id: torch.tensor(
-                    next_observations[agent_id], dtype=torch.float32
+                    next_observations[agent_id], dtype=torch.float64
                 ).unsqueeze(0)
                 for agent_id in self.step_info.keys()
             }
