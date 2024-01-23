@@ -1,16 +1,20 @@
 from statistics import mean
+from typing import Optional
 
-from gymnasium.spaces import Discrete, Space
+from gymnasium.spaces import Space
 from pettingzoo.utils.env import AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
-from src.config.ctrl_config import ACConfig
-from src.controller.actor_critic import ActorCritic
 from src.enums.metrics_e import MetricsE
 from src.interfaces.ma_controller_i import IMaController
 
 
 class CentralMaHeuristicIPD(IMaController):
+    def step_finished(
+        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ) -> None:
+        pass
+
     agent_name = "central_ma_heuristic_ipd_controller"
 
     changed_rewards: list[float]

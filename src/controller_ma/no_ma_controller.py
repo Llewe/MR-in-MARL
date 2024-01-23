@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from gymnasium import Space
 from pettingzoo.utils.env import AgentID, ObsType
@@ -9,6 +9,11 @@ from src.interfaces.ma_controller_i import IMaController
 
 
 class NoMaController(IMaController):
+    def step_finished(
+        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ) -> None:
+        pass
+
     def episode_started(self, episode: int) -> None:
         pass
 

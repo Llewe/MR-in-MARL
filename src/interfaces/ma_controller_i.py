@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, TypeVar
+from typing import Dict, Optional, TypeVar
 
 from gymnasium.spaces import Space
 from pettingzoo.utils.env import AgentID, ObsType
@@ -132,3 +132,9 @@ class IMaController(ABC):
                 changed_rewards[agent_id] += add_to_others
 
         return punishment
+
+    @abstractmethod
+    def step_finished(
+        self, step: int, next_observations: Optional[dict[AgentID, ObsType]] = None
+    ) -> None:
+        pass

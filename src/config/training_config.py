@@ -20,7 +20,7 @@ class TrainingConfig(ExpConfig):
     ENV_NAME: EnvType = EnvType.P_COIN_GAME
     ENV_TAG: str = "test_4-300"
 
-    MA_MODE: ManipulationMode = ManipulationMode.CENTRAL_AC_PERCENTAGE
+    MA_MODE: ManipulationMode = ManipulationMode.NONE
 
     EXP_UNIQUE_NAME: str = ""
 
