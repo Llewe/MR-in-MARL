@@ -39,7 +39,7 @@ class MaAcConfig(ACConfig):
 
     UPDATE_EVERY_X_EPISODES: int = 5
 
-    DIST_TYPE: DISTRIBUTION = DISTRIBUTION.BETA
+    DIST_TYPE: DISTRIBUTION = DISTRIBUTION.FMAX
 
 
 class MaAc(ActorCritic, IMaController, ABC):

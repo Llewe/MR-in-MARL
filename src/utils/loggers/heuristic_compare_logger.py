@@ -77,8 +77,10 @@ class HeuristicCompareLogger:
                         self.correct_changes.append(1)
                     else:
                         self.incorrect_changes.append(1)
+                elif heuristic_reward == real_reward:
+                    self.correct_changes.append(1)
                 else:
-                    if manipulated_reward == real_reward:
+                    if manipulated_reward == manipulated_reward:
                         self.no_changes.append(1)
                     else:
                         self.incorrect_changes.append(1)

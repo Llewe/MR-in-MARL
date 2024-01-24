@@ -67,7 +67,7 @@ class CentralMaHeuristicCoinGame(IMaController):
         for a, r in ma_reward.items():
             self.changed_rewards.append(r - rewards[a])
 
-        return rewards
+        return ma_reward
 
     def set_agents(self, agents: list[AgentID], observation_space: Space) -> None:
         pass
