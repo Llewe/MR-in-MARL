@@ -59,7 +59,7 @@ def write_scalars(
 
 
 def get_and_print_scalar_data(
-    wanted_data: Dict[str, Tuple[Axes, str, str]],
+    wanted_data: Dict[str, Tuple[Tuple[Figure, Axes], str, str]],
     exp_files: List[ExpFile],
     merge_same_name: bool = True,
     print_final_value: bool = True,
@@ -122,7 +122,7 @@ def get_and_print_scalar_data(
                 else:
                     data[tag][line_name] = df_list[0]
 
-    for tag, (ax, x_label, y_label) in wanted_data.items():
+    for tag, ((fig, ax), x_label, y_label) in wanted_data.items():
         for line_name, value in data[tag].items():
             if merge_same_name:
                 write_scalars(ax, line_name, value, x_label, y_label, print_final_value)
@@ -156,10 +156,8 @@ def plot_ipd(
 
     config.configPlt(plt)
 
-    fig_eff, ax_eff = plt.subplots()
-
-    wanted_data: Dict[str, Tuple[Axes, str, str]] = {
-        "pd-eval/efficiency_per_step": (ax_eff, "Epoche", "Effizienz pro Zug"),
+    wanted_data: Dict[str, Tuple[Tuple[Figure, Axes], str, str]] = {
+        "pd-eval/efficiency_per_step": (plt.subplots(), "Epoche", "Effizienz pro Zug"),
     }
 
     get_and_print_scalar_data(
@@ -169,6 +167,7 @@ def plot_ipd(
         print_final_value=print_final_value,
     )
 
+    fig_eff, ax_eff = wanted_data["pd-eval/efficiency_per_step"][0]
     handles, labels = ax_eff.get_legend_handles_labels()
     # sort both labels and handles by labels
     save_legend(config, handles, labels, f"{output_file}-efficiency")
@@ -260,23 +259,45 @@ def plots_coin_game(
 
     config.configPlt(plt)
     # graph
-    fig_eff, ax_eff = plt.subplots()
-    fig_own_coin, ax_own_coin = plt.subplots()
-    fig_coins_total, ax_coins_total = plt.subplots()
 
     # ax_eff.set_prop_cycle(color=[cm(1.0 * i / NUM_COLORS) for i in range(NUM_COLORS)])
 
-    wanted_data: Dict[str, Tuple[Axes, str, str]] = {
+    wanted_data: Dict[str, Tuple[Tuple[Figure, Axes], str, str]] = {
         "coin_game-eval/coins/own_coin/": (
-            ax_own_coin,
+            plt.subplots(),
             "Epoche",
             "Anteil eigene Münzen",
         ),
-        "eval/efficiency": (ax_eff, "Epoche", "Effizienz"),
+        "eval/efficiency": (plt.subplots(), "Epoche", "Effizienz"),
         "coin_game-eval/coins/total/": (
-            ax_coins_total,
+            plt.subplots(),
             "Epoche",
             "gesammt einsammelte Münzen",
+        ),
+        "train/coin_owner_highest_reward": (
+            plt.subplots(),
+            "Epoche",
+            "Münzen Besitzer hat die höchste Belohnung in %",
+        ),
+        "train/percentage_correct_changes": (
+            plt.subplots(),
+            "Epoche",
+            "Prozentuale korrekte Änderungen",
+        ),
+        "train/percentage_incorrect_changes": (
+            plt.subplots(),
+            "Epoche",
+            "Prozentuale inkorrekte Änderungen",
+        ),
+        "train/percentage_overall_correct": (
+            plt.subplots(),
+            "Epoche",
+            "Prozentuale korrekte Änderungen insgesamt",
+        ),
+        "train/heuristic_diff": (
+            plt.subplots(),
+            "Epoche",
+            "Differenz zu der Heuristik",
         ),
     }
 
@@ -288,20 +309,30 @@ def plots_coin_game(
         max_epochs=max_epochs,
     )
 
-    # Efficiency
-    handles, labels = ax_eff.get_legend_handles_labels()
-    save_legend(config, handles, labels, f"{output_file}-efficiency")
-    config.save(fig_eff, f"{output_file}-efficiency")
+    for tag, ((fig, ax), x_label, y_label) in wanted_data.items():
+        name: str
+        if tag == "coin_game-eval/coins/own_coin/":
+            name = f"{output_file}-own_coin"
+        elif tag == "coin_game-eval/coins/total/":
+            name = f"{output_file}-coins_total"
+        elif tag == "eval/efficiency":
+            name = f"{output_file}-efficiency"
+        elif tag == "train/coin_owner_highest_reward":
+            name = f"{output_file}-coin_owner_highest_reward"
+        elif tag == "train/percentage_correct_changes":
+            name = f"{output_file}-percentage_correct_changes"
+        elif tag == "train/percentage_incorrect_changes":
+            name = f"{output_file}-percentage_incorrect_changes"
+        elif tag == "train/percentage_overall_correct":
+            name = f"{output_file}-percentage_overall_correct"
+        elif tag == "train/heuristic_diff":
+            name = f"{output_file}-heuristic_diff"
+        else:
+            name = f"{output_file}-{tag}"
 
-    # Own Coin
-    handles, labels = ax_own_coin.get_legend_handles_labels()
-    save_legend(config, handles, labels, f"{output_file}-own_coin")
-    config.save(fig_own_coin, f"{output_file}-own_coin")
-
-    # Coins Total
-    handles, labels = ax_coins_total.get_legend_handles_labels()
-    save_legend(config, handles, labels, f"{output_file}-coins_total")
-    config.save(fig_coins_total, f"{output_file}-coins_total")
+        handles, labels = ax.get_legend_handles_labels()
+        save_legend(config, handles, labels, name)
+        config.save(fig, name)
 
 
 def draw_heatmaps(
@@ -401,22 +432,42 @@ def start_coin_game_2_plot() -> None:
         # "Individuelle Metric AC-Strafe - [0-0.5]",
         # # "Individuelle Metric AC-Strafe - [0-1.5]",
         # "Individuelle AC-Strafe - [-0.5-0.5]",
-        # "Individuelle AC-Strafe - [0-0.5]",
-        # # "Individuelle AC-Strafe - [0-1.5]",
+        # Coine Game 3
+        # "Zentrale AC-Strafe - [0-2] F5",
+        # "Zentrale AC-Strafe - [0-2] G5",
+        # # "Zentrale AC-Strafe - [0-2] D5",  # <-
+        # "Individuelle AC-Strafe - [0-2] F5",
+        # "Individuelle AC-Strafe - [0-2] G5",
+        # # "Individuelle AC-Strafe - [0-2] D5",  # <-
+        # "Individuelle Metric AC-Strafe - [0-2] F5",
+        # "Individuelle Metric AC-Strafe - [0-2] G5",
+        # # "Individuelle Metric AC-Strafe - [0-2] D5", # <-
         # "Gifting-ZS [0.5]",
         # "Gifting-ZS [1.5]",
+        # Coine Game 4
+        "Zentrale AC-Strafe - [0-2] F5",
+        "Zentrale AC-Strafe - [0-2] G5",
+        # "Zentrale AC-Strafe - [0-2] D5",  # <-
+        "Individuelle AC-Strafe - [0-2] F5",
+        "Individuelle AC-Strafe - [0-2] G5",
+        # "Individuelle AC-Strafe - [0-2] D5",  # <-
+        "Individuelle Metric AC-Strafe - [0-2] F5",
+        "Individuelle Metric AC-Strafe - [0-2] G5",
+        # "Individuelle Metric AC-Strafe - [0-2] D5",  # <-
+        "Gifting-ZS [0.5]",
+        "Gifting-ZS [1.5]",
     ]
 
     replace_dict: Dict[str, str] = {
-        # "Actor-Critic": "Native Learner",
-        # "Zentrale AC-Strafe": "RMP Stufe 1",
-        # "Individuelle Metric AC-Strafe": "RMP Stufe 2",
-        # "Individuelle AC-Strafe": "RMP Stufe 3",
-        # "Gifting-ZS [1]": "Gifting-ZS",
+        "Actor-Critic": "Native Learner",
+        "Zentrale AC-Strafe - [0-2] D5": "RMP Stufe 1",
+        "Individuelle Metric AC-Strafe - [0-2] D5": "RMP Stufe 2",
+        "Individuelle AC-Strafe - [0-2] D5": "RMP Stufe 3",
+        "Gifting-ZS [1]": "Gifting-ZS",
     }
 
     env_name = "../resources/p_coin_game"
-    experiment_label = "3pl-final-5000"
+    experiment_label = "4pl-final-5000"
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -439,7 +490,7 @@ def start_coin_game_2_plot() -> None:
     # draw_heatmaps(experiments, diagram_name)
 
     plots_coin_game(
-        exp_files=experiments, output_file="3p-coin_game-short", print_final_value=False
+        exp_files=experiments, output_file="4p-coin_game-short", print_final_value=False
     )
 
 
