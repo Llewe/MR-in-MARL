@@ -392,31 +392,31 @@ def start_ipd_plot() -> None:
 def start_coin_game_2_plot() -> None:
     # Config variables
     remove_experiments: List[str] = [
-        "Zentraler Prozentsatz - [0.8]",
-        "Zentraler Prozentsatz - [1.0]",
-        "Zentrale AC-Strafe - [-0.5-0.5]",
-        "Zentrale AC-Strafe - [0-1.5]",
-        "Zentrale AC-Strafe - [0-0.5]",
-        "Individuelle Metric AC-Strafe - [-0.5-0.5]",
-        "Individuelle Metric AC-Strafe - [0-0.5]",
-        # "Individuelle Metric AC-Strafe - [0-1.5]",
-        "Individuelle AC-Strafe - [-0.5-0.5]",
-        "Individuelle AC-Strafe - [0-0.5]",
-        # "Individuelle AC-Strafe - [0-1.5]",
-        "Gifting-ZS [0.5]",
-        "Gifting-ZS [1.5]",
+        # "Zentraler Prozentsatz - [0.8]",
+        # "Zentraler Prozentsatz - [1.0]",
+        # "Zentrale AC-Strafe - [-0.5-0.5]",
+        # "Zentrale AC-Strafe - [0-1.5]",
+        # "Zentrale AC-Strafe - [0-0.5]",
+        # "Individuelle Metric AC-Strafe - [-0.5-0.5]",
+        # "Individuelle Metric AC-Strafe - [0-0.5]",
+        # # "Individuelle Metric AC-Strafe - [0-1.5]",
+        # "Individuelle AC-Strafe - [-0.5-0.5]",
+        # "Individuelle AC-Strafe - [0-0.5]",
+        # # "Individuelle AC-Strafe - [0-1.5]",
+        # "Gifting-ZS [0.5]",
+        # "Gifting-ZS [1.5]",
     ]
 
     replace_dict: Dict[str, str] = {
-        "Actor-Critic": "Native Learner",
-        "Zentrale AC-Strafe": "RMP Stufe 1",
-        "Individuelle Metric AC-Strafe": "RMP Stufe 2",
-        "Individuelle AC-Strafe": "RMP Stufe 3",
-        "Gifting-ZS [1]": "Gifting-ZS",
+        # "Actor-Critic": "Native Learner",
+        # "Zentrale AC-Strafe": "RMP Stufe 1",
+        # "Individuelle Metric AC-Strafe": "RMP Stufe 2",
+        # "Individuelle AC-Strafe": "RMP Stufe 3",
+        # "Gifting-ZS [1]": "Gifting-ZS",
     }
 
     env_name = "../resources/p_coin_game"
-    experiment_label = "final-5000"
+    experiment_label = "3pl-final-5000"
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -439,7 +439,7 @@ def start_coin_game_2_plot() -> None:
     # draw_heatmaps(experiments, diagram_name)
 
     plots_coin_game(
-        exp_files=experiments, output_file="coin_game-short", print_final_value=False
+        exp_files=experiments, output_file="3p-coin_game-short", print_final_value=False
     )
 
 
