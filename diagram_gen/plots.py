@@ -266,7 +266,7 @@ def plots_coin_game(
         "coin_game-eval/coins/own_coin/": (
             plt.subplots(),
             "Epoche",
-            "Anteil eigene Münzen",
+            "Anteil eigener Münzen",
         ),
         "eval/efficiency": (plt.subplots(), "Epoche", "Effizienz"),
         "coin_game-eval/coins/total/": (
@@ -389,8 +389,10 @@ def start_ipd_plot() -> None:
 
     replace_dict: Dict[str, str] = {
         "Actor-Critic": "Native Learner - 1",
-        "Zentrale AC-Strafe": "RMP Stufe 1",
-        "Individuelle Metric AC-Strafe": "RMP Stufe 2",
+        "Zentrale AC-Strafe - [0-1.0]": "RMP Stufe 1 - [0-1]",
+        "Individuelle Metric AC-Strafe - [0-1.0]": "RMP Stufe 2 - [0-1]",
+        "Individuelle Metric AC-Strafe - [0-1.5]": "RMP Stufe 2 - [0-1.5]",
+        "Individuelle AC-Strafe - [0-1.5]": "RMP Stufe 3",
         "Individuelle AC-Strafe": "RMP Stufe 3",
         "Gifting-ZS - [1]": "Gifting-ZS - [1]",
     }
@@ -412,7 +414,7 @@ def start_ipd_plot() -> None:
         name = getattr(e.cfg, "NAME", "")
         for k, v in replace_dict.items():
             if k in name:
-                e.cfg.NAME = name.replace(k, v).split(" - ")[0]
+                e.cfg.NAME = name.replace(k, v)  # .split(" - ")[0]
 
     for exp in experiments:
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
@@ -421,53 +423,116 @@ def start_ipd_plot() -> None:
 
 
 def start_coin_game_2_plot() -> None:
-    # Config variables
-    remove_experiments: List[str] = [
-        # "Zentraler Prozentsatz - [0.8]",
-        # "Zentraler Prozentsatz - [1.0]",
-        # "Zentrale AC-Strafe - [-0.5-0.5]",
-        # "Zentrale AC-Strafe - [0-1.5]",
-        # "Zentrale AC-Strafe - [0-0.5]",
-        # "Individuelle Metric AC-Strafe - [-0.5-0.5]",
-        # "Individuelle Metric AC-Strafe - [0-0.5]",
-        # # "Individuelle Metric AC-Strafe - [0-1.5]",
-        # "Individuelle AC-Strafe - [-0.5-0.5]",
-        # Coine Game 3
-        # "Zentrale AC-Strafe - [0-2] F5",
-        # "Zentrale AC-Strafe - [0-2] G5",
-        # # "Zentrale AC-Strafe - [0-2] D5",  # <-
-        # "Individuelle AC-Strafe - [0-2] F5",
-        # "Individuelle AC-Strafe - [0-2] G5",
-        # # "Individuelle AC-Strafe - [0-2] D5",  # <-
-        # "Individuelle Metric AC-Strafe - [0-2] F5",
-        # "Individuelle Metric AC-Strafe - [0-2] G5",
-        # # "Individuelle Metric AC-Strafe - [0-2] D5", # <-
-        # "Gifting-ZS [0.5]",
-        # "Gifting-ZS [1.5]",
-        # Coine Game 4
-        "Zentrale AC-Strafe - [0-2] F5",
-        "Zentrale AC-Strafe - [0-2] G5",
-        # "Zentrale AC-Strafe - [0-2] D5",  # <-
-        "Individuelle AC-Strafe - [0-2] F5",
-        "Individuelle AC-Strafe - [0-2] G5",
-        # "Individuelle AC-Strafe - [0-2] D5",  # <-
-        "Individuelle Metric AC-Strafe - [0-2] F5",
-        "Individuelle Metric AC-Strafe - [0-2] G5",
-        # "Individuelle Metric AC-Strafe - [0-2] D5",  # <-
-        "Gifting-ZS [0.5]",
-        "Gifting-ZS [1.5]",
-    ]
+    remove_experiments: List[str]
+    replace_dict: Dict[str, str]
 
-    replace_dict: Dict[str, str] = {
-        "Actor-Critic": "Native Learner",
-        "Zentrale AC-Strafe - [0-2] D5": "RMP Stufe 1",
-        "Individuelle Metric AC-Strafe - [0-2] D5": "RMP Stufe 2",
-        "Individuelle AC-Strafe - [0-2] D5": "RMP Stufe 3",
-        "Gifting-ZS [1]": "Gifting-ZS",
-    }
+    env_name: str = "../resources/p_coin_game"
+    experiment_label: str
+    output_name: str
+    experiment = "4pl10000"
 
-    env_name = "../resources/p_coin_game"
-    experiment_label = "4pl-final-5000"
+    if experiment == "4pl10000":
+        # Config variables
+        remove_experiments = [
+            "Zentrale AC-Strafe - [0-2] F5",
+            "Zentrale AC-Strafe - [0-2] G5",
+            # "Zentrale AC-Strafe - [0-2] D5",  # <-
+            "Individuelle AC-Strafe - [0-2] F5",
+            "Individuelle AC-Strafe - [0-2] G5",
+            # "Individuelle AC-Strafe - [0-2] D5",  # <-
+            "Individuelle Metric AC-Strafe - [0-2] F5",
+            "Individuelle Metric AC-Strafe - [0-2] G5",
+            # "Individuelle Metric AC-Strafe - [0-2] D5",  # <-
+            "Gifting-ZS [0.5]",
+            "Gifting-ZS [1.5]",
+        ]
+
+        replace_dict = {
+            "Actor-Critic": "Native Learner",
+            "Zentrale AC-Strafe - [0-2] D5": "RMP Stufe 1",
+            "Individuelle Metric AC-Strafe - [0-2] D5": "RMP Stufe 2",
+            "Individuelle AC-Strafe - [0-2] D5": "RMP Stufe 3",
+            "Gifting-ZS [1]": "Gifting-ZS",
+        }
+
+        env_name = "../resources/p_coin_game"
+        experiment_label = "4pl-final-10000-lr0005"
+        output_name = "4pl-final-10000-lr0005-short"
+    elif experiment == "3pl":
+        # Config variables
+        remove_experiments = [
+            # "Zentraler Prozentsatz - [0.8]",
+            # "Zentraler Prozentsatz - [1.0]",
+            # "Zentrale AC-Strafe - [-0.5-0.5]",
+            # "Zentrale AC-Strafe - [0-1.5]",
+            # "Zentrale AC-Strafe - [0-0.5]",
+            # "Individuelle Metric AC-Strafe - [-0.5-0.5]",
+            # "Individuelle Metric AC-Strafe - [0-0.5]",
+            # # "Individuelle Metric AC-Strafe - [0-1.5]",
+            # "Individuelle AC-Strafe - [-0.5-0.5]",
+            # Coine Game 3
+            "Zentrale AC-Strafe - [0-2] F5",
+            "Zentrale AC-Strafe - [0-2] G5",
+            # "Zentrale AC-Strafe - [0-2] D5",  # <-
+            "Individuelle AC-Strafe - [0-2] F5",
+            "Individuelle AC-Strafe - [0-2] G5",
+            # "Individuelle AC-Strafe - [0-2] D5",  # <-
+            "Individuelle Metric AC-Strafe - [0-2] F5",
+            "Individuelle Metric AC-Strafe - [0-2] G5",
+            # "Individuelle Metric AC-Strafe - [0-2] D5", # <-
+            "Gifting-ZS [0.5]",
+            "Gifting-ZS [1.5]",
+        ]
+
+        replace_dict = {
+            "Actor-Critic": "Native Learner",
+            "Zentrale AC-Strafe - [0-2] D5": "RMP Stufe 1",
+            "Individuelle Metric AC-Strafe - [0-2] D5": "RMP Stufe 2",
+            "Individuelle AC-Strafe - [0-2] D5": "RMP Stufe 3",
+            "Gifting-ZS [1]": "Gifting-ZS",
+        }
+        experiment_label = "3pl-final-5000"
+        output_name = "3pl-final-short"
+    elif experiment == "2pl":
+        # Config variables
+        remove_experiments = [
+            "Zentraler Prozentsatz - [0.8]",
+            "Zentraler Prozentsatz - [1.0]",
+            "Zentrale AC-Strafe - [-0.5-0.5]",
+            "Zentrale AC-Strafe - [0-1.5]",
+            "Zentrale AC-Strafe - [0-0.5]",
+            "Individuelle Metric AC-Strafe - [-0.5-0.5]",
+            "Individuelle Metric AC-Strafe - [0-0.5]",
+            "Individuelle AC-Strafe - [0-0.5]",
+            # "Individuelle Metric AC-Strafe - [0-1.5]",
+            "Individuelle AC-Strafe - [-0.5-0.5]",
+            # Coine Game 3
+            "Zentrale AC-Strafe - [0-2] F5",
+            "Zentrale AC-Strafe - [0-2] G5",
+            # "Zentrale AC-Strafe - [0-2] D5",  # <-
+            "Individuelle AC-Strafe - [0-2] F5",
+            "Individuelle AC-Strafe - [0-2] G5",
+            # "Individuelle AC-Strafe - [0-2] D5",  # <-
+            "Individuelle Metric AC-Strafe - [0-2] F5",
+            "Individuelle Metric AC-Strafe - [0-2] G5",
+            # "Individuelle Metric AC-Strafe - [0-2] D5", # <-
+            "Gifting-ZS [0.5]",
+            "Gifting-ZS [1.5]",
+        ]
+
+        replace_dict = {
+            "Actor-Critic": "Native Learner - 1",
+            "Zentrale AC-Strafe - [0-1.0]": "RMP Stufe 1 - [0-1]",
+            "Individuelle Metric AC-Strafe - [0-1.0]": "RMP Stufe 2 - [0-1]",
+            "Individuelle Metric AC-Strafe - [0-1.5]": "RMP Stufe 2 - [0-1.5]",
+            "Individuelle AC-Strafe - [0-1.5]": "RMP Stufe 3",
+            "Individuelle AC-Strafe": "RMP Stufe 3",
+            "Gifting-ZS - [1]": "Gifting-ZS - [1]",
+        }
+        experiment_label = "final-5000"
+        output_name = "2pl-final-short"
+    else:
+        raise ValueError
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -490,7 +555,9 @@ def start_coin_game_2_plot() -> None:
     # draw_heatmaps(experiments, diagram_name)
 
     plots_coin_game(
-        exp_files=experiments, output_file="4p-coin_game-short", print_final_value=False
+        exp_files=experiments,
+        output_file=output_name,
+        print_final_value=False,
     )
 
 
