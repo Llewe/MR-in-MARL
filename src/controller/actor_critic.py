@@ -240,15 +240,6 @@ class ActorCritic(IController):
             running_add = running_add * gamma + rewards[t]
             discounted_returns[t] = running_add
 
-        # TODO not sure why i added this maybe it helped with MPE envs but it is bad for MATE
-        # # Adding a small constant to avoid division by zero
-        # mean_returns = np.mean(discounted_returns)
-        # std_returns = np.std(discounted_returns) + 1e-8
-        #
-        # # Normalize using mean and standard deviation with added constant
-        # discounted_returns -= mean_returns
-        # discounted_returns /= std_returns
-
         return discounted_returns
 
     def update_critic(self, agent_id, gamma: float, returns) -> None:
@@ -267,7 +258,8 @@ class ActorCritic(IController):
 
     def update_actor(self, agent_id, gamma: float, returns) -> None:
         actor = self.actor_networks[agent_id]
-        critic = self.critic_networks[agent_id]
+        # critic = self.critic_networks[agent_id]
+        # -> Reuse critic value since it is already computed
 
         obs = torch.stack(self.step_info[agent_id].observations)
 

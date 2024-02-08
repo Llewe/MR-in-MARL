@@ -1,3 +1,7 @@
+# reference
+# https://github.com/thomyphan/emergent-cooperation
+
+
 import functools
 import logging
 import random

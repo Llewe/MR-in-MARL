@@ -299,6 +299,11 @@ def plots_coin_game(
             "Epoche",
             "Differenz zu der Heuristik",
         ),
+        "train/percentage_no_changes": (
+            plt.subplots(),
+            "Epoche",
+            "Prozentuale korrekte unveränderte Belohnungen",
+        ),
     }
 
     get_and_print_scalar_data(
@@ -325,6 +330,8 @@ def plots_coin_game(
             name = f"{output_file}-percentage_incorrect_changes"
         elif tag == "train/percentage_overall_correct":
             name = f"{output_file}-percentage_overall_correct"
+        elif tag == "train/percentage_no_changes":
+            name = f"{output_file}-percentage_no_changes"
         elif tag == "train/heuristic_diff":
             name = f"{output_file}-heuristic_diff"
         else:
@@ -429,7 +436,7 @@ def start_coin_game_2_plot() -> None:
     env_name: str = "../resources/p_coin_game"
     experiment_label: str
     output_name: str
-    experiment = "4pl10000"
+    experiment = "3pl"
 
     if experiment == "4pl10000":
         # Config variables

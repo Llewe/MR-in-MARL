@@ -1,15 +1,14 @@
-from typing import List
+# reference
+# https://github.com/thomyphan/emergent-cooperation
 
-import numpy
 import torch
 from gymnasium.spaces import Space
 from pettingzoo.utils.env import AgentID
-from src.controller.actor_critic import ActorCritic
-from torch import Tensor
-from torch.distributions import Categorical
 from torch.autograd import grad
+from torch.distributions import Categorical
 
 from src.config.ctrl_config import LolaPGConfig
+from src.controller.actor_critic import ActorCritic
 
 
 class LolaPG(ActorCritic):

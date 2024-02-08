@@ -56,7 +56,7 @@ class HeuristicCompareLogger:
         if self.env_type == EnvType.P_COIN_GAME:
             heuristic = CentralMaHeuristicCoinGame.get_modified_reward(obs, rewards)
 
-            # to do check if correct got punnished
+            # to do check if correct got punished
 
             coin_owner = obs[-1]
 

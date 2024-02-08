@@ -1,14 +1,17 @@
-from collections import defaultdict
+# reference
+# https://github.com/thomyphan/emergent-cooperation
+
+
 from typing import Any, Optional
 
 import numpy
 import torch
 from gymnasium import Space
-from pettingzoo.utils.env import ActionType, AgentID, ObsType
+from pettingzoo.utils.env import AgentID, ObsType
 from torch import Tensor
 
-from src.controller.actor_critic import ActorCritic
 from src.config.ctrl_config import MateConfig
+from src.controller.actor_critic import ActorCritic
 
 
 class Mate(ActorCritic):
