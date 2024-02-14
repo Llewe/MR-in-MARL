@@ -6,7 +6,6 @@ import numpy
 import numpy as np
 import pygame
 from pettingzoo import AECEnv, ParallelEnv
-from pettingzoo.mpe._mpe_utils.simple_env import SimpleEnv
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
@@ -25,8 +24,6 @@ from src.envs import build_env
 from src.interfaces.controller_i import IController
 from src.interfaces.ma_controller_i import IMaController
 from src.utils.loggers.heuristic_compare_logger import HeuristicCompareLogger
-from src.utils.loggers.obs_logger import IObsLogger
-from src.utils.loggers.simple_env_logger import SimpleEnvLogger
 from src.utils.loggers.util_logger import log_efficiency
 
 _training_config = TrainingConfig()
@@ -39,7 +36,6 @@ def _train_epoch(
     current_epoch: int,
     writer: SummaryWriter,
     heuristic_compare_logger: HeuristicCompareLogger,
-    obs_logger: IObsLogger,
     parallel: bool = False,
 ) -> None:
     controller.epoch_started(current_epoch)
@@ -47,8 +43,6 @@ def _train_epoch(
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
     env.reset(options={"history_reset": True})
-
-    obs_logger.clear_buffer()
 
     epoch_rewards: dict[AgentID, list[float]] = {a: [] for a in env.agents}
     heuristic_compare_logger.reset()
@@ -65,7 +59,6 @@ def _train_epoch(
                 current_epoch,
                 episode,
                 heuristic_compare_logger,
-                obs_logger,
             )
 
         else:
@@ -92,8 +85,6 @@ def _train_epoch(
         current_epoch, "train", writer, epoch_rewards, _training_config.EPISODES
     )
 
-    obs_logger.log_epoch(current_epoch, "train")
-
     controller.epoch_finished(current_epoch, "train")
     ma_controller.epoch_finished(current_epoch, "train")
 
@@ -105,7 +96,6 @@ def _train_parallel_episode(
     current_epoch: int,
     current_episode: int,
     heuristic_compare_logger: HeuristicCompareLogger,
-    obs_logger: IObsLogger,
 ) -> dict[AgentID, float]:
     timestep: int = 0
 
@@ -134,9 +124,6 @@ def _train_parallel_episode(
         actions: dict[AgentID, ActionType] = controller.act_parallel(
             observations, explore=True
         )
-
-        for agent_id, observation in observations.items():
-            obs_logger.add_observation(agent_id, observation)
 
         global_obs = obs_callback()
 
@@ -181,7 +168,6 @@ def _eval_parallel_agents(
     env: ParallelEnv,
     writer: SummaryWriter,
     current_epoch: int,
-    obs_logger: IObsLogger,
     num_eval_episodes: int,
 ) -> None:
     rewards: dict[AgentID, list[float]] = {}
@@ -190,7 +176,6 @@ def _eval_parallel_agents(
 
     for agent_name in env.possible_agents:
         rewards[agent_name] = []
-    obs_logger.clear_buffer()
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
     env.reset(options={"history_reset": True})
@@ -216,9 +201,6 @@ def _eval_parallel_agents(
                 observations, explore=False
             )
 
-            for agent_id, observation in observations.items():
-                obs_logger.add_observation(agent_id, observation)
-
             new_observations, r, terminations, truncations, infos = env.step(a)
 
             observations = new_observations
@@ -238,8 +220,6 @@ def _eval_parallel_agents(
                 steps,
             )
             rewards[agent_id].append(episode_reward[agent_id])
-
-    obs_logger.log_epoch(current_epoch, "eval")
 
     for agent_id in env.possible_agents:
         writer.add_scalar(
@@ -286,15 +266,6 @@ def start_training() -> None:
         if not parallel:
             raise NotImplementedError("Only parallel envs are supported")
 
-        obs_logger: IObsLogger
-
-        if isinstance(env.unwrapped, SimpleEnv):
-            logging.info("Using SimpleEnvLogger")
-            obs_logger = SimpleEnvLogger(env.unwrapped, writer)  # type: ignore
-        else:
-            logging.info("Using IObsLogger")
-            obs_logger = IObsLogger(writer)
-
         # Building the agents
         agents = get_agents()
 
@@ -334,7 +305,6 @@ def start_training() -> None:
                 epoch,
                 writer,
                 heuristic_compare_logger,
-                obs_logger,
                 parallel=parallel,
             )
 
@@ -346,7 +316,6 @@ def start_training() -> None:
                         env,
                         writer,
                         epoch,
-                        obs_logger,
                         num_eval_episodes=_training_config.EVAL_EPISODES,
                     )
                 else:

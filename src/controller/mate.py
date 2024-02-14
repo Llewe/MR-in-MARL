@@ -15,6 +15,12 @@ from src.controller.actor_critic import ActorCritic
 
 
 class Mate(ActorCritic):
+    """
+    This implementation is a simplified version of the original implementation.
+    It removes parts of the neighborhood since this is not relevant for the coin game
+    and ipd.
+    """
+
     mate_mode: MateConfig.Mode
     defect_mode: MateConfig.DefectMode
     token_value: float
@@ -145,28 +151,16 @@ class Mate(ActorCritic):
     ):  # history, next_history is missing
         if self.mate_mode == MateConfig.Mode.STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
-            if (
-                not is_empty
-            ):  # TODO this is a change to the original code -> its probably a bug in the original code
+            if not is_empty:
+                # This is a change to the original implementation. The original
+                # implementation has a bug here (at least i think so ;)).
                 self.last_rewards_observed[agent_id].append(reward)
                 return True
             last_reward = numpy.mean(self.last_rewards_observed[agent_id])
             self.last_rewards_observed[agent_id].append(reward)
             return reward >= last_reward
         if self.mate_mode == MateConfig.Mode.TD_ERROR_MODE:
-            # if len(self.step_info[agent_id].rewards) < 2:
-            #     return True
-
             return reward + self.config.DISCOUNT_FACTOR * v_new - v_old >= 0
-            # history = torch.tensor(
-            #     numpy.asarray([history]), dtype=torch.float32, device=self.device
-            # )
-            # next_history = torch.tensor(
-            #     numpy.asarray([next_history]), dtype=torch.float32, device=self.device
-            # )
-            # value = self.get_values(agent_id, history)[0].item()
-            # next_value = self.get_values(agent_id, next_history)[0].item()
-            # return reward + self.gamma * next_value - value >= 0
         if self.mate_mode == MateConfig.Mode.VALUE_DECOMPOSE_MODE:
             return False
 
@@ -180,37 +174,6 @@ class Mate(ActorCritic):
             return self.neighborhood[agent_id]
 
     def mate(self, next_observations: Optional[dict[AgentID, ObsType]] = None):
-        """
-        V = approximated value function
-        N = sum of all neighbors agents
-        tau = history
-        e = experience
-        at = action
-        st = state
-        z = observation/local observation
-        r = reward
-        e = <tau,action,reward,observation> -> History zum Zeitpunkt i
-        𝑒𝑡,𝑖 = ⟨𝜏𝑡,𝑖, 𝑎𝑡,𝑖, 𝑟𝑡,𝑖, 𝑧𝑡+1,𝑖 ⟩
-
-        1: procedure MATE(MI𝑖, ˆ 𝑉𝑖, N𝑡,𝑖, 𝜏𝑡,𝑖, 𝑒𝑡,𝑖 )
-        2:      𝑟req ← 0, ˆ 𝑟res ← 0
-        3:      if MI𝑖 (𝑟𝑡,𝑖 ) ≥ 0 then
-        4:          Send acknowledgment request 𝑥𝑖 = 𝑥token to all 𝑗 ∈ N𝑡,𝑖
-        5:      for neighbor agent 𝑗 ∈ N𝑡,𝑖 do ⊲ Respond to requests
-        6:          if request 𝑥 𝑗 received from 𝑗 then
-        7:              𝑟req ← max{ ˆ 𝑟req, 𝑥 𝑗 }
-        8:              if MI𝑖 (𝑟𝑡,𝑖 + 𝑥 𝑗 ) ≥ 0 then
-        9:                  Send response 𝑦𝑖 = +𝑥 𝑗 to agent 𝑗
-        10:             else
-        11:                 Send response 𝑦𝑖 = −𝑥 𝑗 to agent 𝑗
-        12:     if MI𝑖 (𝑟𝑡,𝑖 ) ≥ 0 then ⊲ If requests have been sent before
-        13:         for neighbor agent 𝑗 ∈ N𝑡,𝑖 do ⊲ Receive responses
-        14:             if response 𝑦𝑗 received from 𝑗 then
-        15:                 𝑟res ← min{ ˆ 𝑟res, 𝑦𝑗 }
-        16:     return 𝑟𝑡,𝑖 + ˆ 𝑟req + ˆ 𝑟res (ˆ 𝑟 MATE 𝑡,𝑖 as defined in Eq. 5)
-
-        """
-
         original_rewards: dict[AgentID, float] = {
             a: self.step_info[a].rewards[-1] for a in self.step_info.keys()
         }

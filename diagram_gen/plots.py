@@ -260,8 +260,6 @@ def plots_coin_game(
     config.configPlt(plt)
     # graph
 
-    # ax_eff.set_prop_cycle(color=[cm(1.0 * i / NUM_COLORS) for i in range(NUM_COLORS)])
-
     wanted_data: Dict[str, Tuple[Tuple[Figure, Axes], str, str]] = {
         "coin_game-eval/coins/own_coin/": (
             plt.subplots(),
@@ -344,9 +342,6 @@ def plots_coin_game(
 
 def draw_heatmaps(
     exp_files: List[ExpFile],
-    tag: str,
-    x_label: str = "Steps",
-    y_label: str = "Efficiency",
     output_file: str = "plot",
 ) -> None:
     config: PlotConfig = PlotConfig()

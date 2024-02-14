@@ -7,7 +7,6 @@ from src.cfg_manager import get_cfg
 from src.config.ctrl_config import (
     ACConfig,
     CtrlConfig,
-    DemoMaConfig,
     GiftingConfig,
     LolaPGConfig,
     MaACConfig,
@@ -20,7 +19,6 @@ from src.controller.env_specific.coin_game.ma_coin_dont_take_others_coins import
     MaCoinDontTakeOthersCoins,
 )
 from src.controller.env_specific.coin_game.ma_coin_to_middle import MaCoinToMiddle
-from src.controller.env_specific.demo_ma import DemoMa
 from src.controller.env_specific.harvest.ma_harvest_optimal_path import (
     MaHarvestOptimalPath,
 )
@@ -69,8 +67,6 @@ def get_agent_class(
         return Gifting, GiftingConfig
     elif agent_type == AgentType.LOLA_PG:
         return LolaPG, LolaPGConfig
-    elif agent_type == AgentType.DEMO_MANIPULATION_AGENT:
-        return DemoMa, DemoMaConfig
     elif agent_type == AgentType.MA_COIN_TO_MIDDLE_AC:
         return MaCoinToMiddle, MaACConfig
     elif agent_type == AgentType.MA_COIN_TO_MIDDLE_MATE:

@@ -2,6 +2,12 @@ import numpy as np
 
 
 class RewardNormalization:
+    """
+    Reward normalization class
+
+    This can be helpful if mpe is used. The rewards there can be ]-inf, inf[.
+    """
+
     current_episode = 1
     mean_reward = 0.0
     std_reward = 1.0

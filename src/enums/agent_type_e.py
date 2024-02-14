@@ -8,8 +8,6 @@ class AgentType(str, Enum):
     GIFTING = "gifting"
     LOLA_PG = "lola_pg"
 
-    DEMO_MANIPULATION_AGENT = "demo_manipulation_agent"
-
     MA_IPD_PUNISH_DEFECT = "ma_ipd_punish_defect"
 
     MA_COIN_TO_MIDDLE_AC = "ma_coin_to_middle_ac"

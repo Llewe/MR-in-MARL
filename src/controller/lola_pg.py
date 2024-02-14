@@ -41,7 +41,7 @@ class LolaPG(ActorCritic):
             print("preprocess agent_i", agent_i)
             actor_i = self.actor_networks[agent_i]
 
-            history_i: A2C.RolloutBuffer = self.step_info[agent_i]
+            history_i: ActorCritic.RolloutBuffer = self.step_info[agent_i]
 
             obs_i = torch.stack(history_i.observations)
 
@@ -59,11 +59,10 @@ class LolaPG(ActorCritic):
             action_i = torch.tensor(history_i.actions, dtype=torch.int64).detach()  # OK
 
             for agent_j in self.actor_networks:
-                print("loop ", agent_j)
                 if agent_j != agent_i:
                     actor_j = self.actor_networks[agent_j]
 
-                    history_j: A2C.RolloutBuffer = self.step_info[agent_j]
+                    history_j: ActorCritic.RolloutBuffer = self.step_info[agent_j]
 
                     obs_j = torch.stack(history_j.observations).detach()
 
@@ -133,13 +132,10 @@ class LolaPG(ActorCritic):
             self.all_gradients[agent_i] = gradients
 
     def epoch_finished(self, epoch: int, tag: str) -> None:
-        print("epoch finished")
         self.preprocess()
-        print("preprocess finished")
         super(LolaPG, self).epoch_finished(epoch, tag)
 
     def update_actor(self, agent_id: AgentID, gamma: float, returns) -> None:
-        print("update bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
         actor_net = self.actor_networks[agent_id]
         actor_net.optimizer.zero_grad()
         for params, lola_grad in zip(

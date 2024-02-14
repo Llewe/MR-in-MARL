@@ -102,10 +102,6 @@ class DemoMaCoinConfig(ACConfig):
     MANIPULATION_AMOUNT: float = 0.2
 
 
-class DemoMaConfig(ACConfig):
-    MANIPULATION_AMOUNT: float = 0.1
-
-
 if __name__ == "__main__":
     # Calculate Decay rate:
     epoch_reached_min = 4000
