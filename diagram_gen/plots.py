@@ -436,15 +436,6 @@ def start_coin_game_2_plot() -> None:
     if experiment == "4pl10000":
         # Config variables
         remove_experiments = [
-            "Zentrale AC-Strafe - [0-2] F5",
-            "Zentrale AC-Strafe - [0-2] G5",
-            # "Zentrale AC-Strafe - [0-2] D5",  # <-
-            "Individuelle AC-Strafe - [0-2] F5",
-            "Individuelle AC-Strafe - [0-2] G5",
-            # "Individuelle AC-Strafe - [0-2] D5",  # <-
-            "Individuelle Metric AC-Strafe - [0-2] F5",
-            "Individuelle Metric AC-Strafe - [0-2] G5",
-            # "Individuelle Metric AC-Strafe - [0-2] D5",  # <-
             "Gifting-ZS [0.5]",
             "Gifting-ZS [1.5]",
         ]
@@ -463,25 +454,7 @@ def start_coin_game_2_plot() -> None:
     elif experiment == "3pl":
         # Config variables
         remove_experiments = [
-            # "Zentraler Prozentsatz - [0.8]",
-            # "Zentraler Prozentsatz - [1.0]",
-            # "Zentrale AC-Strafe - [-0.5-0.5]",
-            # "Zentrale AC-Strafe - [0-1.5]",
-            # "Zentrale AC-Strafe - [0-0.5]",
-            # "Individuelle Metric AC-Strafe - [-0.5-0.5]",
-            # "Individuelle Metric AC-Strafe - [0-0.5]",
-            # # "Individuelle Metric AC-Strafe - [0-1.5]",
-            # "Individuelle AC-Strafe - [-0.5-0.5]",
-            # Coine Game 3
-            "Zentrale AC-Strafe - [0-2] F5",
-            "Zentrale AC-Strafe - [0-2] G5",
-            # "Zentrale AC-Strafe - [0-2] D5",  # <-
-            "Individuelle AC-Strafe - [0-2] F5",
-            "Individuelle AC-Strafe - [0-2] G5",
-            # "Individuelle AC-Strafe - [0-2] D5",  # <-
-            "Individuelle Metric AC-Strafe - [0-2] F5",
-            "Individuelle Metric AC-Strafe - [0-2] G5",
-            # "Individuelle Metric AC-Strafe - [0-2] D5", # <-
+            # Coin Game 3
             "Gifting-ZS [0.5]",
             "Gifting-ZS [1.5]",
         ]
@@ -506,18 +479,6 @@ def start_coin_game_2_plot() -> None:
             "Individuelle Metric AC-Strafe - [-0.5-0.5]",
             "Individuelle Metric AC-Strafe - [0-0.5]",
             "Individuelle AC-Strafe - [0-0.5]",
-            # "Individuelle Metric AC-Strafe - [0-1.5]",
-            "Individuelle AC-Strafe - [-0.5-0.5]",
-            # Coine Game 3
-            "Zentrale AC-Strafe - [0-2] F5",
-            "Zentrale AC-Strafe - [0-2] G5",
-            # "Zentrale AC-Strafe - [0-2] D5",  # <-
-            "Individuelle AC-Strafe - [0-2] F5",
-            "Individuelle AC-Strafe - [0-2] G5",
-            # "Individuelle AC-Strafe - [0-2] D5",  # <-
-            "Individuelle Metric AC-Strafe - [0-2] F5",
-            "Individuelle Metric AC-Strafe - [0-2] G5",
-            # "Individuelle Metric AC-Strafe - [0-2] D5", # <-
             "Gifting-ZS [0.5]",
             "Gifting-ZS [1.5]",
         ]
@@ -550,7 +511,7 @@ def start_coin_game_2_plot() -> None:
         name = getattr(e.cfg, "NAME", "")
         for k, v in replace_dict.items():
             if k in name:
-                e.cfg.NAME = name.replace(k, v)  # .split(" - ")[0]
+                e.cfg.NAME = name.replace(k, v)
 
     for exp in experiments:
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
