@@ -1,12 +1,10 @@
 from statistics import mean
 from typing import Dict, Optional
 
-from gymnasium.spaces import Discrete, Space
+from gymnasium.spaces import Space
 from pettingzoo.utils.env import AgentID, ObsType
 from torch.utils.tensorboard import SummaryWriter
 
-from src.config.ctrl_config import ACConfig
-from src.controller.actor_critic import ActorCritic
 from src.enums.metrics_e import MetricsE
 from src.interfaces.ma_controller_i import IMaController
 

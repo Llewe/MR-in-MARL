@@ -2,7 +2,7 @@ from typing import Callable, Dict, List
 from pettingzoo import ParallelEnv
 from pettingzoo.utils.env import AgentID, ObsType
 
-from src.controller_ma.individual_ma_ac_p_global_metric import (
+from src.config.ma_ac_config import (
     IndividualMaACPGlobalMetricConfig,
 )
 from src.enums import EnvType

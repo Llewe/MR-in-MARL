@@ -2,7 +2,8 @@ from typing import Dict
 
 from pettingzoo.utils.env import AgentID, ObsType
 
-from src.controller_ma.utils.ma_ac import MaAc, MaAcConfig
+from src.config.ma_ac_config import MaAcConfig
+from src.controller_ma.utils.ma_ac import MaAc
 from src.enums.metrics_e import MetricsE
 
 

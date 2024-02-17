@@ -3,14 +3,10 @@ from statistics import mean
 from gymnasium.spaces import Discrete, Space
 from pettingzoo.utils.env import AgentID, ObsType
 
-from src.config.ctrl_config import ACConfig
+from src.config.ma_ac_config import CentralMaFixedPercentageConfig
 from src.controller.actor_critic import ActorCritic
 from src.enums.metrics_e import MetricsE
 from src.interfaces.ma_controller_i import IMaController
-
-
-class CentralMaFixedPercentageConfig(ACConfig):
-    PERCENTAGE: float = 0.8
 
 
 class CentralMaFixedPercentage(ActorCritic, IMaController):

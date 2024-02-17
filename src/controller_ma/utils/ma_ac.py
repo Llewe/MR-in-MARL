@@ -1,45 +1,19 @@
 import statistics
 from abc import ABC
-from enum import Enum
 from itertools import islice
 from statistics import mean
 from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from gymnasium.spaces import Box, Space
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
-from torch import Tensor, clamp
-from torch.distributions import Beta
 from torch.utils.tensorboard import SummaryWriter
 
 from src.config.ctrl_config import ACConfig
+from src.config.ma_ac_config import MaAcConfig
 from src.controller.actor_critic import ActorCritic
 from src.interfaces.ma_controller_i import IMaController
-
-
-class MaAcConfig(ACConfig):
-    UPPER_BOUND: float = 2.0
-    LOWER_BOUND: float = 0.0
-
-    NR_MA_AGENTS: int = 1
-
-    BETA_PROB_CONCENTRATION: float = 2.0
-
-    class DISTRIBUTION(Enum):
-        DIRECT = "direct"
-        BETA = "beta"
-        GAUSSIAN = "gaussian"
-        FMAX = "fmax"
-
-    PERCENTAGE_MODE: bool = True
-
-    USE_BETA_DISTRIBUTION: bool = False
-
-    UPDATE_EVERY_X_EPISODES: int = 5
-
-    DIST_TYPE: DISTRIBUTION = DISTRIBUTION.GAUSSIAN
 
 
 class MaAc(ActorCritic, IMaController, ABC):
@@ -60,16 +34,10 @@ class MaAc(ActorCritic, IMaController, ABC):
     changed_rewards: List[float]
 
     update_every_x_episodes: int
-    dist_type: MaAcConfig.DISTRIBUTION
 
     writer: SummaryWriter
 
     def __init__(self, config: MaAcConfig):
-        # config.EPSILON_INIT = 0.0
-        # config.EPSILON_MIN = 0.00
-        # config.EPSILON_DECAY = 9.75e-05
-        # config.DISCOUNT_FACTOR = 0.95
-
         super().__init__(config)
         self.changed_rewards = []
 
@@ -77,14 +45,12 @@ class MaAc(ActorCritic, IMaController, ABC):
         self.lower_bound = self.config.LOWER_BOUND
         self.nr_ma_agents = self.config.NR_MA_AGENTS
         self.update_every_x_episodes = self.config.UPDATE_EVERY_X_EPISODES
-        self.dist_type = self.config.DIST_TYPE
 
         torch.set_default_dtype(torch.float64)
 
     def act(self, agent_id: AgentID, observation: ObsType, explore=True) -> ActionType:
         if explore and self.epsilon > 0 and np.random.rand() < self.epsilon:
             actions = np.random.rand(self.actor_networks[agent_id].num_actions).tolist()
-            # log_prob = -np.log(1.0 / self.actor_networks[agent_id].action_space.n)
             return actions
         else:
             obs_tensor = torch.tensor(observation, dtype=torch.float64).unsqueeze(0)
@@ -93,54 +59,13 @@ class MaAc(ActorCritic, IMaController, ABC):
 
             action_probabilities = policy_network(obs_tensor).detach()[0]
 
-            if np.isnan(action_probabilities).any():
-                print(f"obs: {observation}")
-                print(f"obs_tensor: {obs_tensor}")
-                print(f"action_probabilities: {action_probabilities}")
-                raise ValueError("action_probabilities is nan")
             action_probabilities = torch.clamp(
                 action_probabilities,
                 min=1e-8,
                 max=1 - 1e-8,  # help to avoid nan from log(0)
             )
 
-            if self.dist_type == MaAcConfig.DISTRIBUTION.BETA:
-                alpha, beta = self.get_alpha_beta(action_probabilities)
-
-                c = Beta(alpha, beta).sample()
-                return c.tolist()
-            else:
-                return action_probabilities.tolist()
-
-    def get_alpha_beta(self, action_probabilities: Tensor) -> Tuple[Tensor, Tensor]:
-        """
-        Parameters
-        ----------
-        concentration
-        action_probabilities
-
-        Returns
-        -------
-
-        """
-
-        # Calculate shape parameters
-        e = 1e-8
-        action_probabilities = torch.clamp(action_probabilities, min=e, max=1.0 - e)
-
-        alpha = action_probabilities * self.config.BETA_PROB_CONCENTRATION
-        beta = (1 - action_probabilities) * self.config.BETA_PROB_CONCENTRATION
-        #
-        alpha = clamp(alpha, min=e, max=self.config.BETA_PROB_CONCENTRATION)
-        beta = clamp(beta, min=e, max=self.config.BETA_PROB_CONCENTRATION)
-
-        if torch.isnan(alpha).any() or torch.isnan(beta).any():
-            print(f"alpha: {alpha}")
-            print(f"beta: {beta}")
-            print(f"action_probabilities: {action_probabilities}")
-            raise ValueError("alpha or beta is nan")
-
-        return alpha, beta
+            return action_probabilities.tolist()
 
     def update_actor(self, agent_id, gamma: float, returns) -> None:
         actor = self.actor_networks[agent_id]
@@ -154,26 +79,9 @@ class MaAc(ActorCritic, IMaController, ABC):
         actor_probs = actor(obs.detach())
         advantages = returns.detach() - critic_values
 
-        if self.dist_type == MaAcConfig.DISTRIBUTION.BETA:
-            alpha, beta = self.get_alpha_beta(actions)
-            m1 = Beta(alpha, beta)
-            log_prob = torch.sum(m1.log_prob(actor_probs), dim=-1)
-            actor_loss = (-log_prob * advantages).sum()
-        elif self.dist_type == MaAcConfig.DISTRIBUTION.GAUSSIAN:
-            log_probs = torch.sum(
-                -0.5 * ((actions - actor_probs) ** 2), dim=-1
-            )  # Assuming Gaussian policy
-            actor_loss = (-log_probs * advantages).sum()
-        elif self.dist_type == MaAcConfig.DISTRIBUTION.FMAX:
-            log_probs = torch.sum(F.log_softmax(actor_probs, dim=1), dim=-1)
-
-            actor_loss = (-log_probs * advantages).sum()
-        elif self.dist_type == MaAcConfig.DISTRIBUTION.DIRECT:
-            actor_probs = torch.clamp(actor_probs, min=1e-8, max=1 - 1e-8)
-            log_probs = torch.sum(actor_probs * torch.log(actor_probs), dim=-1)
-            actor_loss = (-log_probs * advantages).sum()
-        else:
-            raise ValueError("Unknown distribution type")
+        actor_probs = torch.clamp(actor_probs, min=1e-8, max=1 - 1e-8)
+        log_probs = torch.sum(actor_probs * torch.log(actor_probs), dim=-1)
+        actor_loss = (-log_probs * advantages).sum()
 
         actor.optimizer.zero_grad()
         actor_loss.backward()
