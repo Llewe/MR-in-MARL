@@ -24,6 +24,8 @@ class TrainingConfig(ExpConfig):
 
     EXP_UNIQUE_NAME: str = ""
 
+    REST_SEED: int = 42
+
     def __init__(self, **data):
         super().__init__(**data)
 
@@ -43,5 +45,5 @@ class TrainingConfig(ExpConfig):
 
             if cfg.UPDATE_EVERY_X_EPISODES > 0:
                 self.EXP_TAG = f"{self.EXP_TAG} - UPDATE={cfg.UPDATE_EVERY_X_EPISODES}"
-
+        self.EXP_TAG = f"{self.EXP_TAG} - Seed={self.REST_SEED}"
         self.EXP_UNIQUE_NAME = f"{datetime.fromtimestamp(time()).isoformat(timespec='seconds')} - {self.EXP_TAG}"

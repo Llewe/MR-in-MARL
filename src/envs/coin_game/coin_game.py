@@ -270,6 +270,8 @@ class CoinGame(ParallelEnv):
     name: str = "coin_game_llewe"
     nr_actions: int
 
+    random: random.Random
+
     # Render Variables
     render_mode: str
     pygame_renderer: Optional[CoinGamePygameRenderer]
@@ -313,12 +315,11 @@ class CoinGame(ParallelEnv):
         grid_size: int
         randomize_coin: bool
         allow_overlap_players: bool
-        seed: int
         summary_writer: Optional[SummaryWriter]
         """
 
         super().__init__()
-
+        self.random = random.Random(42)
         self.with_none_action = with_none_action
         self.walls = walls
         self.max_cycles = max_cycles
@@ -340,7 +341,6 @@ class CoinGame(ParallelEnv):
         self.agents: list[AgentID] = [f"player_{r}" for r in range(self.n_players)]
         self.possible_agents: list[AgentID] = self.agents[:]
 
-        # init global global_state #TODO make this seed able and random
         self.global_state = GlobalState(
             agent_states={
                 agent: AgentState(x=1, y=2) for agent in self.possible_agents
@@ -417,12 +417,15 @@ class CoinGame(ParallelEnv):
             if (agent.x, agent.y) in possible_pos:
                 possible_pos.remove((agent.x, agent.y))
 
-        self.global_state.coin_state.x, self.global_state.coin_state.y = random.choice(
-            possible_pos
-        )
+        (
+            self.global_state.coin_state.x,
+            self.global_state.coin_state.y,
+        ) = self.random.choice(possible_pos)
 
         if self.randomize_coin:
-            self.global_state.coin_state.owner = random.choice(self.possible_agents)
+            self.global_state.coin_state.owner = self.random.choice(
+                self.possible_agents
+            )
 
         self.global_state.coin_is_collected = False
 
@@ -439,7 +442,7 @@ class CoinGame(ParallelEnv):
         possible_pos: list[tuple[int, int]] = self._all_locations()
 
         for agent_state in self.global_state.agent_states.values():
-            agent_state.x, agent_state.y = random.choice(possible_pos)
+            agent_state.x, agent_state.y = self.random.choice(possible_pos)
 
             if not self.allow_overlap_players:
                 possible_pos.remove((agent_state.x, agent_state.y))
@@ -506,6 +509,8 @@ class CoinGame(ParallelEnv):
         seed: int | None = None,
         options: dict | None = None,
     ) -> tuple[dict[AgentID, ObsType], dict[AgentID, dict]]:
+        if seed is not None:
+            self.random.seed(seed)
         self.reinit(options=options)
         if options is None:
             self.current_history.clear()

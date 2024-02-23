@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from random import Random
 from typing import Callable, Union
 
 import numpy
@@ -37,12 +38,13 @@ def _train_epoch(
     writer: SummaryWriter,
     heuristic_compare_logger: HeuristicCompareLogger,
     parallel: bool = False,
+    seeder: Random = Random(),
 ) -> None:
     controller.epoch_started(current_epoch)
     ma_controller.epoch_started(current_epoch)
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
-    env.reset(options={"history_reset": True})
+    env.reset(seed=seeder.randint(0, 10000), options={"history_reset": True})
 
     epoch_rewards: dict[AgentID, list[float]] = {a: [] for a in env.agents}
     heuristic_compare_logger.reset()
@@ -59,6 +61,7 @@ def _train_epoch(
                 current_epoch,
                 episode,
                 heuristic_compare_logger,
+                seeder,
             )
 
         else:
@@ -70,11 +73,12 @@ def _train_epoch(
     heuristic_compare_logger.log_and_clear(current_epoch, "train")
     # by resetting some envs (e.g. coin game) will log some env specific data
     env.reset(
+        seed=seeder.randint(0, 10000),
         options={
             "write_log": True,
             "epoch": current_epoch,
             "tag": "train",
-        }
+        },
     )
 
     for agent_id, epoch_reward in epoch_rewards.items():
@@ -96,15 +100,17 @@ def _train_parallel_episode(
     current_epoch: int,
     current_episode: int,
     heuristic_compare_logger: HeuristicCompareLogger,
+    seeder: Random = Random(),
 ) -> dict[AgentID, float]:
     timestep: int = 0
 
     observations, infos = env.reset(
+        seed=seeder.randint(0, 10000),
         options={
             "write_log": False,
             "epoch": current_epoch,
             "tag": "train",
-        }
+        },
     )
     episode_reward: dict[AgentID, float] = {a: 0 for a in env.possible_agents}
 
@@ -169,6 +175,7 @@ def _eval_parallel_agents(
     writer: SummaryWriter,
     current_epoch: int,
     num_eval_episodes: int,
+    seeder: Random = Random(),
 ) -> None:
     rewards: dict[AgentID, list[float]] = {}
 
@@ -178,15 +185,16 @@ def _eval_parallel_agents(
         rewards[agent_name] = []
 
     # For coin game this resets the history.Important in case e.g. eval is done in between
-    env.reset(options={"history_reset": True})
+    env.reset(seed=seeder.randint(0, 10000), options={"history_reset": True})
 
     for steps in range(num_eval_episodes):
         observations, infos = env.reset(
+            seeder.randint(0, 10000),
             options={
                 "write_log": False,
                 "epoch": current_epoch,
                 "tag": "eval",
-            }
+            },
         )
 
         episode_reward = {}
@@ -237,12 +245,13 @@ def _eval_parallel_agents(
 
     # by resetting some envs (e.g. coin game) will log some env specific data
     env.reset(
+        seed=seeder.randint(0, 10000),
         options={
             "write_log": True,
             "epoch": current_epoch,
             "tag": "eval",
             "heatmap": True,
-        }
+        },
     )
 
 
@@ -257,6 +266,8 @@ def start_training() -> None:
     agent_dir: str = get_cfg().get_ctrl_dir()
 
     logging.info(f"TensorBoard -> Logging to {agent_dir}")
+
+    random_seed: Random = Random(_training_config.REST_SEED)
 
     with SummaryWriter(log_dir=agent_dir) as writer:
         # Building  the environment
@@ -306,6 +317,7 @@ def start_training() -> None:
                 writer,
                 heuristic_compare_logger,
                 parallel=parallel,
+                seeder=random_seed,
             )
 
             if epoch % _training_config.EVAL_EPOCH_INTERVAL == 0:
@@ -317,6 +329,7 @@ def start_training() -> None:
                         writer,
                         epoch,
                         num_eval_episodes=_training_config.EVAL_EPISODES,
+                        seeder=random_seed,
                     )
                 else:
                     raise NotImplementedError("Only parallel envs are supported")
