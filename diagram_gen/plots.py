@@ -19,6 +19,24 @@ NUM_COLORS = 20
 cm = plt.get_cmap("gist_rainbow")
 colors = [cm(1.0 * i / NUM_COLORS) for i in range(NUM_COLORS)]
 
+color_map: Dict[str, str] = {
+    "Native Learner": "blue",
+    "Zufall": "gray",
+    "Heuristik": "brown",
+    "MATE-TD": "purple",
+    "Gifting-ZS": "cyan",
+    "Gifting-ZS - [1]": "cyan",
+    "RMP Stufe 1": "green",
+    "RMP Stufe 1 - [0-1.0]": "green",
+    "RMP Stufe 1 - [0-1.5]": "lime",
+    "RMP Stufe 2": "orange",
+    "RMP Stufe 2 - [0-1.0]": "orange",
+    "RMP Stufe 2 - [0-1.5]": "darkorange",
+    "RMP Stufe 3": "red",
+    "RMP Stufe 3 - [0-1.0]": "red",
+    "RMP Stufe 3 - [0-1.5]": "lightcoral",
+}
+
 
 def write_scalars(
     axis: Axes,
@@ -44,6 +62,9 @@ def write_scalars(
         line_name = e
     else:
         line_name = getattr(e.cfg, "NAME", e.path)
+
+    color = color_map.get(line_name, "black")
+
     axis.plot(
         df["Steps"],
         df["Rolling_Avg"],
@@ -51,6 +72,8 @@ def write_scalars(
         if print_final_value
         else f"{line_name}",
         alpha=0.7,
+        color=color,
+        linewidth=2,
     )
     axis.set_xlabel(x_label)
     axis.set_ylabel(y_label)
@@ -390,13 +413,22 @@ def start_ipd_plot() -> None:
     ]
 
     replace_dict: Dict[str, str] = {
-        "Actor-Critic": "Native Learner - 1",
-        "Zentrale AC-Strafe - [0-1.0]": "RMP Stufe 1 - [0-1]",
-        "Individuelle Metric AC-Strafe - [0-1.0]": "RMP Stufe 2 - [0-1]",
-        "Individuelle Metric AC-Strafe - [0-1.5]": "RMP Stufe 2 - [0-1.5]",
-        "Individuelle AC-Strafe - [0-1.5]": "RMP Stufe 3",
-        "Individuelle AC-Strafe": "RMP Stufe 3",
-        "Gifting-ZS - [1]": "Gifting-ZS - [1]",
+        "Actor-Critic": "Native Learner",
+        "Zentrale AC-Strafe - [0-1.0]": "RMP Stufe 1",
+        "Individuelle Metric AC-Strafe - [0-1.0]": "RMP Stufe 2",
+        "Individuelle AC-Strafe - [0-1.0]": "RMP Stufe 3",
+        "Gifting-ZS - [1]": "Gifting-ZS",
+    }
+
+    comparisons: Dict[str, List[str]] = {
+        "rmp": ["RMP Stufe 1", "RMP Stufe 2", "RMP Stufe 3", "Heuristik"],
+        "related_work": [
+            "Zufall",
+            "Gifting-ZS",
+            "Native Learner",
+            "MATE-TD",
+            "RMP Stufe 3",
+        ],
     }
 
     env_name = "../resources/p_prisoners_dilemma"
@@ -421,7 +453,21 @@ def start_ipd_plot() -> None:
     for exp in experiments:
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
 
-    plot_ipd(exp_files=experiments, output_file="ipd-short", print_final_value=False)
+    for plot_name, graphs in comparisons.items():
+        plot_exp: List[ExpFile] = [
+            e for e in experiments if e.cfg is not None and e.cfg.NAME in graphs
+        ]
+
+        plot_ipd(
+            exp_files=plot_exp,
+            output_file=f"idp/ipd-short-{plot_name}",
+            print_final_value=False,
+        )
+    plot_ipd(
+        exp_files=experiments,
+        output_file=f"idp/ipd-short-all",
+        print_final_value=False,
+    )
 
 
 def start_coin_game_2_plot() -> None:
@@ -431,11 +477,17 @@ def start_coin_game_2_plot() -> None:
     env_name: str = "../resources/p_coin_game"
     experiment_label: str
     output_name: str
-    experiment = "3pl"
+    experiment = "4pl10000"
 
     if experiment == "4pl10000":
         # Config variables
         remove_experiments = [
+            "Individuelle AC-Strafe - [0-2] F5",
+            "Individuelle AC-Strafe - [0-2] G5",
+            "Individuelle Metric AC-Strafe - [0-2] F5",
+            "Individuelle Metric AC-Strafe - [0-2] G5",
+            "Zentrale AC-Strafe - [0-2] F5",
+            "Zentrale AC-Strafe - [0-2] G5",
             "Gifting-ZS [0.5]",
             "Gifting-ZS [1.5]",
         ]
@@ -450,11 +502,16 @@ def start_coin_game_2_plot() -> None:
 
         env_name = "../resources/p_coin_game"
         experiment_label = "4pl-final-10000-lr0005"
-        output_name = "4pl-final-10000-lr0005-short"
+        output_name = "4pl/4pl-final-10000-lr0005-short"
     elif experiment == "3pl":
         # Config variables
         remove_experiments = [
-            # Coin Game 3
+            "Individuelle AC-Strafe - [0-2] F5",
+            "Individuelle AC-Strafe - [0-2] G5",
+            "Individuelle Metric AC-Strafe - [0-2] F5",
+            "Individuelle Metric AC-Strafe - [0-2] G5",
+            "Zentrale AC-Strafe - [0-2] F5",
+            "Zentrale AC-Strafe - [0-2] G5",
             "Gifting-ZS [0.5]",
             "Gifting-ZS [1.5]",
         ]
@@ -467,35 +524,56 @@ def start_coin_game_2_plot() -> None:
             "Gifting-ZS [1]": "Gifting-ZS",
         }
         experiment_label = "3pl-final-5000"
-        output_name = "3pl-final-short"
+        output_name = "3pl/3pl-final-short"
     elif experiment == "2pl":
         # Config variables
         remove_experiments = [
             "Zentraler Prozentsatz - [0.8]",
             "Zentraler Prozentsatz - [1.0]",
             "Zentrale AC-Strafe - [-0.5-0.5]",
-            "Zentrale AC-Strafe - [0-1.5]",
             "Zentrale AC-Strafe - [0-0.5]",
+            "Zentrale AC-Strafe - [0-1.5]",
             "Individuelle Metric AC-Strafe - [-0.5-0.5]",
             "Individuelle Metric AC-Strafe - [0-0.5]",
+            "Individuelle Metric AC-Strafe - [0-1.5]",
+            "Individuelle AC-Strafe - [-0.5-0.5]",
             "Individuelle AC-Strafe - [0-0.5]",
+            "Individuelle AC-Strafe - [0-1.5]",
             "Gifting-ZS [0.5]",
             "Gifting-ZS [1.5]",
         ]
 
         replace_dict = {
-            "Actor-Critic": "Native Learner - 1",
-            "Zentrale AC-Strafe - [0-1.0]": "RMP Stufe 1 - [0-1]",
-            "Individuelle Metric AC-Strafe - [0-1.0]": "RMP Stufe 2 - [0-1]",
+            "Actor-Critic": "Native Learner",
+            "Zentrale AC-Strafe - [0-1.0]": "RMP Stufe 1",
+            "Individuelle Metric AC-Strafe - [0-1.0]": "RMP Stufe 2",
             "Individuelle Metric AC-Strafe - [0-1.5]": "RMP Stufe 2 - [0-1.5]",
-            "Individuelle AC-Strafe - [0-1.5]": "RMP Stufe 3",
-            "Individuelle AC-Strafe": "RMP Stufe 3",
-            "Gifting-ZS - [1]": "Gifting-ZS - [1]",
+            "Individuelle AC-Strafe - [0-1.5]": "RMP Stufe 3 - [0-1.5]",
+            "Individuelle AC-Strafe - [0-1.0]": "RMP Stufe 3",
+            "Gifting-ZS [1]": "Gifting-ZS",
         }
-        experiment_label = "final-5000"
-        output_name = "2pl-final-short"
+        experiment_label = "sfinal-5000"
+        output_name = "2pl/2pl-finals-short"
     else:
         raise ValueError
+
+    comparisons: Dict[str, List[str]] = {
+        "rmp": [
+            "RMP Stufe 1",
+            "RMP Stufe 2",
+            "RMP Stufe 3",
+            "Heuristik",
+            "RMP Stufe 2 - [0-1.5]",
+            "RMP Stufe 3 - [0-1.5]",
+        ],
+        "related_work": [
+            "Zufall",
+            "Gifting-ZS",
+            "Native Learner",
+            "MATE-TD",
+            "RMP Stufe 1",
+        ],
+    }
 
     experiments: List[ExpFile] = find_matching_files(
         exp_path=env_name, exp_label=experiment_label
@@ -517,6 +595,16 @@ def start_coin_game_2_plot() -> None:
         exp.diagram_data = load_diagram_data(path=exp.path, tag=None)
     # draw_heatmaps(experiments, diagram_name)
 
+    for plot_name, graphs in comparisons.items():
+        plot_exp: List[ExpFile] = [
+            e for e in experiments if e.cfg is not None and e.cfg.NAME in graphs
+        ]
+
+        plots_coin_game(
+            exp_files=plot_exp,
+            output_file=f"{output_name}-{plot_name}",
+            print_final_value=False,
+        )
     plots_coin_game(
         exp_files=experiments,
         output_file=output_name,

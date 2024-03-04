@@ -29,3 +29,4 @@ class PlotConfig(BaseSettings):
     def save(self, plot, name: str) -> None:
         Path(self.storage_path).mkdir(parents=True, exist_ok=True)
         plot.savefig(f"{self.storage_path}/{name}.png", bbox_inches="tight", dpi=300)
+        plot.savefig(f"{self.storage_path}/{name}.pdf", bbox_inches="tight", dpi=300)
